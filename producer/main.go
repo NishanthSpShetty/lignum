@@ -12,4 +12,6 @@ func main() {
 	fmt.Println("hello")
 	log.Info("Starting producer service")
 	api.DefaultConfig()
+	//fetch the current leader service.
+
 }

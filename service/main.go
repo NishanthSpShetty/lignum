@@ -15,7 +15,7 @@ import (
 
 const (
 	//Register this key on consul and get  a lock on it.
-	ServiceKey  = "service/disqlogger/key/master"
+	ServiceKey  = "service/disqlogger/key/"
 	ServiceName = "distributed-quote-logger"
 	//Standard port where all follower should register with primary server.
 	PrimaryPort = 9090
@@ -45,27 +45,29 @@ func signalHandler(sessionRenewalChannel chan struct{}, sessionId string) {
 //leaderElection Function will keep trying to aquire lock on the `ServiceKey`
 func leaderElection(sessionId string) {
 	//make sure there is a leader registered on the consul all time.
+	loggedOnce := false
 	for {
 		if !isLeader {
 
 			aquired, queryDuration, err := client.KV().Acquire(&api.KVPair{
-				Key:     ServiceKey,
+				Key:     ServiceKey + "master",
 				Value:   []byte(fmt.Sprintf("%d", PrimaryPort)),
 				Session: sessionId,
 			}, nil)
 
 			if err != nil {
 				log.Errorf("Failed to aquire lock %v \n", err)
-				return
-
+				continue
 			}
 
 			if aquired {
 				isLeader = aquired
-
-				log.Infof("Lock aquired and marking the service as leader, Lock aquired in %dms\n", queryDuration.RequestTime.Milliseconds)
+				log.Infof("Lock aquired and marking the service as leader, Lock aquired in %dms\n", queryDuration.RequestTime.Milliseconds())
 			} else {
-				log.Debug("Lock is already taken, will check again...")
+				if !loggedOnce {
+					log.Debug("Lock is already taken, will check again...")
+					loggedOnce = true
+				}
 			}
 
 			time.Sleep(60 * time.Millisecond)
@@ -109,13 +111,12 @@ func main() {
 		return
 	}
 
-	log.Debugf("Consul session created, ID : %v, Aquired in :%d  ", sessionId, queryDuration.RequestTime.Milliseconds)
+	log.Debugf("Consul session created, ID : %v, Aquired in :%dms  ", sessionId, queryDuration.RequestTime.Milliseconds())
 
 	//Start leader election routine
 	go leaderElection(sessionId)
-
 	doneChan := make(chan struct{})
-	signalHandler(doneChan, sessionId)
+	go signalHandler(doneChan, sessionId)
 	//Create a session renewer routine.
 	go func() {
 		defer close(doneChan)
@@ -125,6 +126,7 @@ func main() {
 		}
 	}()
 
+	log.Infoln("Blocking on channel recieve")
 	//start the work.
 	ch <- 1
 }
