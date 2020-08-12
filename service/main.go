@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	Hello = "hello"
 	//Register this key on consul and get  a lock on it.
 	ServiceKey  = "service/disqlogger/key/master"
 	ServiceName = "distributed-quote-logger"
