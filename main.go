@@ -129,6 +129,8 @@ func leaderElection(port int, sessionId string) {
 
 func main() {
 
+	//TODO: Read config file.
+
 	_, err := net.InterfaceAddrs()
 	HOST = "localhost" //addr[0].String()
 
