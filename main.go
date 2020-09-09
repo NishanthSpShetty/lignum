@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +15,8 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/disquote-logger/cluster"
+	"github.com/disquote-logger/config"
 	"github.com/hashicorp/consul/api"
 )
 
@@ -128,45 +129,28 @@ func leaderElection(port int, sessionId string) {
 }
 
 func main() {
-
-	//TODO: Read config file.
-
-	_, err := net.InterfaceAddrs()
-	HOST = "localhost" //addr[0].String()
-
-	//parse the command line args
-	flag.IntVar(&PORT, "port", 9090, "Service port")
-	flag.Parse()
-
-	serviceId = uuid.New()
-
 	log.SetLevel(log.DebugLevel)
 
-	log.Info("Starting loger service [ServiceID : %s ].", serviceId.String())
-	config := api.DefaultConfig()
+	configFile := flag.String("config", "", "get configuration from file")
+	flag.Parse()
 
-	config.Address = "localhost:8500"
-	client, err = api.NewClient(config)
-
+	config, err := config.GetConfig(*configFile)
 	if err != nil {
-		log.Error("Failed to create the new consul client ", err)
+		log.Error("Failed to read config", err)
 		return
 	}
 
-	sessionEntry := &api.SessionEntry{
-		Name:      ServiceName,
-		TTL:       ttlS,
-		LockDelay: 1 * time.Millisecond,
-	}
+	log.Infof("Starting loger service [ServiceID : %s ].\n", serviceId.String())
+	serviceId = uuid.New()
 
-	sessionId, queryDuration, err := client.Session().Create(sessionEntry, nil)
-
+	var sessionRenewalChannel chan struct{}
+	err = cluster.InitialiseConsulClient(config.Consul)
 	if err != nil {
-		log.Errorf("Failed to create session %v \n", err)
+		log.Error("Failed to initialise the consule client", err)
 		return
 	}
 
-	log.Debugf("Consul session created, ID : %v, Aquired in :%dms  ", sessionId, queryDuration.RequestTime.Milliseconds())
+	sessionId, err := cluster.CreateConsulSession(config.Consul, sessionRenewalChannel)
 
 	//Start leader election routine
 	go leaderElection(PORT, sessionId)
@@ -178,13 +162,6 @@ func main() {
 	//so we shouyld start the leader connection routine.
 	go connectToLeader()
 	//Create a session renewer routine.
-	go func() {
-		defer close(doneChan)
-		for {
-			client.Session().RenewPeriodic(ttlS, sessionId, nil, doneChan)
-			time.Sleep(90 * time.Second)
-		}
-	}()
 
 	log.Infof("Starting HTTP service at %s:%d \n", HOST, PORT)
 

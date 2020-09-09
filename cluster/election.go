@@ -1,4 +1,4 @@
-package clusetr
+package cluster
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ func leaderElection(nodeConfig NodeConfig, sessionId string, serviceKey string) 
 			//if the current node is leader, stop the busy loop for now
 			return
 		}
-		aquired, queryDuration, err := client.KV().Acquire(&kvPair, nil)
+		aquired, queryDuration, err := client.KV().Acquire(kvPair, nil)
 		if err != nil {
 			log.Errorf("Failed to aquire lock")
 			continue

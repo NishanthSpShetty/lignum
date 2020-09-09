@@ -1,4 +1,4 @@
-package clusetr
+package cluster
 
 import "strconv"
 
@@ -10,7 +10,7 @@ type NodeConfig struct {
 }
 
 func (nodeConfig NodeConfig) Stringer() string {
-	return "NodeConfig { NodeId : " + nodeConfig.NodeId + ", NodeIp : " + nodenodeConfig.NodeId + ", Port " + strconv.Itoa(nodeConfig.Port) + "}"
+	return "NodeConfig { NodeId : " + nodeConfig.NodeId + ", NodeIp : " + nodeConfig.NodeId + ", Port " + strconv.Itoa(nodeConfig.Port) + "}"
 }
 
 func NewNodeConfig(nodeId string, nodeIp string, port int) NodeConfig {

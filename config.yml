@@ -1,0 +1,12 @@
+# config file
+
+server:
+  host: "localhost"
+  port: 8080
+  service-key: "/lignum/master"
+
+consul:
+  host: "localhost"
+  port: 8500 
+  sessionTTL: "15s"
+  sessionRenewalTTL: "15s"

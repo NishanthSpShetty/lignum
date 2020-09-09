@@ -9,6 +9,9 @@ Create a disributed logging service using golang, something like go.
 
 ## TODO's
 
+ - [] Read config from the config file.
+ - [] Move to docker multiple node cluster setup.
+
 ### cluster 
  - [X] Leader election
  - [] Get the current cluster leader and register to them.
@@ -18,7 +21,4 @@ Create a disributed logging service using golang, something like go.
 ### functional
   - [] Send message to any node in a cluster which should be replicated to all node.
   - [] Can read from any node.
-
-
-
 
