@@ -27,30 +27,33 @@ func ConnectToLeader(appConfig config.Server, serviceId string) {
 	})
 	for {
 		//loop if the current node becomes the leader
-		log.Infoln("Registering this servce as a follower to the clusetr leader...")
+		log.Infoln("Registering this service as a follower to the cluster leader...")
 		//get the leader
-		kv, err := GetLeader(appConfig.ServiceKey)
-		if err != nil {
-			log.Errorf("Failed to get the leader information", err)
-			//TODO: give it a second and loop back??
-			time.Sleep(1 * time.Second)
-			continue
-		}
-		//check if the KV has a session
 		if !isLeader {
+			kv, err := GetLeader(appConfig.ServiceKey)
+			if err != nil {
+				log.Errorf("Failed to get the leader information", err)
+				//TODO: give it a second and loop back??
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			//check if the KV has a session attached.
 			if kv != nil && kv.Session != "" {
 				//get the leader information and send a follow request.
 				leaderEndpoint := fmt.Sprintf("http://localhost:%s%s", kv.Value, "/service/api/follower/register")
 				resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
 				if err != nil {
 					log.Errorln("Failed to register with the leader ", err)
+					//FIXME : this is possible when the leader elections are still going on and we call GetLeader.
+					// should i return or not?
 					return
 				}
 				response, err := ioutil.ReadAll(resp.Body)
-				log.Infof("ConnecToLeader Response : %s\n ", string(response))
+				log.Infof("ConnectToLeader Response : %s\n ", string(response))
 				break
 			} else {
-				log.Errorln("Unable to get the leader information, will try again")
+				log.Errorln("Unable to get the leader information, will try again in 10ms")
+				time.Sleep(10 * time.Millisecond)
 			}
 			//send connect ping to leader
 		} else {
