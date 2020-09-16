@@ -12,23 +12,16 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/hashicorp/consul/api"
 	"github.com/lignum/cluster"
 	"github.com/lignum/config"
 )
 
-//Register this key on consul and get  a lock on it.
-var serviceId uuid.UUID
-var client *api.Client
-var HOST string
-var PORT int
-
-func signalHandler(sessionRenewalChannel chan struct{}, sessionId string) {
+func signalHandler(sessionRenewalChannel chan struct{}, serviceId  string, sessionId string) {
 	signalChannel := make(chan os.Signal)
 	signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
 	//read the signal and discard
 	<-signalChannel
-	log.Infof("Destroying session and stopping service [ServiceID : %s ]", serviceId)
+	log.Infof("Destroying session and stopping service [ServiceID : %s ]\n", serviceId)
 	close(sessionRenewalChannel)
 
 	err := cluster.DestroySession(sessionId)
@@ -51,26 +44,27 @@ func main() {
 		return
 	}
 
-	serviceId = uuid.New()
-	log.Infof("Starting loger service [ServiceID : %s ].\n", serviceId.String())
+	serviceId := uuid.New().String()
+	appConfig.SetServiceId( serviceId)
+	log.Infof("Starting lignum - distributed messaging service service [ServiceID : %s ].\n", serviceId)
 
 	sessionRenewalChannel := make(chan struct{})
 	err = cluster.InitialiseConsulClient(appConfig.Consul)
 	if err != nil {
-		log.Error("Failed to initialise the consule client", err)
+		log.Error("Failed to initialise the consul client", err)
 		return
 	}
 
 	log.Infof("Loaded app config %v ", appConfig)
 	sessionId, err := cluster.CreateConsulSession(appConfig.Consul, sessionRenewalChannel)
 	if err != nil {
-		log.Error("Failed to create the consule session %v, Check if the consul is running and reachable", err)
+		log.Error("Failed to create the consul session %v, Check if the consul is running and reachable.", err)
 		return
 	}
 
 	//Start leader election routine
-	cluster.InitiateLeaderElection(appConfig.Server, serviceId.String(), sessionId)
-	go signalHandler(sessionRenewalChannel, sessionId)
+	cluster.InitiateLeaderElection(appConfig.Server, serviceId, sessionId)
+	go signalHandler(sessionRenewalChannel, serviceId, sessionId )
 	//connect to leader
 
 	//TODO: try to connect to the leader, if not found call the leader election routine to make this service as the leader,
@@ -82,7 +76,7 @@ func main() {
 	address := fmt.Sprintf("%s:%d", appConfig.Server.Host, appConfig.Server.Port)
 	http.HandleFunc("/service/api/follower/register", func(w http.ResponseWriter, req *http.Request) {
 		requestBody, _ := ioutil.ReadAll(req.Body)
-		log.Infof("Request recieved for follower registration %v ", string(requestBody))
+		log.Infof("Request received for follower registration %v ", string(requestBody))
 
 		fmt.Fprintf(w, "Follower registered service  %s\n", serviceId)
 	})
