@@ -41,8 +41,23 @@ func CreateConsulSession(consulConfig config.Consul, sessionRenewalChannel chan 
 
 	sessionId, queryDuration, err := client.Session().Create(sessionEntry, nil)
 
+	if err != nil {
+		return "", err
+	}
 	log.Debugf("Consul session created, ID : %v, Aquired in :%dms  ", sessionId, queryDuration.RequestTime.Milliseconds())
 	//TODO : should it be started conditionally?
 	go renewSessionPeriodicall(sessionId, consulConfig.SessionRenewalTTL, sessionRenewalChannel)
 	return sessionId, err
+}
+
+func DestroySession(sessionId string) error {
+
+	_, err := client.Session().Destroy(sessionId, nil)
+	return err
+}
+
+func GetLeader(serviceKey string) (*api.KVPair, error) {
+	kv, _, err := client.KV().Get(serviceKey, nil)
+	return kv, err
+
 }

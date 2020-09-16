@@ -16,6 +16,6 @@ format:
 test:
 	@echo "Running test"
 	go test -v ./...
-run1:
+run:
 	@echo "Running single instance on the host..."
 	go run main.go -config $(CONFIG_FILE)

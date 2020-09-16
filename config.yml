@@ -3,7 +3,7 @@
 server:
   host: "localhost"
   port: 8080
-  service-key: "/lignum/master"
+  service-key: "service/disqlogger/key/master"
 
 consul:
   host: "localhost"
