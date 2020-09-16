@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/disquote-logger/config"
 	"github.com/hashicorp/consul/api"
+	"github.com/lignum/config"
 	log "github.com/sirupsen/logrus"
 )
 

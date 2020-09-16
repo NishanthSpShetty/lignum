@@ -1,5 +1,5 @@
 !_TAG_FILE_SORTED	2	/0=unsorted, 1=sorted, 2=foldcase/
-client	/Users/nishanth/projects/programs/golang/disquote-logger/service/cluster/consul.go	/^var client *api.Client$/;"	d	language:Go
-CreateConsulSession	/Users/nishanth/projects/programs/golang/disquote-logger/service/cluster/consul.go	/^func CreateConsulSession(serviceName, ttlS string) (string, error) {$/;"	d	language:Go
-err	/Users/nishanth/projects/programs/golang/disquote-logger/service/cluster/consul.go	/^	var err error$/;"	d	language:Go
-InitialiseConsulClient	/Users/nishanth/projects/programs/golang/disquote-logger/service/cluster/consul.go	/^func InitialiseConsulClient(host string, port int) error {$/;"	d	language:Go
+client	/Users/nishanth/projects/programs/golang/lignum/service/cluster/consul.go	/^var client *api.Client$/;"	d	language:Go
+CreateConsulSession	/Users/nishanth/projects/programs/golang/lignum/service/cluster/consul.go	/^func CreateConsulSession(serviceName, ttlS string) (string, error) {$/;"	d	language:Go
+err	/Users/nishanth/projects/programs/golang/lignum/service/cluster/consul.go	/^	var err error$/;"	d	language:Go
+InitialiseConsulClient	/Users/nishanth/projects/programs/golang/lignum/service/cluster/consul.go	/^func InitialiseConsulClient(host string, port int) error {$/;"	d	language:Go

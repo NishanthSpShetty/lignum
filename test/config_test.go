@@ -3,7 +3,7 @@ package test
 import (
 	"testing"
 
-	"github.com/disquote-logger/config"
+	"github.com/lignum/config"
 )
 
 func Test_ReadConfig(t *testing.T) {

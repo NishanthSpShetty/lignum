@@ -12,9 +12,9 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/disquote-logger/cluster"
-	"github.com/disquote-logger/config"
 	"github.com/hashicorp/consul/api"
+	"github.com/lignum/cluster"
+	"github.com/lignum/config"
 )
 
 //Register this key on consul and get  a lock on it.
@@ -74,7 +74,7 @@ func main() {
 	//connect to leader
 
 	//TODO: try to connect to the leader, if not found call the leader election routine to make this service as the leader,
-	//so we shouyld start the leader connection routine.
+	//so we should start the leader connection routine.
 	cluster.ConnectToLeader(appConfig.Server, sessionId)
 
 	//start the work.

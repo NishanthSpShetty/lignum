@@ -1,4 +1,4 @@
-module github.com/disquote-logger
+module github.com/lignum
 
 go 1.14
 
