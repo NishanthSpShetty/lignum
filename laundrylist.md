@@ -9,8 +9,10 @@ Create a disributed logging service using golang, something like go.
 
 ## TODO's
 
- - [] Read config from the config file.
+ - [X] Read config from the config file.
  - [] Move to docker multiple node cluster setup.
+ - [] implement http api 
+ - [] Implement core functionality
 
 ### cluster 
  - [X] Leader election

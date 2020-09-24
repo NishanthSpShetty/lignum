@@ -1,6 +1,23 @@
 package cluster
 
-import "strconv"
+import (
+	"errors"
+	"strconv"
+)
+
+var (
+	errLeaderNotFound = errors.New("failed to get reader from the cluster controller")
+)
+
+//Leader has port information of the leader
+type Leader struct {
+	Port int
+}
+
+type ClusterController interface {
+	AquireLock(NodeConfig, string) (bool, error)
+	GetLeader(string) (Leader, error)
+}
 
 //NodeNodeConfig contains the node information
 type NodeConfig struct {

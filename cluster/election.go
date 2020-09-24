@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/hashicorp/consul/api"
 	"github.com/lignum/config"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,9 +15,9 @@ import (
 //isLeader mark it as true when the current node becomes the leader
 var isLeader = false
 
-//connectToLeader Connect thsi service as a follower to the elected leader.
+//connectToLeader Connect this service as a follower to the elected leader.
 //this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
-func ConnectToLeader(appConfig config.Server, serviceId string) {
+func ConnectToLeader(appConfig config.Server, serviceId string, clusteController ClusterController) {
 
 	requestBody, _ := json.Marshal(map[string]interface{}{
 		"node": serviceId,
@@ -30,31 +29,26 @@ func ConnectToLeader(appConfig config.Server, serviceId string) {
 		log.Infoln("Registering this service as a follower to the cluster leader...")
 		//get the leader
 		if !isLeader {
-			kv, err := GetLeader(appConfig.ServiceKey)
+			leader, err := clusteController.GetLeader(appConfig.ServiceKey)
 			if err != nil {
 				log.Errorf("Failed to get the leader information", err)
 				//TODO: give it a second and loop back??
 				time.Sleep(1 * time.Second)
 				continue
 			}
-			//check if the KV has a session attached.
-			if kv != nil && kv.Session != "" {
-				//get the leader information and send a follow request.
-				leaderEndpoint := fmt.Sprintf("http://localhost:%s%s", kv.Value, "/service/api/follower/register")
-				resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
-				if err != nil {
-					log.Errorln("Failed to register with the leader ", err)
-					//FIXME : this is possible when the leader elections are still going on and we call GetLeader.
-					// should i return or not?
-					return
-				}
-				response, err := ioutil.ReadAll(resp.Body)
-				log.Infof("ConnectToLeader Response : %s\n ", string(response))
-				break
-			} else {
-				log.Errorln("Unable to get the leader information, will try again in 10ms")
-				time.Sleep(10 * time.Millisecond)
+			//get the leader information and send a follow request.
+			leaderEndpoint := fmt.Sprintf("http://localhost:%s%s", leader.Port, "/service/api/follower/register")
+			resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
+			if err != nil {
+				log.Errorln("Failed to register with the leader ", err)
+				//FIXME : this is possible when the leader elections are still going on and we call GetLeader.
+				// should i return or not?
+				return
 			}
+			response, err := ioutil.ReadAll(resp.Body)
+			log.Infof("ConnectToLeader Response : %s\n ", string(response))
+			break
+
 			//send connect ping to leader
 		} else {
 			log.Infoln("Im the leader....")
@@ -62,20 +56,16 @@ func ConnectToLeader(appConfig config.Server, serviceId string) {
 		}
 	}
 }
-func leaderElection(nodeConfig NodeConfig, sessionId string, serviceKey string) {
+
+func leaderElection(nodeConfig NodeConfig, c ClusterController, serviceKey string) {
 	loggedOnce := false
-	kvPair := &api.KVPair{
-		Key:     serviceKey,
-		Value:   []byte(fmt.Sprintf("%d", nodeConfig.Port)),
-		Session: sessionId,
-	}
 	//start polling to aquire the lock indefinitely
 	for {
 		if isLeader {
 			//if the current node is leader, stop the busy loop for now
 			return
 		}
-		aquired, queryDuration, err := client.KV().Acquire(kvPair, nil)
+		aquired, queryDuration, err := c.AquireLock(nodeConfig, serviceKey)
 		if err != nil {
 			log.Errorf("Failed to aquire lock", err)
 			continue
@@ -97,11 +87,11 @@ func leaderElection(nodeConfig NodeConfig, sessionId string, serviceKey string) 
 	}
 }
 
-func InitiateLeaderElection(serverConfig config.Server, nodeId string, sessionId string) {
+func InitiateLeaderElection(serverConfig config.Server, nodeId string, c ClusterController) {
 
 	go leaderElection(NodeConfig{
 		NodeId: nodeId,
 		NodeIp: serverConfig.Host,
 		Port:   serverConfig.Port,
-	}, sessionId, serverConfig.ServiceKey)
+	}, c, serverConfig.ServiceKey)
 }
