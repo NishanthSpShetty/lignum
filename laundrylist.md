@@ -13,12 +13,12 @@ Create a disributed logging service using golang, something like go.
  - [] Move to docker multiple node cluster setup.
  - [] implement http api 
  - [] Implement core functionality
-
+ - [] Unit test for cluster functions
 ### cluster 
  - [X] Leader election
  - [] Get the current cluster leader and register to them.
  - [X] Elect any node as new leader if current leader fais fort some reason.
- - [] When new leader is elected, all follower should register themselves with the leader again.
+ - [X] When new leader is elected, all follower should register themselves with the leader again.
 
 ### functional
   - [] Send message to any node in a cluster which should be replicated to all node.
