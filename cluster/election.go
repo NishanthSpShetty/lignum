@@ -31,13 +31,13 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 		if !isLeader {
 			leader, err := clusteController.GetLeader(appConfig.ServiceKey)
 			if err != nil {
-				log.Errorf("Failed to get the leader information", err)
+				log.Errorln(err)
 				//TODO: give it a second and loop back??
 				time.Sleep(1 * time.Second)
 				continue
 			}
 			//get the leader information and send a follow request.
-			leaderEndpoint := fmt.Sprintf("http://localhost:%s%s", leader.Port, "/service/api/follower/register")
+			leaderEndpoint := fmt.Sprintf("http://localhost:%d%s", leader.Port, "/service/api/follower/register")
 			resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
 			if err != nil {
 				log.Errorln("Failed to register with the leader ", err)
@@ -67,13 +67,13 @@ func leaderElection(nodeConfig NodeConfig, c ClusterController, serviceKey strin
 		}
 		aquired, queryDuration, err := c.AquireLock(nodeConfig, serviceKey)
 		if err != nil {
-			log.Errorf("Failed to aquire lock", err)
+			log.Errorln("Failed to aquire lock", err)
 			continue
 		}
 		if aquired {
 			isLeader = aquired
 			log.Infof("Lock aquired and marking the node  as leader, Took : %dms\n",
-				queryDuration.RequestTime.Milliseconds())
+				queryDuration.Milliseconds())
 		} else {
 
 			if !loggedOnce {

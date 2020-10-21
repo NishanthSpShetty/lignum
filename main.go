@@ -16,7 +16,7 @@ import (
 	"github.com/lignum/config"
 )
 
-func signalHandler(sessionRenewalChannel chan struct{}, serviceId  string, sessionId string) {
+func signalHandler(sessionRenewalChannel chan struct{}, serviceId string, clusteController cluster.ClusterController) {
 	signalChannel := make(chan os.Signal)
 	signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
 	//read the signal and discard
@@ -24,7 +24,7 @@ func signalHandler(sessionRenewalChannel chan struct{}, serviceId  string, sessi
 	log.Infof("Destroying session and stopping service [ServiceID : %s ]\n", serviceId)
 	close(sessionRenewalChannel)
 
-	err := cluster.DestroySession(sessionId)
+	err := clusteController.DestroySession()
 
 	if err != nil {
 		log.Error("Failed to destroy the session ", err)
@@ -45,31 +45,31 @@ func main() {
 	}
 
 	serviceId := uuid.New().String()
-	appConfig.SetServiceId( serviceId)
+	appConfig.SetServiceId(serviceId)
 	log.Infof("Starting lignum - distributed messaging service service [ServiceID : %s ].\n", serviceId)
 
 	sessionRenewalChannel := make(chan struct{})
-	err = cluster.InitialiseConsulClient(appConfig.Consul)
+	consulClusterController, err := cluster.InitialiseClusterController(appConfig.Consul)
 	if err != nil {
 		log.Error("Failed to initialise the consul client", err)
 		return
 	}
 
 	log.Infof("Loaded app config %v ", appConfig)
-	sessionId, err := cluster.CreateConsulSession(appConfig.Consul, sessionRenewalChannel)
+	err = consulClusterController.CreateSession(appConfig.Consul, sessionRenewalChannel)
 	if err != nil {
-		log.Error("Failed to create the consul session %v, Check if the consul is running and reachable.", err)
+		log.Errorf("Failed to create the consul session %v, Check if the consul is running and reachable.", err)
 		return
 	}
 
 	//Start leader election routine
-	cluster.InitiateLeaderElection(appConfig.Server, serviceId, sessionId)
-	go signalHandler(sessionRenewalChannel, serviceId, sessionId )
+	cluster.InitiateLeaderElection(appConfig.Server, serviceId, consulClusterController)
+	go signalHandler(sessionRenewalChannel, serviceId, consulClusterController)
 	//connect to leader
 
 	//TODO: try to connect to the leader, if not found call the leader election routine to make this service as the leader,
 	//so we should start the leader connection routine.
-	cluster.ConnectToLeader(appConfig.Server, sessionId)
+	cluster.ConnectToLeader(appConfig.Server, serviceId, consulClusterController)
 
 	//start the work.
 	log.Infof("Starting HTTP service at %s:%d \n", appConfig.Server.Host, appConfig.Server.Port)

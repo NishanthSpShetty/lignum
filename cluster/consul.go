@@ -15,7 +15,7 @@ type ConsulClusterController struct {
 	SessionId string
 }
 
-func InitialiseConsulClusterController(consulConfig config.Consul) (ClusterController, error) {
+func InitialiseClusterController(consulConfig config.Consul) (ClusterController, error) {
 
 	var err error
 
@@ -25,9 +25,9 @@ func InitialiseConsulClusterController(consulConfig config.Consul) (ClusterContr
 	client, err := api.NewClient(config)
 
 	if err != nil {
-		return ClusterController{}, err
+		return &ConsulClusterController{}, err
 	}
-	return ConsulClusterController{client: client}, nil
+	return &ConsulClusterController{client: client}, nil
 }
 
 func (c *ConsulClusterController) renewSessionPeriodicall(sessionId string, ttlS string, sessionRenewalChannel chan struct{}) {
@@ -38,7 +38,7 @@ func (c *ConsulClusterController) renewSessionPeriodicall(sessionId string, ttlS
 	}
 }
 
-func (c *ConsulClusterController) CreateConsulSession(consulConfig config.Consul, sessionRenewalChannel chan struct{}) (string, error) {
+func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sessionRenewalChannel chan struct{}) error {
 
 	sessionEntry := &api.SessionEntry{
 		Name:      consulConfig.ServiceName,
@@ -49,13 +49,13 @@ func (c *ConsulClusterController) CreateConsulSession(consulConfig config.Consul
 	sessionId, queryDuration, err := c.client.Session().Create(sessionEntry, nil)
 
 	if err != nil {
-		return "", err
+		return err
 	}
 	log.Debugf("Consul session created, ID : %v, Aquired in :%dms  ", sessionId, queryDuration.RequestTime.Milliseconds())
 	//TODO : should it be started conditionally?
 	go c.renewSessionPeriodicall(sessionId, consulConfig.SessionRenewalTTL, sessionRenewalChannel)
 	c.SessionId = sessionId
-	return sessionId, err
+	return err
 }
 
 func (c *ConsulClusterController) DestroySession() error {
@@ -63,13 +63,13 @@ func (c *ConsulClusterController) DestroySession() error {
 	return err
 }
 
-func (c *ConsulClusterController) GetLeader(serviceKey string) (*Leader, error) {
+func (c ConsulClusterController) GetLeader(serviceKey string) (*Leader, error) {
 	kv, _, err := c.client.KV().Get(serviceKey, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if kv != nil && kv.Session != "" {
+	if kv == nil || kv.Session == "" {
 		//read the data we need and create Leader data
 		return nil, errLeaderNotFound
 	}
@@ -81,11 +81,13 @@ func (c *ConsulClusterController) GetLeader(serviceKey string) (*Leader, error) 
 
 }
 
-func (c *ConsulClusterController) AquireLock(nodeConfig NodeConfig, serviceKey string) (bool, time.Duration, error) {
+func (c ConsulClusterController) AquireLock(nodeConfig NodeConfig, serviceKey string) (bool, time.Duration, error) {
 	kvPair := &api.KVPair{
 		Key:     serviceKey,
 		Value:   []byte(fmt.Sprintf("%d", nodeConfig.Port)),
 		Session: c.SessionId,
 	}
-	return c.client.KV().Acquire(kvPair, nil)
+	acquired, writeMeta, err := c.client.KV().Acquire(kvPair, nil)
+	return acquired, writeMeta.RequestTime, err
+
 }

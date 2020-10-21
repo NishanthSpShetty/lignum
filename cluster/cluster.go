@@ -3,10 +3,13 @@ package cluster
 import (
 	"errors"
 	"strconv"
+	"time"
+
+	"github.com/lignum/config"
 )
 
 var (
-	errLeaderNotFound = errors.New("failed to get reader from the cluster controller")
+	errLeaderNotFound = errors.New("failed to get leader from the cluster controller")
 )
 
 //Leader has port information of the leader
@@ -15,8 +18,10 @@ type Leader struct {
 }
 
 type ClusterController interface {
-	AquireLock(NodeConfig, string) (bool, error)
-	GetLeader(string) (Leader, error)
+	CreateSession(config.Consul, chan struct{}) error
+	AquireLock(NodeConfig, string) (bool, time.Duration, error)
+	GetLeader(string) (*Leader, error)
+	DestroySession() error
 }
 
 //NodeNodeConfig contains the node information
