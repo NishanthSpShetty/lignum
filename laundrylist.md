@@ -5,7 +5,7 @@ docker run -d -p 8500:8500 -p 8600:8600/udp --name=badger consul agent -server -
 
 ## Distribute Quote Logger (should be renamed)
 
-Create a disributed logging service using golang, something like go.
+Create a disributed logging service using golang, something like kafka.
 
 ## TODO's
 
