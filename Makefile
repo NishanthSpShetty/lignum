@@ -16,6 +16,9 @@ format:
 test:
 	@echo "Running test"
 	go test -v ./...
+setup:
+	@echo "Starting consul server"
+	docker-compose up -d
 run:
 	@echo "Running single instance on the host..."
 	go run main.go -config $(CONFIG_FILE)
