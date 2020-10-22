@@ -2,9 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/lignum/api"
 	"github.com/lignum/cluster"
 	"github.com/lignum/config"
 )
@@ -65,23 +63,9 @@ func main() {
 	//Start leader election routine
 	cluster.InitiateLeaderElection(appConfig.Server, serviceId, consulClusterController)
 	go signalHandler(sessionRenewalChannel, serviceId, consulClusterController)
+
 	//connect to leader
-
-	//TODO: try to connect to the leader, if not found call the leader election routine to make this service as the leader,
-	//so we should start the leader connection routine.
 	cluster.ConnectToLeader(appConfig.Server, serviceId, consulClusterController)
-
-	//start the work.
-	log.Infof("Starting HTTP service at %s:%d \n", appConfig.Server.Host, appConfig.Server.Port)
-	address := fmt.Sprintf("%s:%d", appConfig.Server.Host, appConfig.Server.Port)
-	http.HandleFunc("/service/api/follower/register", func(w http.ResponseWriter, req *http.Request) {
-		requestBody, _ := ioutil.ReadAll(req.Body)
-		log.Infof("Request received for follower registration %v ", string(requestBody))
-
-		fmt.Fprintf(w, "Follower registered service  %s\n", serviceId)
-	})
-	http.HandleFunc("/ping", func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintf(w, "PONG")
-	})
-	log.Panic(http.ListenAndServe(address, nil))
+	//once the cluster is setup we should be able start api service
+	api.StartApiService(appConfig, serviceId)
 }
