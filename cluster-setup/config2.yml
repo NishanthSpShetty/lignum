@@ -2,11 +2,11 @@
 
 server:
   host: "localhost"
-  port: 8080
-  service-key: "service/disqlogger/key/master"
+  port: 8081
+  service-key: "service/lignum/key/master"
 
 consul:
-  host: "consul"
+  host: "localhost"
   port: 8500 
   sessionTTL: "15s"
   sessionRenewalTTL: "15s"
