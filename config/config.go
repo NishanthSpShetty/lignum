@@ -2,7 +2,7 @@ package config
 
 import (
 	"os"
-
+	//Suggestion : sf13/viper Config solution
 	"gopkg.in/yaml.v2"
 )
 

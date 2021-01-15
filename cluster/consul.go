@@ -30,7 +30,7 @@ func InitialiseClusterController(consulConfig config.Consul) (ClusterController,
 	return &ConsulClusterController{client: client}, nil
 }
 
-func (c *ConsulClusterController) renewSessionPeriodicall(sessionId string, ttlS string, sessionRenewalChannel chan struct{}) {
+func (c *ConsulClusterController) renewSessionPeriodically(sessionId string, ttlS string, sessionRenewalChannel chan struct{}) {
 	defer close(sessionRenewalChannel)
 	for {
 		c.client.Session().RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
@@ -53,7 +53,7 @@ func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sess
 	}
 	log.Debugf("Consul session created, ID : %v, Aquired in :%dms  ", sessionId, queryDuration.RequestTime.Milliseconds())
 	//TODO : should it be started conditionally?
-	go c.renewSessionPeriodicall(sessionId, consulConfig.SessionRenewalTTL, sessionRenewalChannel)
+	go c.renewSessionPeriodically(sessionId, consulConfig.SessionRenewalTTL, sessionRenewalChannel)
 	c.SessionId = sessionId
 	return err
 }
@@ -70,9 +70,10 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (*Leader, error) {
 	}
 
 	if kv == nil || kv.Session == "" {
-		//read the data we need and create Leader data
 		return nil, errLeaderNotFound
 	}
+
+	//extract the value attached to the locked session
 	port, err := strconv.Atoi(string(kv.Value))
 	if err != nil {
 		return nil, err
@@ -88,6 +89,9 @@ func (c ConsulClusterController) AquireLock(nodeConfig NodeConfig, serviceKey st
 		Session: c.SessionId,
 	}
 	acquired, writeMeta, err := c.client.KV().Acquire(kvPair, nil)
+	if err != nil {
+		return false, 0, err
+	}
 	return acquired, writeMeta.RequestTime, err
 
 }
