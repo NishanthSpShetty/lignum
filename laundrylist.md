@@ -13,7 +13,7 @@ Create a disributed logging service using golang, something like kafka.
  - [] Move to docker multiple node cluster setup.
  - [] implement http api 
  - [] Implement core functionality
- - [] Unit test for cluster functions
+ - [X] Unit test for cluster functions
 ### cluster 
  - [X] Leader election
  - [] Get the current cluster leader and register to them.

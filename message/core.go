@@ -1,12 +1,17 @@
 package message
 
+import (
+	log "github.com/sirupsen/logrus"
+)
+
 type MessageT map[string]string
 
 var message MessageT
 
-func init() {
+func Init(initialLogSize int64) {
 	//initialize the message
-	message = make(MessageT, 1000)
+	log.Infof("Initializing message map with the initial log size %d", initialLogSize)
+	message = make(MessageT, initialLogSize)
 }
 
 func Put(key, value string) {

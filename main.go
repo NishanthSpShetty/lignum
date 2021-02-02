@@ -12,6 +12,7 @@ import (
 	"github.com/lignum/api"
 	"github.com/lignum/cluster"
 	"github.com/lignum/config"
+	"github.com/lignum/message"
 )
 
 func signalHandler(sessionRenewalChannel chan struct{}, serviceId string, clusteController cluster.ClusterController) {
@@ -66,6 +67,8 @@ func main() {
 
 	//connect to leader
 	cluster.ConnectToLeader(appConfig.Server, serviceId, consulClusterController)
+	//initialize the message data structure
+	message.Init(appConfig.Message.InitialSize)
 	//once the cluster is setup we should be able start api service
 	api.StartApiService(appConfig, serviceId)
 }

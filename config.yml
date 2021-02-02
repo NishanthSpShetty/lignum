@@ -6,7 +6,10 @@ server:
   service-key: "service/disqlogger/key/master"
 
 consul:
-  host: "consul"
+  host: "localhost"
   port: 8500 
   sessionTTL: "15s"
   sessionRenewalTTL: "15s"
+
+message:
+  initial-size: 1000

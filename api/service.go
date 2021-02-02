@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -23,22 +24,48 @@ func ping(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "PONG")
 }
 
-//handleMessagePut Write the message with the given key.
-func handleMessagePut() http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		if req.Method == "POST" {
-			requestBody, _ := ioutil.ReadAll(req.Body)
-			log.Infof("Write log %s ", requestBody)
-		}
-	}
+// request message struct
+type PutMessageRequest struct {
+	Key   string
+	Value string
 }
 
-//handleMessageGet Get the message for the given key
-func handleMessageGet() http.HandlerFunc {
+type GetMessageRequest struct {
+	Key string
+}
+
+//respons message struct
+type PutMessageResponse struct {
+	Key   string
+	Value string
+}
+
+//handleMessagePut Write the message with the given key.
+func handleMessage() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		if req.Method == "GET" {
-			requestBody, _ := ioutil.ReadAll(req.Body)
-			log.Infof("Get log %s ", requestBody)
+
+		switch req.Method {
+		case "POST":
+			var messageRequest PutMessageRequest
+			err := json.NewDecoder(req.Body).Decode(&messageRequest)
+			if err != nil {
+				log.Infof("Failed to read request body %s ", err)
+			}
+			log.Debugf("Recieved message %v \n", messageRequest)
+			fmt.Fprintf(w, "{status : \"message commited\"\n message : { %v }", "key:value")
+		case "GET":
+			var messageRequest GetMessageRequest
+
+			err := json.NewDecoder(req.Body).Decode(&messageRequest)
+			if err != nil {
+				log.Infof("Failed to read request body %s ", err)
+			}
+
+			log.Debugf(" Recieved message %v ", messageRequest)
+			fmt.Fprintf(w, "{ message : { %v }", "key:value")
+
+		default:
+			http.Error(w, "request method must be one of [ GET, POST ].", http.StatusMethodNotAllowed)
 		}
 	}
 }
@@ -49,7 +76,6 @@ func StartApiService(appConfig config.Config, serviceId string) {
 	address := fmt.Sprintf("%s:%d", appConfig.Server.Host, appConfig.Server.Port)
 	http.HandleFunc("/ping", ping)
 	http.HandleFunc("/service/api/follower/register", registerFollower(serviceId))
-	http.HandleFunc("api/message/put", handleMessagePut())
-	http.HandleFunc("api/message/get", handleMessageGet())
+	http.HandleFunc("/api/message", handleMessage())
 	log.Panic(http.ListenAndServe(address, nil))
 }

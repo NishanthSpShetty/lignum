@@ -21,9 +21,14 @@ type Consul struct {
 	SessionRenewalTTL string `yaml:"sessionRenewalTTL"`
 }
 
+type Message struct {
+	InitialSize int64 `yaml:"initial-size"`
+}
+
 type Config struct {
-	Server Server `yaml:"server"`
-	Consul Consul `yaml:"consul"`
+	Server  Server  `yaml:"server"`
+	Consul  Consul  `yaml:"consul"`
+	Message Message `yaml:"message"`
 }
 
 func (c *Config) SetServiceId(id string) {
