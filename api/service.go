@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/lignum/config"
+	"github.com/lignum/message"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -35,35 +36,46 @@ type GetMessageRequest struct {
 }
 
 //respons message struct
-type PutMessageResponse struct {
-	Key   string
-	Value string
+type GetMessageResponse struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 //handleMessagePut Write the message with the given key.
 func handleMessage() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 
+		w.Header().Set("Content-Type", "application/json")
+		decoder := json.NewDecoder(req.Body)
+		decoder.DisallowUnknownFields()
+
 		switch req.Method {
 		case "POST":
 			var messageRequest PutMessageRequest
-			err := json.NewDecoder(req.Body).Decode(&messageRequest)
+			err := decoder.Decode(&messageRequest)
 			if err != nil {
-				log.Infof("Failed to read request body %s ", err)
+				log.Errorf("Failed to read request body %s ", err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
 			log.Debugf("Recieved message %v \n", messageRequest)
+			message.Put(messageRequest.Key, messageRequest.Value)
 			fmt.Fprintf(w, "{status : \"message commited\"\n message : { %v }", "key:value")
 		case "GET":
 			var messageRequest GetMessageRequest
 
-			err := json.NewDecoder(req.Body).Decode(&messageRequest)
+			err := decoder.Decode(&messageRequest)
+
 			if err != nil {
-				log.Infof("Failed to read request body %s ", err)
+				log.Errorf("Failed to read request body %s ", err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
+			messageValue := message.Get(messageRequest.Key)
+			messag := GetMessageResponse{Value: messageValue, Key: messageRequest.Key}
 
 			log.Debugf(" Recieved message %v ", messageRequest)
-			fmt.Fprintf(w, "{ message : { %v }", "key:value")
-
+			json.NewEncoder(w).Encode(messag)
 		default:
 			http.Error(w, "request method must be one of [ GET, POST ].", http.StatusMethodNotAllowed)
 		}
