@@ -13,3 +13,5 @@ consul:
 
 message:
   initial-size: 1000
+  message-dir: "DataDir"
+  message-flush-interval-in-ms: 1000

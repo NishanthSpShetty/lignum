@@ -68,7 +68,10 @@ func main() {
 	//connect to leader
 	cluster.ConnectToLeader(appConfig.Server, serviceId, consulClusterController)
 	//initialize the message data structure
-	message.Init(appConfig.Message.InitialSize)
+	message.Init(appConfig.Message)
+
+	//start flush routine
+	message.StartFlusher(appConfig.Message)
 	//once the cluster is setup we should be able start api service
 	api.StartApiService(appConfig, serviceId)
 }
