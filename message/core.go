@@ -44,10 +44,13 @@ func StartFlusher(messageConfig config.Message) {
 				continue
 			}
 
-			err := WriteToLogFile(messageConfig, message)
+			count, err := WriteToLogFile(messageConfig, message)
 			if err != nil {
 				log.Errorf("failed to write the messages to file : %v", err.Error())
+				continue
 			}
+			log.Debugf("Wrote %d messages to file", count)
+
 		}
 	}(messageConfig)
 }

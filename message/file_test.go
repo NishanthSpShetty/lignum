@@ -3,10 +3,21 @@ package message
 import (
 	"io/ioutil"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/lignum/config"
+	log "github.com/sirupsen/logrus"
 )
+
+func createTestDir(dir string) error {
+
+	err := os.Mkdir(dir, os.ModePerm)
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+	return nil
+}
 
 func TestWriteToLogFile(t *testing.T) {
 	messageConfig := config.Message{
@@ -16,14 +27,19 @@ func TestWriteToLogFile(t *testing.T) {
 	message := MessageT{
 		"foo": "bar",
 	}
-	err := os.Mkdir(messageConfig.MessageDir, os.ModePerm)
-	if err != nil && !os.IsExist(err) {
+
+	err := createTestDir(messageConfig.MessageDir)
+
+	if err != nil {
 		t.Fatalf("Cannot create data directory for the test : %s ", err.Error())
-		return
 	}
-	err = WriteToLogFile(messageConfig, message)
+	count, err := WriteToLogFile(messageConfig, message)
 	if err != nil {
 		t.Fatalf("Failed to write to log file : %s", err.Error())
+	}
+	expectedCount := 1
+	if count != expectedCount {
+		t.Fatalf("WriteMessageCount: Got %d, Expected %d", count, expectedCount)
 	}
 
 	expected := "foo=bar"
@@ -37,5 +53,36 @@ func TestWriteToLogFile(t *testing.T) {
 	got := string(byts)
 	if expected == got {
 		t.Fatalf("Got %s, Expected %s", got, expected)
+	}
+	err = os.RemoveAll(messageConfig.MessageDir)
+	if err != nil {
+		log.Infof("failed to remove test directory, delete it manually. Path : %s", messageConfig.MessageDir)
+	}
+}
+
+func TestReadFromLogFile(t *testing.T) {
+
+	err := createTestDir("temp")
+
+	if err != nil {
+		t.Fatalf("Cannot create data directory for the test : %s ", err.Error())
+	}
+
+	file := "temp/message_001.dat"
+	messageToWrite := "foo=bar"
+	ioutil.WriteFile(file, []byte(messageToWrite), os.ModePerm)
+	got := ReadFromLogFile("temp")
+
+	expected := MessageT{
+		"foo": "bar",
+	}
+
+	if !reflect.DeepEqual(got, expected) {
+		t.Fatalf("Got %v, Expected %v", got, expected)
+	}
+
+	err = os.RemoveAll("temp")
+	if err != nil {
+		log.Infof("failed to remove test directory, delete it manually. Path : %s", "temp")
 	}
 }
