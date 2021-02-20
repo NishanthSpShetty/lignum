@@ -23,27 +23,6 @@ func Put(key, value string) {
 	message[key] = value
 }
 
-//StartFlusher start flusher routine to write the messages to file
-func StartFlusher(messageConfig config.Message) {
-
-	go func(messageConfig config.Message) {
-
-		for {
-			time.Sleep(messageConfig.MessageFlushIntervalInMilliSeconds * time.Millisecond)
-
-			//keep looping on the above sleep interval when the message size is zero
-			if len(message) == 0 {
-				continue
-			}
-			err := WriteToLogFile(messageConfig, message)
-			if err != nil {
-				log.Errorf("failed to write the messages to file : %v", err.Error())
-			}
-		}
-	}(messageConfig)
-
-}
-
 func Get(key string) string {
 	v, ok := message[key]
 	if ok {
@@ -51,4 +30,24 @@ func Get(key string) string {
 	} else {
 		return ""
 	}
+}
+
+//StartFlusher start flusher routine to write the messages to file
+func StartFlusher(messageConfig config.Message) {
+
+	go func(messageConfig config.Message) {
+		for {
+			time.Sleep(messageConfig.MessageFlushIntervalInMilliSeconds * time.Millisecond)
+
+			//keep looping on the above sleep interval when the message size is zero
+			if len(message) == 0 {
+				continue
+			}
+
+			err := WriteToLogFile(messageConfig, message)
+			if err != nil {
+				log.Errorf("failed to write the messages to file : %v", err.Error())
+			}
+		}
+	}(messageConfig)
 }

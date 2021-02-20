@@ -24,7 +24,7 @@ type Consul struct {
 }
 
 type Message struct {
-	InitialSize                        int64         `yaml:"initial-size"`
+	//InitialSize                        int64         `yaml:"initial-size"`
 	MessageDir                         string        `yaml:"message-dir"`
 	MessageFlushIntervalInMilliSeconds time.Duration `yaml:"message-flush-interval-in-ms"`
 }

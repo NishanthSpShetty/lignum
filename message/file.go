@@ -36,6 +36,21 @@ func WriteToLogFile(messageConfig config.Message, message MessageT) error {
 	return nil
 }
 
+func decodeRawMessage(messages []byte) MessageT {
+
+	message := make(MessageT)
+	for _, line := range strings.Split(string(messages), "\n") {
+		splits := strings.Split(line, "=")
+		if len(splits) != 2 {
+			continue
+		}
+		key := splits[0]
+		value := splits[1]
+		message[key] = value
+	}
+	return message
+}
+
 //ReadFromLogFile
 func ReadFromLogFile(messageDirectory string) MessageT {
 	//load all mesage files from the given directory,
@@ -53,17 +68,5 @@ func ReadFromLogFile(messageDirectory string) MessageT {
 	if err != nil {
 		log.Errorf("Failed to read the message file : %s", err.Error())
 	}
-
-	message := make(MessageT)
-	for _, line := range strings.Split(string(messages), "\n") {
-		splits := strings.Split(line, "=")
-		if len(splits) != 2 {
-			continue
-		}
-		key := splits[0]
-		value := splits[1]
-		message[key] = value
-	}
-
-	return message
+	return decodeRawMessage(messages)
 }
