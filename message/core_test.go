@@ -1,14 +1,19 @@
 package message
 
 import (
+	"os"
 	"testing"
 
 	"github.com/lignum/config"
 )
 
-func Test_messagePut(t *testing.T) {
-	//this should be in some sort of setup call and rest of the test functions should use
+func TestMain(m *testing.M) {
+
 	Init(config.Message{MessageDir: "data_dir"})
+	os.Exit(m.Run())
+}
+
+func Test_messagePut(t *testing.T) {
 
 	key := "messageKey"
 	value := "messageValue"
