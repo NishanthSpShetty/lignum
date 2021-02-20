@@ -15,7 +15,7 @@ var messageChannel chan MessageT
 func Init(messageConfig config.Message) {
 	log.Infof("Initializing messages with config %v", messageConfig)
 
-	message = make(MessageT)
+	//	message = make(MessageT)
 	message = ReadFromLogFile(messageConfig.MessageDir)
 }
 

@@ -10,6 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const TempDirectory = "temp"
+
 func createTestDir(dir string) error {
 
 	err := os.Mkdir(dir, os.ModePerm)
@@ -22,7 +24,7 @@ func createTestDir(dir string) error {
 func TestWriteToLogFile(t *testing.T) {
 	messageConfig := config.Message{
 		MessageFlushIntervalInMilliSeconds: 1,
-		MessageDir:                         "temp",
+		MessageDir:                         TempDirectory,
 	}
 	message := MessageT{
 		"foo": "bar",
@@ -43,7 +45,7 @@ func TestWriteToLogFile(t *testing.T) {
 	}
 
 	expected := "foo=bar"
-	file := "temp/message_001.dat"
+	file := TempDirectory + "/message_001.dat"
 	byts, err := ioutil.ReadFile(file)
 
 	if err != nil {
@@ -62,16 +64,16 @@ func TestWriteToLogFile(t *testing.T) {
 
 func TestReadFromLogFile(t *testing.T) {
 
-	err := createTestDir("temp")
+	err := createTestDir(TempDirectory)
 
 	if err != nil {
 		t.Fatalf("Cannot create data directory for the test : %s ", err.Error())
 	}
 
-	file := "temp/message_001.dat"
+	file := TempDirectory + "/message_001.dat"
 	messageToWrite := "foo=bar"
 	ioutil.WriteFile(file, []byte(messageToWrite), os.ModePerm)
-	got := ReadFromLogFile("temp")
+	got := ReadFromLogFile(TempDirectory)
 
 	expected := MessageT{
 		"foo": "bar",
@@ -81,8 +83,8 @@ func TestReadFromLogFile(t *testing.T) {
 		t.Fatalf("Got %v, Expected %v", got, expected)
 	}
 
-	err = os.RemoveAll("temp")
+	err = os.RemoveAll(TempDirectory)
 	if err != nil {
-		log.Infof("failed to remove test directory, delete it manually. Path : %s", "temp")
+		log.Infof("failed to remove test directory, delete it manually. Path : %s", TempDirectory)
 	}
 }
