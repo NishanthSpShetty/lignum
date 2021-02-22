@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -19,17 +18,14 @@ var isLeader = false
 //this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
 func ConnectToLeader(appConfig config.Server, serviceId string, clusteController ClusterController) {
 
-	requestBody, _ := json.Marshal(map[string]interface{}{
-		"node": serviceId,
-		"host": appConfig.Host,
-		"PORT": appConfig.Port,
-	})
+	thisNode := NewNodeConfig(serviceId, appConfig.Host, appConfig.Port)
+	requestBody, _ := thisNode.json()
 	for {
 		//loop if the current node becomes the leader
 		log.Infoln("Registering this service as a follower to the cluster leader...")
 		//get the leader
 		if !isLeader {
-			leader, err := clusteController.GetLeader(appConfig.ServiceKey)
+			leaderNode, err := clusteController.GetLeader(appConfig.ServiceKey)
 			if err != nil {
 				log.Errorln(err)
 				//TODO: give it a second and loop back??
@@ -37,7 +33,7 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 				continue
 			}
 			//get the leader information and send a follow request.
-			leaderEndpoint := fmt.Sprintf("http://localhost:%d%s", leader.Port, "/service/api/follower/register")
+			leaderEndpoint := fmt.Sprintf("http://%s:%d%s", leaderNode.NodeIp, leaderNode.Port, "/service/api/follower/register")
 			resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
 			if err != nil {
 				log.Errorln("Failed to register with the leader ", err)
@@ -57,7 +53,7 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 	}
 }
 
-func leaderElection(nodeConfig NodeConfig, c ClusterController, serviceKey string) {
+func leaderElection(node Node, c ClusterController, serviceKey string) {
 	loggedOnce := false
 	//start polling to aquire the lock indefinitely
 	for {
@@ -65,7 +61,7 @@ func leaderElection(nodeConfig NodeConfig, c ClusterController, serviceKey strin
 			//if the current node is leader, stop the busy loop for now
 			return
 		}
-		aquired, queryDuration, err := c.AquireLock(nodeConfig, serviceKey)
+		aquired, queryDuration, err := c.AquireLock(node, serviceKey)
 		if err != nil {
 			log.Errorln("Failed to aquire lock", err)
 			continue
@@ -89,7 +85,7 @@ func leaderElection(nodeConfig NodeConfig, c ClusterController, serviceKey strin
 
 func InitiateLeaderElection(serverConfig config.Server, nodeId string, c ClusterController) {
 
-	go leaderElection(NodeConfig{
+	go leaderElection(Node{
 		NodeId: nodeId,
 		NodeIp: serverConfig.Host,
 		Port:   serverConfig.Port,

@@ -1,8 +1,8 @@
 package cluster
 
 import (
+	"encoding/json"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/lignum/config"
@@ -20,25 +20,25 @@ type Leader struct {
 type ClusterController interface {
 	CreateSession(config.Consul, chan struct{}) error
 	AquireLock(NodeConfig, string) (bool, time.Duration, error)
-	GetLeader(string) (*Leader, error)
+	GetLeader(string) (NodeConfig, error)
 	DestroySession() error
 }
 
 //NodeNodeConfig contains the node information
 type NodeConfig struct {
-	NodeId string
-	NodeIp string
-	Port   int
+	NodeId string `json:"node-id"`
+	NodeIp string `json:"node-ip"`
+	Port   int    `json:"port"`
 }
 
-func (nodeConfig NodeConfig) Stringer() string {
-	return "NodeConfig { NodeId : " + nodeConfig.NodeId + ", NodeIp : " + nodeConfig.NodeId + ", Port " + strconv.Itoa(nodeConfig.Port) + "}"
+func (nodeConfig NodeConfig) json() ([]byte, error) {
+	return json.Marshal(nodeConfig)
 }
 
 func NewNodeConfig(nodeId string, nodeIp string, port int) NodeConfig {
 	return NodeConfig{
 		NodeId: nodeId,
-		NodeIp: nodeId,
+		NodeIp: nodeIp,
 		Port:   port,
 	}
 }

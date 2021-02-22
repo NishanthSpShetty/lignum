@@ -1,8 +1,8 @@
 package cluster
 
 import (
+	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/hashicorp/consul/api"
@@ -63,29 +63,31 @@ func (c *ConsulClusterController) DestroySession() error {
 	return err
 }
 
-func (c ConsulClusterController) GetLeader(serviceKey string) (*Leader, error) {
+func (c ConsulClusterController) GetLeader(serviceKey string) (NodeConfig, error) {
 	kv, _, err := c.client.KV().Get(serviceKey, nil)
+	nodeConfig := NodeConfig{}
 	if err != nil {
-		return nil, err
+		return nodeConfig, err
 	}
 
 	if kv == nil || kv.Session == "" {
-		return nil, errLeaderNotFound
+		return nodeConfig, errLeaderNotFound
 	}
-
-	//extract the value attached to the locked session
-	port, err := strconv.Atoi(string(kv.Value))
-	if err != nil {
-		return nil, err
-	}
-	return &Leader{Port: port}, err
-
+	err = json.Unmarshal(kv.Value, &nodeConfig)
+	return nodeConfig, err
 }
 
 func (c ConsulClusterController) AquireLock(nodeConfig NodeConfig, serviceKey string) (bool, time.Duration, error) {
+
+	lockData, err := nodeConfig.json()
+
+	if err != nil {
+		return false, 0, err
+	}
+
 	kvPair := &api.KVPair{
 		Key:     serviceKey,
-		Value:   []byte(fmt.Sprintf("%d", nodeConfig.Port)),
+		Value:   lockData,
 		Session: c.SessionId,
 	}
 	acquired, writeMeta, err := c.client.KV().Acquire(kvPair, nil)
