@@ -18,7 +18,7 @@ var isLeader = false
 //this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
 func ConnectToLeader(appConfig config.Server, serviceId string, clusteController ClusterController) {
 
-	thisNode := NewNodeConfig(serviceId, appConfig.Host, appConfig.Port)
+	thisNode := NewNode(serviceId, appConfig.Host, appConfig.Port)
 	requestBody, _ := thisNode.json()
 	for {
 		//loop if the current node becomes the leader
@@ -33,7 +33,7 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 				continue
 			}
 			//get the leader information and send a follow request.
-			leaderEndpoint := fmt.Sprintf("http://%s:%d%s", leaderNode.NodeIp, leaderNode.Port, "/service/api/follower/register")
+			leaderEndpoint := fmt.Sprintf("http://%s:%d%s", leaderNode.Host, leaderNode.Port, "/service/api/follower/register")
 			resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
 			if err != nil {
 				log.Errorln("Failed to register with the leader ", err)
@@ -86,8 +86,8 @@ func leaderElection(node Node, c ClusterController, serviceKey string) {
 func InitiateLeaderElection(serverConfig config.Server, nodeId string, c ClusterController) {
 
 	go leaderElection(Node{
-		NodeId: nodeId,
-		NodeIp: serverConfig.Host,
-		Port:   serverConfig.Port,
+		Id:   nodeId,
+		Host: serverConfig.Host,
+		Port: serverConfig.Port,
 	}, c, serverConfig.ServiceKey)
 }

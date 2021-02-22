@@ -22,9 +22,9 @@ func Test_ClusterController(t *testing.T) {
 	}
 	serviceKey := "service/lignum/key/master"
 	node := Node{
-		NodeId: "test-node",
-		NodeIp: "localhost",
-		Port:   8080,
+		Id:   "test-node",
+		Host: "localhost",
+		Port: 8080,
 	}
 	_, _, err = clusteController.AquireLock(node, serviceKey)
 
