@@ -21,23 +21,23 @@ func Test_ClusterController(t *testing.T) {
 		t.Fatalf("Failed to create session %v \n", err)
 	}
 	serviceKey := "service/lignum/key/master"
-	nodeConfig := NodeConfig{
+	node := Node{
 		NodeId: "test-node",
 		NodeIp: "localhost",
 		Port:   8080,
 	}
-	_, _, err = clusteController.AquireLock(nodeConfig, serviceKey)
+	_, _, err = clusteController.AquireLock(node, serviceKey)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	leaderNodeConfig, err := clusteController.GetLeader(serviceKey)
+	leaderNode, err := clusteController.GetLeader(serviceKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if leaderNodeConfig.Port != 8080 {
+	if leaderNode.Port != 8080 {
 		t.Fatal(err)
 	}
 

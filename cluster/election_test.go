@@ -22,12 +22,12 @@ func Test_LeaderElection(t *testing.T) {
 		t.Fatalf("Failed to create session %v \n", err)
 	}
 	serviceKey := "service/lignum/key/master"
-	nodeConfig := NodeConfig{
+	node := Node{
 		NodeId: "test-node",
 		NodeIp: "localhost",
 		Port:   8080,
 	}
-	leaderElection(nodeConfig, clusteController, serviceKey)
+	leaderElection(node, clusteController, serviceKey)
 	//sleep for 10ms,
 	time.Sleep(10 * time.Millisecond)
 	leader, err := clusteController.GetLeader(serviceKey)

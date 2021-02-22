@@ -63,9 +63,9 @@ func (c *ConsulClusterController) DestroySession() error {
 	return err
 }
 
-func (c ConsulClusterController) GetLeader(serviceKey string) (NodeConfig, error) {
+func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
 	kv, _, err := c.client.KV().Get(serviceKey, nil)
-	nodeConfig := NodeConfig{}
+	nodeConfig := Node{}
 	if err != nil {
 		return nodeConfig, err
 	}
@@ -77,9 +77,9 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (NodeConfig, error
 	return nodeConfig, err
 }
 
-func (c ConsulClusterController) AquireLock(nodeConfig NodeConfig, serviceKey string) (bool, time.Duration, error) {
+func (c ConsulClusterController) AquireLock(node Node, serviceKey string) (bool, time.Duration, error) {
 
-	lockData, err := nodeConfig.json()
+	lockData, err := node.json()
 
 	if err != nil {
 		return false, 0, err

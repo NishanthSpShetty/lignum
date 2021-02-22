@@ -19,24 +19,24 @@ type Leader struct {
 
 type ClusterController interface {
 	CreateSession(config.Consul, chan struct{}) error
-	AquireLock(NodeConfig, string) (bool, time.Duration, error)
-	GetLeader(string) (NodeConfig, error)
+	AquireLock(Node, string) (bool, time.Duration, error)
+	GetLeader(string) (Node, error)
 	DestroySession() error
 }
 
 //NodeNodeConfig contains the node information
-type NodeConfig struct {
+type Node struct {
 	NodeId string `json:"node-id"`
 	NodeIp string `json:"node-ip"`
 	Port   int    `json:"port"`
 }
 
-func (nodeConfig NodeConfig) json() ([]byte, error) {
+func (nodeConfig Node) json() ([]byte, error) {
 	return json.Marshal(nodeConfig)
 }
 
-func NewNodeConfig(nodeId string, nodeIp string, port int) NodeConfig {
-	return NodeConfig{
+func NewNodeConfig(nodeId string, nodeIp string, port int) Node {
+	return Node{
 		NodeId: nodeId,
 		NodeIp: nodeIp,
 		Port:   port,
