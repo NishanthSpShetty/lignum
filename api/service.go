@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/lignum/cluster"
 	"github.com/lignum/config"
 	"github.com/lignum/message"
 	log "github.com/sirupsen/logrus"
@@ -15,9 +16,12 @@ func registerFollower(serviceId string) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		requestBody, _ := ioutil.ReadAll(req.Body)
-
 		log.Infof("Request received for follower registration %v ", string(requestBody))
-		fmt.Fprintf(w, "Follower registered. Service ID : [ %s ]\n", serviceId)
+		node := cluster.Node{}
+		json.Unmarshal(requestBody, &node)
+		cluster.AddFollower(node)
+		fmt.Fprintf(w, "Follower registered. Node : [ %v ]\n", node)
+		fmt.Printf(" Current followers \n %v ", cluster.GetFollowers())
 	}
 }
 

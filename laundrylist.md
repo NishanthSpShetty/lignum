@@ -19,9 +19,10 @@ Create a disributed logging service using golang, something like kafka.
 ### cluster 
  - [X] Leader election
  - [X] Get the current cluster leader and register to them.
+ - [] Health check of all the followers, if its not available remove them from the list of followers
  - [X] Elect any node as new leader if current leader fais fort some reason.
  - [X] When new leader is elected, all follower should register themselves with the leader again.
- - [] Each node must know the leader.
+ - [X] Each node must know the leader.
 
 ### functional
   - [X] Send message and read from the service
