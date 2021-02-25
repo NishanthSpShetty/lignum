@@ -10,7 +10,6 @@ import (
 type MessageT map[string]string
 
 var message MessageT
-var messageChannel chan MessageT
 
 func Init(messageConfig config.Message) {
 	log.Infof("Initializing messages with config %v", messageConfig)
@@ -53,4 +52,18 @@ func StartFlusher(messageConfig config.Message) {
 
 		}
 	}(messageConfig)
+}
+
+//StartReplicator start replication routine to replicate the messages to all nodes
+func StartReplicator(messageChannel chan MessageT) {
+
+	log.Infoln(" Replicator service is running..")
+	go func(messageChannel <-chan MessageT) {
+		for {
+
+			messag := <-messageChannel
+			log.Debugln(" recieved message for replication ", messag)
+
+		}
+	}(messageChannel)
 }

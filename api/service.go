@@ -46,7 +46,7 @@ type GetMessageResponse struct {
 }
 
 //handleMessagePut Write the message with the given key.
-func handleMessage() http.HandlerFunc {
+func handleMessage(messageChannel chan<- message.MessageT) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
@@ -64,6 +64,12 @@ func handleMessage() http.HandlerFunc {
 			}
 			log.Debugf("Recieved message %v \n", messageRequest)
 			message.Put(messageRequest.Key, messageRequest.Value)
+			//start a go routine to send messages to replicator channel
+			//if replicator is blocked it should not block api call
+			go func(key, value string) {
+				messageChannel <- message.MessageT{key: value}
+			}(messageRequest.Key, messageRequest.Value)
+
 			fmt.Fprintf(w, "{status : \"message commited\"\n message : { %v }", "key:value")
 		case "GET":
 			var messageRequest GetMessageRequest
@@ -86,12 +92,12 @@ func handleMessage() http.HandlerFunc {
 	}
 }
 
-func StartApiService(appConfig config.Config, serviceId string) {
+func StartApiService(appConfig config.Config, serviceId string, messageChannel chan<- message.MessageT) {
 
 	log.Infof("Starting HTTP service at %s:%d \n", appConfig.Server.Host, appConfig.Server.Port)
 	address := fmt.Sprintf("%s:%d", appConfig.Server.Host, appConfig.Server.Port)
 	http.HandleFunc("/ping", ping)
 	http.HandleFunc("/service/api/follower/register", registerFollower(serviceId))
-	http.HandleFunc("/api/message", handleMessage())
+	http.HandleFunc("/api/message", handleMessage(messageChannel))
 	log.Panic(http.ListenAndServe(address, nil))
 }

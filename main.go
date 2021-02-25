@@ -72,6 +72,10 @@ func main() {
 
 	//start flush routine
 	message.StartFlusher(appConfig.Message)
+
+	messageChannel := make(chan message.MessageT)
+
+	message.StartReplicator(messageChannel)
 	//once the cluster is setup we should be able start api service
-	api.StartApiService(appConfig, serviceId)
+	api.StartApiService(appConfig, serviceId, messageChannel)
 }
