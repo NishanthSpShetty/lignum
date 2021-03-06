@@ -53,17 +53,3 @@ func StartFlusher(messageConfig config.Message) {
 		}
 	}(messageConfig)
 }
-
-//StartReplicator start replication routine to replicate the messages to all nodes
-func StartReplicator(messageChannel chan MessageT) {
-
-	log.Infoln(" Replicator service is running..")
-	go func(messageChannel <-chan MessageT) {
-		for {
-
-			messag := <-messageChannel
-			log.Debugln(" recieved message for replication ", messag)
-
-		}
-	}(messageChannel)
-}

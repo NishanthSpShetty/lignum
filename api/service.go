@@ -64,6 +64,7 @@ func handleMessage(messageChannel chan<- message.MessageT) http.HandlerFunc {
 			}
 			log.Debugf("Recieved message %v \n", messageRequest)
 			message.Put(messageRequest.Key, messageRequest.Value)
+
 			//start a go routine to send messages to replicator channel
 			//if replicator is blocked it should not block api call
 			go func(key, value string) {
