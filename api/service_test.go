@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetMessage(t *testing.T) {
-	requestData := GetMessageRequest{Key: "foo"}
+	requestData := GetMessageRequest{From: 0, To: 1}
 	req, _ := json.Marshal(requestData)
 	messageChannel := make(chan message.MessageT)
 	requestHandler := handleMessage(messageChannel)
@@ -23,7 +23,7 @@ func TestGetMessage(t *testing.T) {
 		response := httptest.NewRecorder()
 		requestHandler(response, request)
 		json.Unmarshal(response.Body.Bytes(), &responseData)
-		assert.Equal(t, "", responseData.Value)
+		assert.Equal(t, []string{}, responseData.Messages)
 	})
 
 	t.Run("returns expected message when messages are written", func(t *testing.T) {
@@ -31,6 +31,6 @@ func TestGetMessage(t *testing.T) {
 		response := httptest.NewRecorder()
 		requestHandler(response, request)
 		json.Unmarshal(response.Body.Bytes(), &responseData)
-		assert.Equal(t, "bar", responseData.Value)
+		assert.Equal(t, []string{}, responseData.Messages)
 	})
 }
