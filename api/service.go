@@ -66,8 +66,9 @@ func handleMessage(messageChannel chan<- message.MessageT) http.HandlerFunc {
 			message.Put(messageRequest.Message)
 
 			fmt.Fprintf(w, "{status : \"message commited\"\n message : { %v }", "key:value")
+
 		case "GET":
-			var messageRequest GetMessageRequest
+			var messageRequest GetMessageRequest = GetMessageRequest{}
 
 			err := decoder.Decode(&messageRequest)
 
