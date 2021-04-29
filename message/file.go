@@ -1,8 +1,10 @@
 package message
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/lignum/config"
@@ -16,7 +18,7 @@ How do we structure message file in the message directory?
 
 //WriteToLogFile werite the mesages to log file.
 // doesnt handle consecutive writes well, meaning it will write the all the messages from the beginning on each write
-func WriteToLogFile(messageConfig config.Message, message MessageT) (int, error) {
+func WriteToLogFile(messageConfig config.Message, messages []MessageT) (int, error) {
 
 	filename := "message_001.dat"
 	path := messageConfig.MessageDir + "/" + filename
@@ -28,30 +30,36 @@ func WriteToLogFile(messageConfig config.Message, message MessageT) (int, error)
 	}
 
 	counter := 0
-	for key, value := range message {
+	for _, message := range messages {
 		counter += 1
-		file.WriteString(key + "=" + value + "\n")
+		file.WriteString(fmt.Sprintf("%d=%s", message.Id, message.Message))
 	}
 	return counter, nil
 }
 
-func decodeRawMessage(messages []byte) MessageT {
+func decodeRawMessage(raw []byte) []MessageT {
 
-	message := make(MessageT)
-	for _, line := range strings.Split(string(messages), "\n") {
+	messages := make([]MessageT, 0)
+	for _, line := range strings.Split(string(raw), "\n") {
+		message := MessageT{}
 		splits := strings.Split(line, "=")
 		if len(splits) != 2 {
 			continue
 		}
-		key := splits[0]
-		value := splits[1]
-		message[key] = value
+		id, err := strconv.Atoi(splits[0])
+		if err != nil {
+			log.Errorf("failed to read message :%v\n", err)
+			continue
+		}
+		message.Id = id
+		message.Message = splits[1]
+		messages = append(messages, message)
 	}
-	return message
+	return messages
 }
 
 //ReadFromLogFile
-func ReadFromLogFile(messageDirectory string) MessageT {
+func ReadFromLogFile(messageDirectory string) []MessageT {
 	//load all mesage files from the given directory,
 	filename := "message_001.dat"
 
@@ -59,7 +67,7 @@ func ReadFromLogFile(messageDirectory string) MessageT {
 
 	if err != nil {
 		log.Debugf("Failed to find message file : %s", err.Error())
-		return MessageT{}
+		return nil
 	}
 
 	messages, err := ioutil.ReadAll(file)

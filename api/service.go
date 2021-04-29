@@ -31,18 +31,18 @@ func ping(w http.ResponseWriter, req *http.Request) {
 
 // request message struct
 type PutMessageRequest struct {
-	Key   string
-	Value string
+	Message string
 }
 
 type GetMessageRequest struct {
-	Key string
+	//will need range to pick the messages from
+	From int
+	To   int
 }
 
 //respons message struct
 type GetMessageResponse struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
+	Messages []string `json:"messages"`
 }
 
 //handleMessagePut Write the message with the given key.
@@ -63,13 +63,7 @@ func handleMessage(messageChannel chan<- message.MessageT) http.HandlerFunc {
 				return
 			}
 			log.Debugf("Recieved message %v \n", messageRequest)
-			message.Put(messageRequest.Key, messageRequest.Value)
-
-			//start a go routine to send messages to replicator channel
-			//if replicator is blocked it should not block api call
-			go func(key, value string) {
-				messageChannel <- message.MessageT{key: value}
-			}(messageRequest.Key, messageRequest.Value)
+			message.Put(messageRequest.Message)
 
 			fmt.Fprintf(w, "{status : \"message commited\"\n message : { %v }", "key:value")
 		case "GET":
@@ -82,8 +76,8 @@ func handleMessage(messageChannel chan<- message.MessageT) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			messageValue := message.Get(messageRequest.Key)
-			messag := GetMessageResponse{Value: messageValue, Key: messageRequest.Key}
+			messages := message.Get(messageRequest.From, messageRequest.To)
+			messag := GetMessageResponse{Messages: messages}
 
 			log.Debugf(" Recieved message %v ", messageRequest)
 			json.NewEncoder(w).Encode(messag)

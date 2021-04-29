@@ -1,6 +1,7 @@
 package message
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -27,7 +28,8 @@ func TestWriteToLogFile(t *testing.T) {
 		MessageDir:                         TempDirectory,
 	}
 	message := MessageT{
-		"foo": "bar",
+		Id:      0,
+		Message: "streaming message 1",
 	}
 
 	err := createTestDir(messageConfig.MessageDir)
@@ -35,7 +37,7 @@ func TestWriteToLogFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot create data directory for the test : %s ", err.Error())
 	}
-	count, err := WriteToLogFile(messageConfig, message)
+	count, err := WriteToLogFile(messageConfig, []MessageT{message})
 	if err != nil {
 		t.Fatalf("Failed to write to log file : %s", err.Error())
 	}
@@ -44,7 +46,7 @@ func TestWriteToLogFile(t *testing.T) {
 		t.Fatalf("WriteMessageCount: Got %d, Expected %d", count, expectedCount)
 	}
 
-	expected := "foo=bar"
+	expected := fmt.Sprintf("%d=%s", message.Id, message.Message)
 	file := TempDirectory + "/message_001.dat"
 	byts, err := ioutil.ReadFile(file)
 
@@ -53,7 +55,7 @@ func TestWriteToLogFile(t *testing.T) {
 		return
 	}
 	got := string(byts)
-	if expected == got {
+	if expected != got {
 		t.Fatalf("Got %s, Expected %s", got, expected)
 	}
 	err = os.RemoveAll(messageConfig.MessageDir)
@@ -64,6 +66,10 @@ func TestWriteToLogFile(t *testing.T) {
 
 func TestReadFromLogFile(t *testing.T) {
 
+	message := MessageT{
+		Id:      0,
+		Message: "streaming message 1",
+	}
 	err := createTestDir(TempDirectory)
 
 	if err != nil {
@@ -71,16 +77,14 @@ func TestReadFromLogFile(t *testing.T) {
 	}
 
 	file := TempDirectory + "/message_001.dat"
-	messageToWrite := "foo=bar"
+
+	messageToWrite := fmt.Sprintf("%d=%s", message.Id, message.Message)
 	ioutil.WriteFile(file, []byte(messageToWrite), os.ModePerm)
 	got := ReadFromLogFile(TempDirectory)
-
-	expected := MessageT{
-		"foo": "bar",
-	}
+	expected := []MessageT{message}
 
 	if !reflect.DeepEqual(got, expected) {
-		t.Fatalf("Got %v, Expected %v", got, expected)
+		t.Fatalf("Got %v, Expected %v", got, message)
 	}
 
 	err = os.RemoveAll(TempDirectory)

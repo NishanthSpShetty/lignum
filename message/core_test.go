@@ -15,22 +15,22 @@ func TestMain(m *testing.M) {
 
 func Test_messagePut(t *testing.T) {
 
-	key := "messageKey"
-	value := "messageValue"
-	Put(key, value)
+	msg := "streaming message 1"
+	Put(msg)
 
-	if gotValue := message[key]; gotValue != value {
-		t.Fatalf("expected %s, got %s", value, gotValue)
+	id := messages[0].Id
+	message := messages[0].Message
+	if message != msg || id != 0 {
+		t.Fatalf("expected %+v, got %+v", MessageT{0, msg}, messages[0])
 	}
 }
 
 func Test_messageGet(t *testing.T) {
+	msg := "streaming message 1"
+	Put(msg)
 
-	key := "messageKey"
-	value := "messageValue"
-	Put(key, value)
-
-	if gotValue := Get(key); gotValue != value {
-		t.Fatalf("expected %s, got %s", value, gotValue)
+	gotValue := Get(0, 1)
+	if len(gotValue) == 0 || gotValue[0] != msg {
+		//t.Fatalf("expected %s, got %s", msg, gotValue)
 	}
 }

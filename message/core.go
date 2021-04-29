@@ -7,28 +7,29 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type MessageT map[string]string
+var count = 0
 
-var message MessageT
+type MessageT struct {
+	Id      int
+	Message string
+}
+
+var messages []MessageT
 
 func Init(messageConfig config.Message) {
 	log.Infof("Initializing messages with config %v", messageConfig)
 
 	//	message = make(MessageT)
-	message = ReadFromLogFile(messageConfig.MessageDir)
+	messages = ReadFromLogFile(messageConfig.MessageDir)
+	count = len(messages)
 }
 
-func Put(key, value string) {
-	message[key] = value
+func Put(msg string) {
+	messages = append(messages, MessageT{count, msg})
 }
 
-func Get(key string) string {
-	v, ok := message[key]
-	if ok {
-		return v
-	} else {
-		return ""
-	}
+func Get(from, to int) []string {
+	return []string{}
 }
 
 //StartFlusher start flusher routine to write the messages to file
@@ -39,11 +40,11 @@ func StartFlusher(messageConfig config.Message) {
 			time.Sleep(messageConfig.MessageFlushIntervalInMilliSeconds * time.Millisecond)
 
 			//keep looping on the above sleep interval when the message size is zero
-			if len(message) == 0 {
+			if len(messages) == 0 {
 				continue
 			}
 
-			count, err := WriteToLogFile(messageConfig, message)
+			count, err := WriteToLogFile(messageConfig, messages)
 			if err != nil {
 				log.Errorf("failed to write the messages to file : %v", err.Error())
 				continue
