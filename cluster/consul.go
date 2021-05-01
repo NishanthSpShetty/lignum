@@ -10,8 +10,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type ConsulClient interface {
+	Session() *api.Session
+	KV() *api.KV
+}
+
 type ConsulClusterController struct {
-	client    *api.Client
+	client    ConsulClient
 	SessionId string
 }
 

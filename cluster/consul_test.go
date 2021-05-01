@@ -4,7 +4,12 @@ import (
 	"testing"
 
 	"github.com/lignum/config"
+	"github.com/stretchr/testify/mock"
 )
+
+type mockClient struct {
+	mock.Mock
+}
 
 func Test_ClusterController(t *testing.T) {
 	consulConfig := config.Consul{
