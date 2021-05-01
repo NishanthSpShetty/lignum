@@ -4,50 +4,82 @@ import (
 	"testing"
 
 	"github.com/NishanthSpShetty/lignum/config"
-	"github.com/stretchr/testify/mock"
+	"github.com/rs/zerolog"
 )
 
-type mockClient struct {
-	mock.Mock
-}
-
 func Test_ClusterController(t *testing.T) {
+	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 	consulConfig := config.Consul{
 		Host: "localhost",
 		Port: 8500,
 	}
 
-	clusteController, err := InitialiseClusterController(consulConfig)
-	if err != nil {
-		t.Fatal(err)
+	controller := newMockClient(&mockConsulClient{})
+
+	//test create session
+	type args struct {
+		config                    config.Consul
+		sessionRenewalChannelChan chan struct{}
 	}
 
-	if err := clusteController.CreateSession(consulConfig, make(chan struct{})); err != nil {
-		t.Fatalf("Failed to create session %v \n", err)
-	}
-	serviceKey := "service/lignum/key/master"
-	node := Node{
-		Id:   "test-node",
-		Host: "localhost",
-		Port: 8080,
-	}
-	_, _, err = clusteController.AquireLock(node, serviceKey)
+	testCases := []struct {
+		name       string
+		args       args
+		sessionId  string
+		err        error
+		controller *ConsulClusterController
+	}{
+		{
+			name: "Create session successfully",
+			args: args{
+				sessionRenewalChannelChan: make(chan struct{}),
+				config:                    consulConfig,
+			},
+			err:       nil,
+			sessionId: "session-id",
+			controller: func() *ConsulClusterController {
 
-	if err != nil {
-		t.Fatal(err)
+				mclient := &mockConsulClient{}
+				mclient.On("CreateSession").Return("session-id")
+				return newMockClient(mclient)
+			}(),
+		},
 	}
 
-	leaderNode, err := clusteController.GetLeader(serviceKey)
-	if err != nil {
-		t.Fatal(err)
+	for _, tt := range testCases {
+
+		err := tt.controller.CreateSession(consulConfig, make(chan struct{}))
+		if err != tt.err {
+			t.Fatalf("CreateSession: %s, Expected %v, Got %v", tt.name, tt.err, err)
+		}
+		if tt.sessionId != "" && tt.sessionId != tt.controller.SessionId {
+			t.Fatalf("CreateSession: %s, Expected %s, Got %s", tt.name, tt.sessionId, controller.SessionId)
+		}
 	}
 
-	if leaderNode.Port != 8080 {
-		t.Fatal(err)
-	}
-
-	if err := clusteController.DestroySession(); err != nil {
-		t.Fatal(err)
-	}
+	//	serviceKey := "service/lignum/key/master"
+	//	node := Node{
+	//		Id:   "test-node",
+	//		Host: "localhost",
+	//		Port: 8080,
+	//	}
+	//	_, _, err = clusteController.AquireLock(node, serviceKey)
+	//
+	//	if err != nil {
+	//		t.Fatal(err)
+	//	}
+	//
+	//	leaderNode, err := clusteController.GetLeader(serviceKey)
+	//	if err != nil {
+	//		t.Fatal(err)
+	//	}
+	//
+	//	if leaderNode.Port != 8080 {
+	//		t.Fatal(err)
+	//	}
+	//
+	//	if err := clusteController.DestroySession(); err != nil {
+	//		t.Fatal(err)
+	//	}
 
 }

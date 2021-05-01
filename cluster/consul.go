@@ -29,6 +29,7 @@ func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterCont
 }
 
 func (c *ConsulClusterController) renewSessionPeriodically(sessionId string, ttlS string, sessionRenewalChannel chan struct{}) {
+	//TODO: handle how to stop this goroutine
 	defer close(sessionRenewalChannel)
 	for {
 		c.client.RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
