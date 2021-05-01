@@ -2,14 +2,9 @@ package cluster
 
 import (
 	"encoding/json"
-	"errors"
 	"time"
 
-	"github.com/lignum/config"
-)
-
-var (
-	errLeaderNotFound = errors.New("failed to get leader from the cluster controller")
+	"github.com/NishanthSpShetty/lignum/config"
 )
 
 //Leader has port information of the leader
@@ -31,7 +26,7 @@ type Node struct {
 	Port int    `json:"port"`
 }
 
-func (nodeConfig Node) json() ([]byte, error) {
+func (nodeConfig Node) Json() ([]byte, error) {
 	return json.Marshal(nodeConfig)
 }
 

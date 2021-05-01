@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lignum/config"
-	log "github.com/sirupsen/logrus"
+	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/rs/zerolog/log"
 )
 
 /*
@@ -48,7 +48,7 @@ func decodeRawMessage(raw []byte) []MessageT {
 		}
 		id, err := strconv.Atoi(splits[0])
 		if err != nil {
-			log.Errorf("failed to read message :%v\n", err)
+			log.Error().Err(err).Msg("failed to read message")
 			continue
 		}
 		message.Id = id
@@ -66,14 +66,14 @@ func ReadFromLogFile(messageDirectory string) []MessageT {
 	file, err := os.Open(messageDirectory + "/" + filename)
 
 	if err != nil {
-		log.Debugf("Failed to find message file : %s", err.Error())
+		log.Debug().Err(err).Msg("Failed to find message file")
 		return nil
 	}
 
 	messages, err := ioutil.ReadAll(file)
 
 	if err != nil {
-		log.Errorf("Failed to read the message file : %s", err.Error())
+		log.Error().Err(err).Msg("Failed to read the message file")
 	}
 	return decodeRawMessage(messages)
 }

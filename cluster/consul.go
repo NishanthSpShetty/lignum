@@ -5,25 +5,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/hashicorp/consul/api"
-	"github.com/lignum/config"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
-type ConsulClient interface {
-	Session() *api.Session
-	KV() *api.KV
-}
-
 type ConsulClusterController struct {
-	client    ConsulClient
+	client    IClient
 	SessionId string
 }
 
-func InitialiseClusterController(consulConfig config.Consul) (ClusterController, error) {
-
+func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterController, error) {
 	var err error
-
 	config := api.DefaultConfig()
 	config.Address = fmt.Sprintf("%s:%d", consulConfig.Host, consulConfig.Port)
 
@@ -32,13 +25,13 @@ func InitialiseClusterController(consulConfig config.Consul) (ClusterController,
 	if err != nil {
 		return &ConsulClusterController{}, err
 	}
-	return &ConsulClusterController{client: client}, nil
+	return &ConsulClusterController{client: &Client{client}}, nil
 }
 
 func (c *ConsulClusterController) renewSessionPeriodically(sessionId string, ttlS string, sessionRenewalChannel chan struct{}) {
 	defer close(sessionRenewalChannel)
 	for {
-		c.client.Session().RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
+		c.client.RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
 		time.Sleep(90 * time.Second)
 	}
 }
@@ -51,12 +44,15 @@ func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sess
 		LockDelay: 1 * time.Millisecond,
 	}
 
-	sessionId, queryDuration, err := c.client.Session().Create(sessionEntry, nil)
+	sessionId, queryDuration, err := c.client.CreateSession(sessionEntry, nil)
 
 	if err != nil {
 		return err
 	}
-	log.Debugf("Consul session created, ID : %v, Aquired in :%dms  ", sessionId, queryDuration.RequestTime.Milliseconds())
+	log.Debug().
+		Str("SessionId", sessionId).
+		Str("Duration", queryDuration.RequestTime.String()).
+		Msg("Consul session created")
 	//TODO : should it be started conditionally?
 	go c.renewSessionPeriodically(sessionId, consulConfig.SessionRenewalTTL, sessionRenewalChannel)
 	c.SessionId = sessionId
@@ -64,27 +60,26 @@ func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sess
 }
 
 func (c *ConsulClusterController) DestroySession() error {
-	_, err := c.client.Session().Destroy(c.SessionId, nil)
-	return err
+	return c.client.DestroySession(c.SessionId)
 }
 
 func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
-	kv, _, err := c.client.KV().Get(serviceKey, nil)
+	kvPair, err := c.client.GetKVPair(serviceKey)
 	nodeConfig := Node{}
 	if err != nil {
 		return nodeConfig, err
 	}
 
-	if kv == nil || kv.Session == "" {
-		return nodeConfig, errLeaderNotFound
+	if kvPair == nil || kvPair.Session == "" {
+		return nodeConfig, ErrLeaderNotFound
 	}
-	err = json.Unmarshal(kv.Value, &nodeConfig)
+	err = json.Unmarshal(kvPair.Value, &nodeConfig)
 	return nodeConfig, err
 }
 
 func (c ConsulClusterController) AquireLock(node Node, serviceKey string) (bool, time.Duration, error) {
 
-	lockData, err := node.json()
+	lockData, err := node.Json()
 
 	if err != nil {
 		return false, 0, err
@@ -95,7 +90,8 @@ func (c ConsulClusterController) AquireLock(node Node, serviceKey string) (bool,
 		Value:   lockData,
 		Session: c.SessionId,
 	}
-	acquired, writeMeta, err := c.client.KV().Acquire(kvPair, nil)
+
+	acquired, writeMeta, err := c.client.AquireLock(kvPair)
 	if err != nil {
 		return false, 0, err
 	}

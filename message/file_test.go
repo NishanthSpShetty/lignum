@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/lignum/config"
+	"github.com/NishanthSpShetty/lignum/config"
 	log "github.com/sirupsen/logrus"
 )
 

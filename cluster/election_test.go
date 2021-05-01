@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lignum/config"
+	"github.com/NishanthSpShetty/lignum/config"
 )
 
 func Test_LeaderElection(t *testing.T) {

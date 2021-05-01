@@ -1,16 +1,16 @@
 package message
 
-import log "github.com/sirupsen/logrus"
+import "github.com/rs/zerolog/log"
 
 //StartReplicator start replication routine to replicate the messages to all nodes
 func StartReplicator(messageChannel chan MessageT) {
 
-	log.Infoln("Replicator service is running..")
+	log.Info().Msg("Replicator service is running..")
 	go func(messageChannel <-chan MessageT) {
 		for {
 
 			messag := <-messageChannel
-			log.Debugln("Recieved message for replication ", messag)
+			log.Debug().Interface("Message", messag).Msg("Recieved message for replication ")
 
 		}
 	}(messageChannel)

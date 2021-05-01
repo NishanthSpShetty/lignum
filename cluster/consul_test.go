@@ -3,7 +3,7 @@ package cluster
 import (
 	"testing"
 
-	"github.com/lignum/config"
+	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/stretchr/testify/mock"
 )
 

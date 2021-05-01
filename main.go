@@ -6,13 +6,13 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/NishanthSpShetty/lignum/api"
+	"github.com/NishanthSpShetty/lignum/cluster"
+	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
-
-	"github.com/lignum/api"
-	"github.com/lignum/cluster"
-	"github.com/lignum/config"
-	"github.com/lignum/message"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func signalHandler(sessionRenewalChannel chan struct{}, serviceId string, clusteController cluster.ClusterController) {
@@ -20,44 +20,54 @@ func signalHandler(sessionRenewalChannel chan struct{}, serviceId string, cluste
 	signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
 	//read the signal and discard
 	<-signalChannel
-	log.Infof("Destroying session and stopping service [ServiceID : %s ]\n", serviceId)
+	log.Info().
+		Str("ServiceID", serviceId).
+		Msg("Destroying session and stopping service ")
 	close(sessionRenewalChannel)
 
 	err := clusteController.DestroySession()
 
 	if err != nil {
-		log.Error("Failed to destroy the session ", err)
+		log.Error().Err(err).Msg("Failed to destroy the session ")
 	}
 	os.Exit(0)
 }
 
+func initialiseLogger() {
+
+	//zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+}
+
 func main() {
-	log.SetLevel(log.DebugLevel)
+	initialiseLogger()
 
 	configFile := flag.String("config", "", "get configuration from file")
 	flag.Parse()
 
 	appConfig, err := config.GetConfig(*configFile)
 	if err != nil {
-		log.Error("Failed to read config", err)
+		//o	 ("Failed to read config", err)
+		log.Error().Err(err).Msg("Failed to read config")
 		return
 	}
 
 	serviceId := uuid.New().String()
 	appConfig.SetServiceId(serviceId)
-	log.Infof("Starting lignum - distributed messaging service service [ServiceID : %s ].\n", serviceId)
+	log.Info().Str("ServiceID", serviceId).Msg("Starting lignum - distributed messaging service")
 
 	sessionRenewalChannel := make(chan struct{})
 	consulClusterController, err := cluster.InitialiseClusterController(appConfig.Consul)
+
 	if err != nil {
-		log.Error("Failed to initialise the consul client", err)
+		log.Error().Err(err).Msg("Failed to initialise the consul client")
 		return
 	}
 
-	log.Infof("Loaded app config %v ", appConfig)
+	log.Debug().Interface("Config", appConfig).Msg("Loaded app config")
 	err = consulClusterController.CreateSession(appConfig.Consul, sessionRenewalChannel)
 	if err != nil {
-		log.Errorf("Failed to create the consul session %v, Check if the consul is running and reachable.", err)
+		log.Error().Err(err).Msg("Failed to create the consul session.")
 		return
 	}
 

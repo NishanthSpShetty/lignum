@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/lignum/config"
+	"github.com/NishanthSpShetty/lignum/config"
 )
 
 func TestMain(m *testing.M) {
