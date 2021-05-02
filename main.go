@@ -33,14 +33,18 @@ func signalHandler(sessionRenewalChannel chan struct{}, serviceId string, cluste
 	os.Exit(0)
 }
 
-func initialiseLogger() {
-
+func initialiseLogger(development bool) {
 	//zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Logger = log.With().Caller().Logger()
+	if development {
+		log.Logger = log.Logger.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
+
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 }
 
 func main() {
-	initialiseLogger()
+	initialiseLogger(true)
 
 	configFile := flag.String("config", "", "get configuration from file")
 	flag.Parse()
