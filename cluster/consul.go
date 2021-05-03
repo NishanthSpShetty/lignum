@@ -29,13 +29,12 @@ func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterCont
 }
 
 func (c *ConsulClusterController) renewSessionPeriodically(sessionId string, ttlS string, sessionRenewalChannel chan struct{}) {
-	//TODO: handle how to stop this goroutine
 	for {
 		select {
 		//if this channel is closed, stop this loop
 		case <-sessionRenewalChannel:
-			fmt.Println("returning...")
 			return
+
 		case <-time.After(90 * time.Second):
 			c.client.RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
 		}
@@ -50,15 +49,16 @@ func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sess
 		LockDelay: 1 * time.Millisecond,
 	}
 
-	sessionId, queryDuration, err := c.client.CreateSession(sessionEntry, nil)
+	sessionId, writeMeta, err := c.client.CreateSession(sessionEntry, nil)
 
 	if err != nil {
 		return err
 	}
 	log.Debug().
 		Str("SessionId", sessionId).
-		Str("Duration", queryDuration.RequestTime.String()).
+		Str("Duration", writeMeta.RequestTime.String()).
 		Msg("Consul session created")
+
 	//TODO : should it be started conditionally?
 	go c.renewSessionPeriodically(sessionId, consulConfig.SessionRenewalTTL, sessionRenewalChannel)
 	c.SessionId = sessionId
@@ -83,12 +83,12 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
 	return nodeConfig, err
 }
 
-func (c ConsulClusterController) AquireLock(node Node, serviceKey string) (bool, time.Duration, error) {
+func (c ConsulClusterController) AquireLock(node Node, serviceKey string) (bool, error) {
 
 	lockData, err := node.Json()
 
 	if err != nil {
-		return false, 0, err
+		return false, err
 	}
 
 	kvPair := &api.KVPair{
@@ -99,8 +99,13 @@ func (c ConsulClusterController) AquireLock(node Node, serviceKey string) (bool,
 
 	acquired, writeMeta, err := c.client.AquireLock(kvPair)
 	if err != nil {
-		return false, 0, err
+		return false, err
 	}
-	return acquired, writeMeta.RequestTime, err
+
+	log.Debug().
+		Str("Duration", writeMeta.RequestTime.String()).
+		RawJSON("Node", lockData).
+		Msg("Consul lock aquired on the session")
+	return acquired, err
 
 }

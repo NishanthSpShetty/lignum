@@ -12,7 +12,7 @@ import (
 
 var errUnexpectedResponse = errors.New("Unexpected response code: 200")
 
-func Test_ClusterController(t *testing.T) {
+func Test_CreateSession(t *testing.T) {
 	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 	consulConfig := config.Consul{
 		Host: "localhost",
@@ -41,7 +41,6 @@ func Test_ClusterController(t *testing.T) {
 			err:       nil,
 			sessionId: "session-id",
 			controller: func() *ConsulClusterController {
-
 				mclient := &mockConsulClient{}
 				mclient.On("CreateSession").Return("session-id", nil)
 				return newMockClient(mclient)
@@ -116,4 +115,73 @@ func Test_ClusterController(t *testing.T) {
 	//		t.Fatal(err)
 	//	}
 
+}
+
+func Test_AquireLock(t *testing.T) {
+
+	node := Node{
+		Id:   "test-node",
+		Host: "localhost",
+		Port: 8080,
+	}
+
+	type args struct {
+		node       Node
+		serviceKey string
+	}
+
+	testCases := []struct {
+		name       string
+		args       args
+		aquired    bool
+		err        error
+		controller ClusterController
+	}{
+		{
+			name: "lock aquired successfully",
+			args: args{
+				node:       node,
+				serviceKey: "service/lignum/key/master",
+			},
+			aquired: true,
+			err:     nil,
+
+			controller: func() *ConsulClusterController {
+				mclient := &mockConsulClient{}
+				mclient.On("AquireLock").Return(true, nil)
+				controller := newMockClient(mclient)
+				controller.SessionId = "test-session-id"
+				return controller
+			}(),
+		},
+		{
+			name: "failed to aquire lock on the consul",
+			args: args{
+				node:       node,
+				serviceKey: "service/lignum/key/master",
+			},
+			aquired: false,
+			err:     errUnexpectedResponse,
+
+			controller: func() *ConsulClusterController {
+				mclient := &mockConsulClient{}
+				mclient.On("AquireLock").Return(false, errUnexpectedResponse)
+				controller := newMockClient(mclient)
+				controller.SessionId = "test-session-id"
+				return controller
+			}(),
+		},
+	}
+
+	for _, tt := range testCases {
+		acquired, err := tt.controller.AquireLock(tt.args.node, tt.args.serviceKey)
+
+		if !errors.Is(err, tt.err) {
+			t.Fatalf("AquireLock: %s, Expected :%s, Got :%s", tt.name, tt.err, err)
+		}
+
+		if tt.aquired != acquired {
+			t.Fatalf("AquireLock: %s, Expected :%t, Got :%t", tt.name, tt.aquired, acquired)
+		}
+	}
 }

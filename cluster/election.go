@@ -61,14 +61,14 @@ func leaderElection(node Node, c ClusterController, serviceKey string) {
 			//if the current node is leader, stop the busy loop for now
 			return
 		}
-		aquired, queryDuration, err := c.AquireLock(node, serviceKey)
+		aquired, err := c.AquireLock(node, serviceKey)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to aquire lock")
 			continue
 		}
 		if aquired {
 			isLeader = aquired
-			log.Info().Str("Took", queryDuration.String()).Msg("Lock aquired and marking the node  as leader")
+			log.Info().Msg("Lock aquired and marking the node  as leader")
 		} else {
 
 			if !loggedOnce {

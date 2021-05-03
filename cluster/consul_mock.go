@@ -14,7 +14,10 @@ func (c *mockConsulClient) GetKVPair(serviceKey string) (*api.KVPair, error) {
 }
 
 func (c *mockConsulClient) AquireLock(kvPair *api.KVPair) (bool, *api.WriteMeta, error) {
-	return true, nil, nil
+	args := c.Called()
+	return args.Bool(0), &api.WriteMeta{
+		RequestTime: 100,
+	}, args.Error(1)
 }
 
 func (c *mockConsulClient) RenewPeriodic(initialTTL string, id string, q *api.WriteOptions, doneCh <-chan struct{}) error {
