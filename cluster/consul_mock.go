@@ -25,7 +25,7 @@ func (c *mockConsulClient) CreateSession(se *api.SessionEntry, q *api.WriteOptio
 	args := c.Called()
 	return args.String(0), &api.WriteMeta{
 		RequestTime: 100,
-	}, nil
+	}, args.Error(1)
 }
 
 func (c *mockConsulClient) DestroySession(sessionId string) error {

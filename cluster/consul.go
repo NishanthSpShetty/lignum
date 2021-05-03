@@ -30,10 +30,15 @@ func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterCont
 
 func (c *ConsulClusterController) renewSessionPeriodically(sessionId string, ttlS string, sessionRenewalChannel chan struct{}) {
 	//TODO: handle how to stop this goroutine
-	defer close(sessionRenewalChannel)
 	for {
-		c.client.RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
-		time.Sleep(90 * time.Second)
+		select {
+		//if this channel is closed, stop this loop
+		case <-sessionRenewalChannel:
+			fmt.Println("returning...")
+			return
+		case <-time.After(90 * time.Second):
+			c.client.RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
+		}
 	}
 }
 

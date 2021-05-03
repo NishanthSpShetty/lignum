@@ -1,11 +1,16 @@
 package cluster
 
 import (
+	"errors"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/rs/zerolog"
 )
+
+var errUnexpectedResponse = errors.New("Unexpected response code: 200")
 
 func Test_ClusterController(t *testing.T) {
 	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
@@ -13,8 +18,6 @@ func Test_ClusterController(t *testing.T) {
 		Host: "localhost",
 		Port: 8500,
 	}
-
-	controller := newMockClient(&mockConsulClient{})
 
 	//test create session
 	type args struct {
@@ -40,7 +43,22 @@ func Test_ClusterController(t *testing.T) {
 			controller: func() *ConsulClusterController {
 
 				mclient := &mockConsulClient{}
-				mclient.On("CreateSession").Return("session-id")
+				mclient.On("CreateSession").Return("session-id", nil)
+				return newMockClient(mclient)
+			}(),
+		},
+		{
+			name: "Failed to create session",
+			args: args{
+				sessionRenewalChannelChan: make(chan struct{}),
+				config:                    consulConfig,
+			},
+			err:       errUnexpectedResponse,
+			sessionId: "",
+			controller: func() *ConsulClusterController {
+
+				mclient := &mockConsulClient{}
+				mclient.On("CreateSession").Return("", errUnexpectedResponse)
 				return newMockClient(mclient)
 			}(),
 		},
@@ -48,13 +66,29 @@ func Test_ClusterController(t *testing.T) {
 
 	for _, tt := range testCases {
 
-		err := tt.controller.CreateSession(consulConfig, make(chan struct{}))
-		if err != tt.err {
-			t.Fatalf("CreateSession: %s, Expected %v, Got %v", tt.name, tt.err, err)
+		activeGoRoutineBefore := runtime.NumGoroutine()
+
+		renewalChannel := make(chan struct{})
+		err := tt.controller.CreateSession(consulConfig, renewalChannel)
+
+		if !errors.Is(tt.err, err) {
+			t.Fatalf("CreateSession: %s, Expected :%v, Got :%v", tt.name, tt.err, err)
 		}
+
 		if tt.sessionId != "" && tt.sessionId != tt.controller.SessionId {
-			t.Fatalf("CreateSession: %s, Expected %s, Got %s", tt.name, tt.sessionId, controller.SessionId)
+			t.Fatalf("CreateSession: %s, Expected :%s, Got :%s", tt.name, tt.sessionId, tt.controller.SessionId)
 		}
+		close(renewalChannel)
+		//give it a second to send signal to the routines
+		time.Sleep(time.Millisecond)
+
+		activeGoRoutineAfter := runtime.NumGoroutine()
+
+		if activeGoRoutineAfter != activeGoRoutineBefore {
+			t.Fatalf("CreateSession: GoRoutineLeakDetected: Active goroutine Before:%d, After:%d\n", activeGoRoutineBefore, activeGoRoutineAfter)
+
+		}
+
 	}
 
 	//	serviceKey := "service/lignum/key/master"
