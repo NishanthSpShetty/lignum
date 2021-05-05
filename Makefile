@@ -24,5 +24,4 @@ setup:
 	docker-compose up -d
 
 run:
-	@echo "Running single instance on the host..."
-	go run main.go -config $(CONFIG_FILE)
+	@go run main.go -config $(CONFIG_FILE)

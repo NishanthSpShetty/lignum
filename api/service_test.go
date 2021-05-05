@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/lignum/message"
+	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/stretchr/testify/assert"
 )
 

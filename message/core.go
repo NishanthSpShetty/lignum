@@ -3,8 +3,8 @@ package message
 import (
 	"time"
 
-	"github.com/lignum/config"
-	log "github.com/sirupsen/logrus"
+	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/rs/zerolog/log"
 )
 
 var count = 0
@@ -17,7 +17,9 @@ type MessageT struct {
 var messages []MessageT
 
 func Init(messageConfig config.Message) {
-	log.Infof("Initializing messages with config %v", messageConfig)
+	log.Info().
+		Interface("MessageConfig", messageConfig).
+		Msg("Initializing messages")
 
 	//	message = make(MessageT)
 	messages = ReadFromLogFile(messageConfig.MessageDir)
@@ -46,10 +48,10 @@ func StartFlusher(messageConfig config.Message) {
 
 			count, err := WriteToLogFile(messageConfig, messages)
 			if err != nil {
-				log.Errorf("failed to write the messages to file : %v", err.Error())
+				log.Error().Err(err).Msg("failed to write the messages to file")
 				continue
 			}
-			log.Debugf("Wrote %d messages to file", count)
+			log.Debug().Int("Count", count).Msg("Wrote %d messages to file")
 
 		}
 	}(messageConfig)

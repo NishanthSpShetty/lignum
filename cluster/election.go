@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/lignum/config"
-	log "github.com/sirupsen/logrus"
+	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/rs/zerolog/log"
 )
 
 //isLeader mark it as true when the current node becomes the leader
@@ -19,15 +19,15 @@ var isLeader = false
 func ConnectToLeader(appConfig config.Server, serviceId string, clusteController ClusterController) {
 
 	thisNode := NewNode(serviceId, appConfig.Host, appConfig.Port)
-	requestBody, _ := thisNode.json()
+	requestBody, _ := thisNode.Json()
 	for {
 		//loop if the current node becomes the leader
-		log.Infoln("Registering this service as a follower to the cluster leader...")
+		log.Info().Msg("Registering this service as a follower to the cluster leader...")
 		//get the leader
 		if !isLeader {
 			leaderNode, err := clusteController.GetLeader(appConfig.ServiceKey)
 			if err != nil {
-				log.Errorln(err)
+				log.Error().Err(err).Send()
 				//TODO: give it a second and loop back??
 				time.Sleep(1 * time.Second)
 				continue
@@ -36,18 +36,18 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 			leaderEndpoint := fmt.Sprintf("http://%s:%d%s", leaderNode.Host, leaderNode.Port, "/service/api/follower/register")
 			resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
 			if err != nil {
-				log.Errorln("Failed to register with the leader ", err)
+				log.Error().Err(err).Msg("Failed to register with the leader ")
 				//FIXME : this is possible when the leader elections are still going on and we call GetLeader.
 				// should i return or not?
 				return
 			}
 			response, err := ioutil.ReadAll(resp.Body)
-			log.Infof("ConnectToLeader Response : %s\n ", string(response))
+			log.Debug().Bytes("ConnectLeaderResponse", response).Send()
 			break
 
 			//send connect ping to leader
 		} else {
-			log.Infoln("Im the leader....")
+			log.Info().Msg("Im the leader....")
 			return
 		}
 	}
@@ -61,19 +61,18 @@ func leaderElection(node Node, c ClusterController, serviceKey string) {
 			//if the current node is leader, stop the busy loop for now
 			return
 		}
-		aquired, queryDuration, err := c.AquireLock(node, serviceKey)
+		aquired, err := c.AquireLock(node, serviceKey)
 		if err != nil {
-			log.Errorln("Failed to aquire lock", err)
+			log.Error().Err(err).Msg("Failed to aquire lock")
 			continue
 		}
 		if aquired {
 			isLeader = aquired
-			log.Infof("Lock aquired and marking the node  as leader, Took : %dms\n",
-				queryDuration.Milliseconds())
+			log.Info().Msg("Lock aquired and marking the node  as leader")
 		} else {
 
 			if !loggedOnce {
-				log.Debug("Lock is already taken, will check again...")
+				log.Debug().Msg("Lock is already taken, will check again...")
 				loggedOnce = true
 			}
 			//every 10ms attempt to grab a lock on the consul.

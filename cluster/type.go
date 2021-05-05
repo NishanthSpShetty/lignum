@@ -2,14 +2,8 @@ package cluster
 
 import (
 	"encoding/json"
-	"errors"
-	"time"
 
-	"github.com/lignum/config"
-)
-
-var (
-	errLeaderNotFound = errors.New("failed to get leader from the cluster controller")
+	"github.com/NishanthSpShetty/lignum/config"
 )
 
 //Leader has port information of the leader
@@ -19,7 +13,7 @@ type Leader struct {
 
 type ClusterController interface {
 	CreateSession(config.Consul, chan struct{}) error
-	AquireLock(Node, string) (bool, time.Duration, error)
+	AquireLock(Node, string) (bool, error)
 	GetLeader(string) (Node, error)
 	DestroySession() error
 }
@@ -31,7 +25,7 @@ type Node struct {
 	Port int    `json:"port"`
 }
 
-func (nodeConfig Node) json() ([]byte, error) {
+func (nodeConfig Node) Json() ([]byte, error) {
 	return json.Marshal(nodeConfig)
 }
 

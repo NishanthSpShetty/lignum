@@ -6,17 +6,17 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/lignum/cluster"
-	"github.com/lignum/config"
-	"github.com/lignum/message"
-	log "github.com/sirupsen/logrus"
+	"github.com/NishanthSpShetty/lignum/cluster"
+	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/rs/zerolog/log"
 )
 
 func registerFollower(serviceId string) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		requestBody, _ := ioutil.ReadAll(req.Body)
-		log.Infof("Request received for follower registration %v ", string(requestBody))
+		log.Info().Bytes("RequestBody", requestBody).Msg("Request received for follower registration")
 		node := cluster.Node{}
 		json.Unmarshal(requestBody, &node)
 		cluster.AddFollower(node)
@@ -58,11 +58,11 @@ func handleMessage(messageChannel chan<- message.MessageT) http.HandlerFunc {
 			var messageRequest PutMessageRequest
 			err := decoder.Decode(&messageRequest)
 			if err != nil {
-				log.Errorf("Failed to read request body %s ", err)
+				log.Error().Err(err).Msg("Failed to read request body %s ")
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			log.Debugf("Recieved message %v \n", messageRequest)
+			log.Debug().Interface("RecievedMessage", messageRequest).Send()
 			message.Put(messageRequest.Message)
 
 			fmt.Fprintf(w, "{status : \"message commited\"\n message : { %v }", "key:value")
@@ -73,14 +73,14 @@ func handleMessage(messageChannel chan<- message.MessageT) http.HandlerFunc {
 			err := decoder.Decode(&messageRequest)
 
 			if err != nil {
-				log.Errorf("Failed to read request body %s ", err)
+				log.Error().Err(err).Msg("Failed to read request body")
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			messages := message.Get(messageRequest.From, messageRequest.To)
 			messag := GetMessageResponse{Messages: messages}
 
-			log.Debugf(" Recieved message %v ", messageRequest)
+			log.Debug().Interface("RecievedMessage", messageRequest).Send()
 			json.NewEncoder(w).Encode(messag)
 		default:
 			http.Error(w, "request method must be one of [ GET, POST ].", http.StatusMethodNotAllowed)
@@ -90,10 +90,18 @@ func handleMessage(messageChannel chan<- message.MessageT) http.HandlerFunc {
 
 func StartApiService(appConfig config.Config, serviceId string, messageChannel chan<- message.MessageT) {
 
-	log.Infof("Starting HTTP service at %s:%d \n", appConfig.Server.Host, appConfig.Server.Port)
+	log.Info().
+		Str("Host", appConfig.Server.Host).
+		Int("Port", appConfig.Server.Port).
+		Msg("Starting HTTP service")
+
 	address := fmt.Sprintf("%s:%d", appConfig.Server.Host, appConfig.Server.Port)
 	http.HandleFunc("/ping", ping)
 	http.HandleFunc("/service/api/follower/register", registerFollower(serviceId))
 	http.HandleFunc("/api/message", handleMessage(messageChannel))
-	log.Panic(http.ListenAndServe(address, nil))
+	err := http.ListenAndServe(address, nil)
+
+	if err != nil {
+		log.Panic().Err(err).Send()
+	}
 }
