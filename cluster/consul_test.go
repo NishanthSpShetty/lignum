@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/hashicorp/consul/api"
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
 )
 
 var errUnexpectedResponse = errors.New("Unexpected response code: 200")
@@ -70,9 +72,7 @@ func Test_CreateSession(t *testing.T) {
 		renewalChannel := make(chan struct{})
 		err := tt.controller.CreateSession(consulConfig, renewalChannel)
 
-		if !errors.Is(tt.err, err) {
-			t.Fatalf("CreateSession: %s, Expected :%v, Got :%v", tt.name, tt.err, err)
-		}
+		assert.ErrorIsf(t, err, tt.err, "CreateSession: %s", tt.name)
 
 		if tt.sessionId != "" && tt.sessionId != tt.controller.SessionId {
 			t.Fatalf("CreateSession: %s, Expected :%s, Got :%s", tt.name, tt.sessionId, tt.controller.SessionId)
@@ -83,25 +83,10 @@ func Test_CreateSession(t *testing.T) {
 
 		activeGoRoutineAfter := runtime.NumGoroutine()
 
-		if activeGoRoutineAfter != activeGoRoutineBefore {
-			t.Fatalf("CreateSession: GoRoutineLeakDetected: Active goroutine Before:%d, After:%d\n", activeGoRoutineBefore, activeGoRoutineAfter)
-
-		}
+		assert.Equalf(t, activeGoRoutineBefore, activeGoRoutineAfter, "CreateSession: GoRoutineLeakDetected: Active goroutine Before:%d, After:%d\n", activeGoRoutineBefore, activeGoRoutineAfter)
 
 	}
 
-	//	serviceKey := "service/lignum/key/master"
-	//	node := Node{
-	//		Id:   "test-node",
-	//		Host: "localhost",
-	//		Port: 8080,
-	//	}
-	//	_, _, err = clusteController.AquireLock(node, serviceKey)
-	//
-	//	if err != nil {
-	//		t.Fatal(err)
-	//	}
-	//
 	//	leaderNode, err := clusteController.GetLeader(serviceKey)
 	//	if err != nil {
 	//		t.Fatal(err)
@@ -175,13 +160,107 @@ func Test_AquireLock(t *testing.T) {
 
 	for _, tt := range testCases {
 		acquired, err := tt.controller.AquireLock(tt.args.node, tt.args.serviceKey)
+		assert.ErrorIsf(t, err, tt.err, "AquireLock: %s", tt.name)
+		assert.Equalf(t, tt.aquired, acquired, "AquireLock: %s", tt.name)
+	}
+}
 
-		if !errors.Is(err, tt.err) {
-			t.Fatalf("AquireLock: %s, Expected :%s, Got :%s", tt.name, tt.err, err)
-		}
+func Test_GetLeader(t *testing.T) {
+	node := Node{
+		Id:   "test-node",
+		Host: "localhost",
+		Port: 8080,
+	}
 
-		if tt.aquired != acquired {
-			t.Fatalf("AquireLock: %s, Expected :%t, Got :%t", tt.name, tt.aquired, acquired)
-		}
+	testservicekey := "test-service-key"
+	testsessionid := "testsessionid"
+	lockData, _ := node.Json()
+
+	type args struct {
+		serviceKey string
+	}
+
+	testCases := []struct {
+		name       string
+		args       args
+		want       Node
+		err        error
+		controller ClusterController
+	}{
+
+		{
+			name: "consul api returns error",
+			args: args{
+				serviceKey: testservicekey,
+			},
+			want: Node{},
+			err:  errUnexpectedResponse,
+			controller: func() *ConsulClusterController {
+				mclient := &mockConsulClient{}
+				mclient.On("GetKVPair").Return(nil, errUnexpectedResponse)
+				controller := newMockClient(mclient)
+				controller.SessionId = testsessionid
+				return controller
+			}(),
+		},
+		{
+			name: "consul returns nil kvpair",
+			args: args{
+				serviceKey: testservicekey,
+			},
+			want: Node{},
+			err:  ErrLeaderNotFound,
+			controller: func() *ConsulClusterController {
+				mclient := &mockConsulClient{}
+				mclient.On("GetKVPair").Return(nil, nil)
+				controller := newMockClient(mclient)
+				controller.SessionId = testsessionid
+				return controller
+			}(),
+		},
+		{
+			name: "kvPair returned from consul is empty",
+			args: args{},
+			want: Node{},
+			err:  ErrLeaderNotFound,
+			controller: func() *ConsulClusterController {
+				mclient := &mockConsulClient{}
+
+				kvPair := &api.KVPair{
+					Key:     testservicekey,
+					Value:   lockData,
+					Session: "",
+				}
+				mclient.On("GetKVPair").Return(kvPair, nil)
+				controller := newMockClient(mclient)
+				controller.SessionId = testsessionid
+				return controller
+			}(),
+		},
+		{
+			name: "consul returns leader node",
+			args: args{},
+			want: node,
+			err:  nil,
+			controller: func() *ConsulClusterController {
+				mclient := &mockConsulClient{}
+
+				kvPair := &api.KVPair{
+					Key:     testservicekey,
+					Value:   lockData,
+					Session: testsessionid,
+				}
+				mclient.On("GetKVPair").Return(kvPair, nil)
+				controller := newMockClient(mclient)
+				controller.SessionId = "test-session-id"
+				return controller
+			}(),
+		},
+	}
+
+	for _, tt := range testCases {
+		got, err := tt.controller.GetLeader(tt.args.serviceKey)
+		assert.ErrorIsf(t, err, tt.err, "GetLeader: %s", tt.name)
+		assert.Equal(t, tt.want, got, "GetLeader: %s", tt.name)
 	}
 }

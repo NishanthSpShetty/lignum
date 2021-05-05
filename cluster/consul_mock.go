@@ -10,7 +10,13 @@ type mockConsulClient struct {
 }
 
 func (c *mockConsulClient) GetKVPair(serviceKey string) (*api.KVPair, error) {
-	return nil, nil
+	args := c.Called()
+	obj := args.Get(0)
+	if obj == nil {
+		return nil, args.Error(1)
+
+	}
+	return obj.(*api.KVPair), args.Error(1)
 }
 
 func (c *mockConsulClient) AquireLock(kvPair *api.KVPair) (bool, *api.WriteMeta, error) {
