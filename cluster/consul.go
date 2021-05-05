@@ -15,6 +15,9 @@ type ConsulClusterController struct {
 	SessionId string
 }
 
+//assert that ConsulClusterController implemnets ClusterController
+var _ ClusterController = &ConsulClusterController{}
+
 func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterController, error) {
 	var err error
 	config := api.DefaultConfig()
@@ -83,7 +86,7 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
 	return nodeConfig, err
 }
 
-func (c ConsulClusterController) AquireLock(node Node, serviceKey string) (bool, error) {
+func (c *ConsulClusterController) AquireLock(node Node, serviceKey string) (bool, error) {
 
 	lockData, err := node.Json()
 
