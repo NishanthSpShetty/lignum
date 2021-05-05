@@ -84,22 +84,7 @@ func Test_CreateSession(t *testing.T) {
 		activeGoRoutineAfter := runtime.NumGoroutine()
 
 		assert.Equalf(t, activeGoRoutineBefore, activeGoRoutineAfter, "CreateSession: GoRoutineLeakDetected: Active goroutine Before:%d, After:%d\n", activeGoRoutineBefore, activeGoRoutineAfter)
-
 	}
-
-	//	leaderNode, err := clusteController.GetLeader(serviceKey)
-	//	if err != nil {
-	//		t.Fatal(err)
-	//	}
-	//
-	//	if leaderNode.Port != 8080 {
-	//		t.Fatal(err)
-	//	}
-	//
-	//	if err := clusteController.DestroySession(); err != nil {
-	//		t.Fatal(err)
-	//	}
-
 }
 
 func Test_AquireLock(t *testing.T) {
