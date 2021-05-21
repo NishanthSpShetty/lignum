@@ -14,6 +14,14 @@ import (
 //isLeader mark it as true when the current node becomes the leader
 var isLeader = false
 
+func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
+	leaderEndpoint := fmt.Sprintf("http://%s:%d%s", host, port, "/service/api/follower/register")
+	resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
+	response, err := ioutil.ReadAll(resp.Body)
+	log.Debug().Bytes("ConnectLeaderResponse", response).Send()
+	return err
+}
+
 //connectToLeader Connect this service as a follower to the elected leader.
 //this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
 func ConnectToLeader(appConfig config.Server, serviceId string, clusteController ClusterController) {
@@ -23,8 +31,8 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 	for {
 		//loop if the current node becomes the leader
 		log.Info().Msg("Registering this service as a follower to the cluster leader...")
-		//get the leader
 		if !isLeader {
+			//get the leader information and send a follow request.
 			leaderNode, err := clusteController.GetLeader(appConfig.ServiceKey)
 			if err != nil {
 				log.Error().Err(err).Send()
@@ -32,20 +40,14 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 				time.Sleep(1 * time.Second)
 				continue
 			}
-			//get the leader information and send a follow request.
-			leaderEndpoint := fmt.Sprintf("http://%s:%d%s", leaderNode.Host, leaderNode.Port, "/service/api/follower/register")
-			resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
+			err = sendConnectRequestLeader(leaderNode.Host, leaderNode.Port, requestBody)
+
 			if err != nil {
 				log.Error().Err(err).Msg("Failed to register with the leader ")
 				//FIXME : this is possible when the leader elections are still going on and we call GetLeader.
-				// should i return or not?
+				// should it return or not?
 				return
 			}
-			response, err := ioutil.ReadAll(resp.Body)
-			log.Debug().Bytes("ConnectLeaderResponse", response).Send()
-			break
-
-			//send connect ping to leader
 		} else {
 			log.Info().Msg("Im the leader....")
 			return
@@ -66,6 +68,7 @@ func leaderElection(node Node, c ClusterController, serviceKey string) {
 			log.Error().Err(err).Msg("Failed to aquire lock")
 			continue
 		}
+
 		if aquired {
 			isLeader = aquired
 			log.Info().Msg("Lock aquired and marking the node  as leader")
