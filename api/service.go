@@ -13,7 +13,6 @@ import (
 )
 
 func registerFollower(serviceId string) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, req *http.Request) {
 		requestBody, _ := ioutil.ReadAll(req.Body)
 		log.Info().Bytes("RequestBody", requestBody).Msg("Request received for follower registration")
@@ -21,7 +20,7 @@ func registerFollower(serviceId string) http.HandlerFunc {
 		json.Unmarshal(requestBody, &node)
 		cluster.AddFollower(node)
 		fmt.Fprintf(w, "Follower registered. Node : [ %v ]\n", node)
-		fmt.Printf(" Current followers \n %v ", cluster.GetFollowers())
+		//		fmt.Printf(" Current followers \n %v ", cluster.GetFollowers())
 	}
 }
 

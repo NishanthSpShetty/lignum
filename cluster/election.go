@@ -17,7 +17,11 @@ var isLeader = false
 func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
 	leaderEndpoint := fmt.Sprintf("http://%s:%d%s", host, port, "/service/api/follower/register")
 	resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return err
+	}
 	response, err := ioutil.ReadAll(resp.Body)
+	//TODO: We will just log whatever we recieve from the leader for now
 	log.Debug().Bytes("ConnectLeaderResponse", response).Send()
 	return err
 }
@@ -46,6 +50,8 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 				log.Error().Err(err).Msg("Failed to register with the leader ")
 				//FIXME : this is possible when the leader elections are still going on and we call GetLeader.
 				// should it return or not?
+			} else {
+				//registered successfully, return?
 				return
 			}
 		} else {
