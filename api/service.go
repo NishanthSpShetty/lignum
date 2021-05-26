@@ -87,7 +87,7 @@ func handleMessage(messageChannel chan<- message.MessageT) http.HandlerFunc {
 	}
 }
 
-func StartApiService(appConfig config.Config, serviceId string, messageChannel chan<- message.MessageT) {
+func StartApiService(appConfig config.Config, serviceId string, messageChannel chan<- message.MessageT) error {
 
 	log.Info().
 		Str("Host", appConfig.Server.Host).
@@ -98,9 +98,5 @@ func StartApiService(appConfig config.Config, serviceId string, messageChannel c
 	http.HandleFunc("/ping", ping)
 	http.HandleFunc("/service/api/follower/register", registerFollower(serviceId))
 	http.HandleFunc("/api/message", handleMessage(messageChannel))
-	err := http.ListenAndServe(address, nil)
-
-	if err != nil {
-		log.Panic().Err(err).Send()
-	}
+	return http.ListenAndServe(address, nil)
 }
