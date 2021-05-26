@@ -32,10 +32,11 @@ func New(config config.Config) (*Service, error) {
 		return nil, errors.Wrap(err, "Service.New")
 	}
 	return &Service{
-		ServiceId:         uuid.New().String(),
-		Config:            config,
-		ClusterController: consulClusterController,
-		ReplicationQueue:  make(chan message.MessageT, REPLICATION_QUEUE_SIZE),
+		ServiceId:             uuid.New().String(),
+		Config:                config,
+		ClusterController:     consulClusterController,
+		ReplicationQueue:      make(chan message.MessageT, REPLICATION_QUEUE_SIZE),
+		SessionRenewalChannel: make(chan struct{}),
 	}, nil
 }
 
@@ -73,5 +74,4 @@ func (s *Service) Start() error {
 
 	//once the cluster is setup we should be able start api service
 	return api.StartApiService(s.Config, s.ServiceId, s.ReplicationQueue)
-
 }

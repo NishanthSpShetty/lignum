@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/NishanthSpShetty/lignum/config"
@@ -43,8 +42,8 @@ func main() {
 	err = service.Start()
 
 	if err != nil {
-		fmt.Println(err)
 		log.Error().Err(err).Msg("failed to start service")
+		service.Stop()
 		return
 	}
 
