@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -61,41 +62,66 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 	}
 }
 
-func leaderElection(node Node, c ClusterController, serviceKey string) {
-	loggedOnce := false
-	//start polling to aquire the lock indefinitely
-	for {
-		if isLeader {
-			//if the current node is leader, stop the busy loop for now
-			return
-		}
-		aquired, err := c.AquireLock(node, serviceKey)
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to aquire lock")
-			continue
-		}
+func tryAquireLock(node Node, c ClusterController, serviceKey string) (bool, error) {
 
-		if aquired {
-			isLeader = aquired
-			log.Info().Msg("Lock aquired and marking the node  as leader")
-		} else {
+	acquired, err := c.AquireLock(node, serviceKey)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to acquire lock")
+		return false, err
+	}
+
+	if acquired {
+		isLeader = acquired
+		log.Info().Msg("Lock acquired and marking the node as leader")
+	}
+	return acquired, nil
+}
+
+func leaderElection(ctx context.Context, node Node, c ClusterController, serviceKey string) {
+
+	loggedOnce := false
+	consulLockPingInterval := 10 * time.Millisecond
+	ticker := time.NewTicker(consulLockPingInterval)
+	//start polling to acquire the lock indefinitely
+	acquired := false
+	var err error
+	for {
+		select {
+		case <-ticker.C:
+			if acquired {
+				return
+			}
+			acquired, err = tryAquireLock(node, c, serviceKey)
+
+			if err != nil {
+
+				log.Error().Err(err).Msg("failed to acquire lock, will check again")
+			}
 
 			if !loggedOnce {
-				log.Debug().Msg("Lock is already taken, will check again...")
+				log.Debug().Msg("lock is already taken, will check again")
 				loggedOnce = true
 			}
-			//every 10ms attempt to grab a lock on the consul.
-			time.Sleep(10 * time.Millisecond)
-		}
 
+		case <-ctx.Done():
+			log.Info().Err(ctx.Err()).Msg("context closed, shutting down leader election worker")
+			return
+		}
 	}
 }
 
-func InitiateLeaderElection(serverConfig config.Server, nodeId string, c ClusterController) {
-
-	go leaderElection(Node{
+func InitiateLeaderElection(ctx context.Context, serverConfig config.Server, nodeId string, c ClusterController) {
+	node := Node{
 		Id:   nodeId,
 		Host: serverConfig.Host,
 		Port: serverConfig.Port,
-	}, c, serverConfig.ServiceKey)
+	}
+
+	acquired, _ := tryAquireLock(node, c, serverConfig.ServiceKey)
+
+	if acquired {
+		//return if this node was able to acquire the lock quickly, otherwise start the election poller
+		return
+	}
+	go leaderElection(ctx, node, c, serverConfig.ServiceKey)
 }

@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,6 @@ func Test_LeaderElection(t *testing.T) {
 		Port: 8080,
 	}
 	clusterController.On("AquireLock", mock.Anything).Return()
-	leaderElection(node, clusterController, serviceKey)
+	leaderElection(context.Background(), node, clusterController, serviceKey)
 	assert.True(t, isLeader, "This node should be the leader")
 }
