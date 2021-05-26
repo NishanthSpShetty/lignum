@@ -7,7 +7,7 @@ server:
 
 consul:
   host: "localhost"
-  port: 8500 
+  port: 8500
   sessionTTL: "15s"
   sessionRenewalTTL: "15s"
 
