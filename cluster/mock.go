@@ -7,6 +7,6 @@ type mockclusteController struct {
 	mock.Mock
 }
 
-func (m *mockclusteController) AquireLock(node Node, serviceKey string) (bool, error) {
+func (m *mockclusteController) AcquireLock(node Node, serviceKey string) (bool, error) {
 	return true, nil
 }

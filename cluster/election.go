@@ -34,9 +34,9 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 	thisNode := NewNode(serviceId, appConfig.Host, appConfig.Port)
 	requestBody, _ := thisNode.Json()
 	for {
-		//loop if the current node becomes the leader
-		log.Info().Msg("Registering this service as a follower to the cluster leader...")
 		if !isLeader {
+			//loop if the current node becomes the leader
+			log.Info().Msg("Registering this service as a follower to the cluster leader...")
 			//get the leader information and send a follow request.
 			leaderNode, err := clusteController.GetLeader(appConfig.ServiceKey)
 			if err != nil {
@@ -62,9 +62,9 @@ func ConnectToLeader(appConfig config.Server, serviceId string, clusteController
 	}
 }
 
-func tryAquireLock(node Node, c ClusterController, serviceKey string) (bool, error) {
+func tryAcquireLock(node Node, c ClusterController, serviceKey string) (bool, error) {
 
-	acquired, err := c.AquireLock(node, serviceKey)
+	acquired, err := c.AcquireLock(node, serviceKey)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to acquire lock")
 		return false, err
@@ -83,7 +83,7 @@ func leaderElection(ctx context.Context, node Node, c ClusterController, service
 	consulLockPingInterval := 10 * time.Millisecond
 	ticker := time.NewTicker(consulLockPingInterval)
 	//start polling to acquire the lock indefinitely
-	acquired := false
+	acquired := isLeader
 	var err error
 	for {
 		select {
@@ -91,10 +91,9 @@ func leaderElection(ctx context.Context, node Node, c ClusterController, service
 			if acquired {
 				return
 			}
-			acquired, err = tryAquireLock(node, c, serviceKey)
+			acquired, err = tryAcquireLock(node, c, serviceKey)
 
 			if err != nil {
-
 				log.Error().Err(err).Msg("failed to acquire lock, will check again")
 			}
 
@@ -117,11 +116,7 @@ func InitiateLeaderElection(ctx context.Context, serverConfig config.Server, nod
 		Port: serverConfig.Port,
 	}
 
-	acquired, _ := tryAquireLock(node, c, serverConfig.ServiceKey)
+	tryAcquireLock(node, c, serverConfig.ServiceKey)
 
-	if acquired {
-		//return if this node was able to acquire the lock quickly, otherwise start the election poller
-		return
-	}
 	go leaderElection(ctx, node, c, serverConfig.ServiceKey)
 }

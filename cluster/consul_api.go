@@ -12,7 +12,7 @@ var (
 
 type IClient interface {
 	GetKVPair(serviceKey string) (*api.KVPair, error)
-	AquireLock(kvPair *api.KVPair) (bool, *api.WriteMeta, error)
+	AcquireLock(kvPair *api.KVPair) (bool, *api.WriteMeta, error)
 	RenewPeriodic(initialTTL string, id string, q *api.WriteOptions, doneCh <-chan struct{}) error
 	CreateSession(se *api.SessionEntry, q *api.WriteOptions) (string, *api.WriteMeta, error)
 	DestroySession(sessionId string) error
@@ -27,7 +27,7 @@ func (c *Client) GetKVPair(serviceKey string) (*api.KVPair, error) {
 	return kvPair, err
 }
 
-func (c *Client) AquireLock(kvPair *api.KVPair) (bool, *api.WriteMeta, error) {
+func (c *Client) AcquireLock(kvPair *api.KVPair) (bool, *api.WriteMeta, error) {
 	return c.Client.KV().Acquire(kvPair, nil)
 }
 

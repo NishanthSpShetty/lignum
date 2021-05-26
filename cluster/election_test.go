@@ -17,7 +17,7 @@ func Test_LeaderElection(t *testing.T) {
 		Host: "localhost",
 		Port: 8080,
 	}
-	clusterController.On("AquireLock", mock.Anything).Return()
+	clusterController.On("AcquireLock", mock.Anything).Return()
 	leaderElection(context.Background(), node, clusterController, serviceKey)
 	assert.True(t, isLeader, "This node should be the leader")
 }

@@ -86,7 +86,7 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
 	return nodeConfig, err
 }
 
-func (c *ConsulClusterController) AquireLock(node Node, serviceKey string) (bool, error) {
+func (c *ConsulClusterController) AcquireLock(node Node, serviceKey string) (bool, error) {
 
 	lockData, err := node.Json()
 
@@ -100,15 +100,18 @@ func (c *ConsulClusterController) AquireLock(node Node, serviceKey string) (bool
 		Session: c.SessionId,
 	}
 
-	acquired, writeMeta, err := c.client.AquireLock(kvPair)
+	acquired, writeMeta, err := c.client.AcquireLock(kvPair)
 	if err != nil {
 		return false, err
 	}
 
-	log.Debug().
-		Str("Duration", writeMeta.RequestTime.String()).
-		RawJSON("Node", lockData).
-		Msg("Consul lock aquired on the session")
+	if acquired {
+		log.Debug().
+			Str("Duration", writeMeta.RequestTime.String()).
+			RawJSON("Node", lockData).
+			Bool("Acquired", acquired).
+			Msg("Consul lock aquired on the session")
+	}
 	return acquired, err
 
 }

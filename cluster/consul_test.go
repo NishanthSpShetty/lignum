@@ -87,7 +87,7 @@ func Test_CreateSession(t *testing.T) {
 	}
 }
 
-func Test_AquireLock(t *testing.T) {
+func Test_AcquireLock(t *testing.T) {
 
 	node := Node{
 		Id:   "test-node",
@@ -103,39 +103,39 @@ func Test_AquireLock(t *testing.T) {
 	testCases := []struct {
 		name       string
 		args       args
-		aquired    bool
+		acquired   bool
 		err        error
 		controller ClusterController
 	}{
 		{
-			name: "lock aquired successfully",
+			name: "lock acquired successfully",
 			args: args{
 				node:       node,
 				serviceKey: "service/lignum/key/master",
 			},
-			aquired: true,
-			err:     nil,
+			acquired: true,
+			err:      nil,
 
 			controller: func() *ConsulClusterController {
 				mclient := &mockConsulClient{}
-				mclient.On("AquireLock").Return(true, nil)
+				mclient.On("AcquireLock").Return(true, nil)
 				controller := newMockClient(mclient)
 				controller.SessionId = "test-session-id"
 				return controller
 			}(),
 		},
 		{
-			name: "failed to aquire lock on the consul",
+			name: "failed to acquire lock on the consul",
 			args: args{
 				node:       node,
 				serviceKey: "service/lignum/key/master",
 			},
-			aquired: false,
-			err:     errUnexpectedResponse,
+			acquired: false,
+			err:      errUnexpectedResponse,
 
 			controller: func() *ConsulClusterController {
 				mclient := &mockConsulClient{}
-				mclient.On("AquireLock").Return(false, errUnexpectedResponse)
+				mclient.On("AcquireLock").Return(false, errUnexpectedResponse)
 				controller := newMockClient(mclient)
 				controller.SessionId = "test-session-id"
 				return controller
@@ -144,9 +144,9 @@ func Test_AquireLock(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		acquired, err := tt.controller.AquireLock(tt.args.node, tt.args.serviceKey)
-		assert.ErrorIsf(t, err, tt.err, "AquireLock: %s", tt.name)
-		assert.Equalf(t, tt.aquired, acquired, "AquireLock: %s", tt.name)
+		acquired, err := tt.controller.AcquireLock(tt.args.node, tt.args.serviceKey)
+		assert.ErrorIsf(t, err, tt.err, "AcquireLock: %s", tt.name)
+		assert.Equalf(t, tt.acquired, acquired, "AcquireLock: %s", tt.name)
 	}
 }
 
