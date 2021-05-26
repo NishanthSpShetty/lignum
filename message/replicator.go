@@ -7,11 +7,8 @@ func StartReplicator(messageChannel chan MessageT) {
 
 	log.Info().Msg("Replicator service is running..")
 	go func(messageChannel <-chan MessageT) {
-		for {
-
-			messag := <-messageChannel
-			log.Debug().Interface("Message", messag).Msg("Recieved message for replication ")
-
+		for msg := range messageChannel {
+			log.Debug().Interface("Message", msg).Msg("Recieved message for replication ")
 		}
 	}(messageChannel)
 }
