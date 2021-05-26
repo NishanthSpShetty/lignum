@@ -12,7 +12,6 @@ type Server struct {
 	Host       string `yaml:"host"`
 	Port       int    `yaml:"port"`
 	ServiceKey string `yaml:"service-key"`
-	ServiceId  string
 }
 
 type Consul struct {
@@ -33,10 +32,6 @@ type Config struct {
 	Server  Server  `yaml:"server"`
 	Consul  Consul  `yaml:"consul"`
 	Message Message `yaml:"message"`
-}
-
-func (c *Config) SetServiceId(id string) {
-	c.Server.ServiceId = id
 }
 
 func GetConfig(fileName string) (Config, error) {
