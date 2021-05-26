@@ -32,16 +32,8 @@ func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterCont
 }
 
 func (c *ConsulClusterController) renewSessionPeriodically(sessionId string, ttlS string, sessionRenewalChannel chan struct{}) {
-	for {
-		select {
-		//if this channel is closed, stop this loop
-		case <-sessionRenewalChannel:
-			return
-
-		case <-time.After(90 * time.Second):
-			c.client.RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
-		}
-	}
+	//spawn go routine for renewal and return
+	go c.client.RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
 }
 
 func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sessionRenewalChannel chan struct{}) error {
@@ -62,8 +54,7 @@ func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sess
 		Str("Duration", writeMeta.RequestTime.String()).
 		Msg("Consul session created")
 
-	//TODO : should it be started conditionally?
-	go c.renewSessionPeriodically(sessionId, consulConfig.SessionRenewalTTL, sessionRenewalChannel)
+	c.renewSessionPeriodically(sessionId, consulConfig.SessionRenewalTTL, sessionRenewalChannel)
 	c.SessionId = sessionId
 	return err
 }
@@ -86,7 +77,7 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
 	return nodeConfig, err
 }
 
-func (c *ConsulClusterController) AquireLock(node Node, serviceKey string) (bool, error) {
+func (c *ConsulClusterController) AcquireLock(node Node, serviceKey string) (bool, error) {
 
 	lockData, err := node.Json()
 
@@ -100,15 +91,18 @@ func (c *ConsulClusterController) AquireLock(node Node, serviceKey string) (bool
 		Session: c.SessionId,
 	}
 
-	acquired, writeMeta, err := c.client.AquireLock(kvPair)
+	acquired, writeMeta, err := c.client.AcquireLock(kvPair)
 	if err != nil {
 		return false, err
 	}
 
-	log.Debug().
-		Str("Duration", writeMeta.RequestTime.String()).
-		RawJSON("Node", lockData).
-		Msg("Consul lock aquired on the session")
+	if acquired {
+		log.Debug().
+			Str("Duration", writeMeta.RequestTime.String()).
+			RawJSON("Node", lockData).
+			Bool("Acquired", acquired).
+			Msg("Consul lock aquired on the session")
+	}
 	return acquired, err
 
 }

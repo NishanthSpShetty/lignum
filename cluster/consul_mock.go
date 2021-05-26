@@ -19,7 +19,7 @@ func (c *mockConsulClient) GetKVPair(serviceKey string) (*api.KVPair, error) {
 	return obj.(*api.KVPair), args.Error(1)
 }
 
-func (c *mockConsulClient) AquireLock(kvPair *api.KVPair) (bool, *api.WriteMeta, error) {
+func (c *mockConsulClient) AcquireLock(kvPair *api.KVPair) (bool, *api.WriteMeta, error) {
 	args := c.Called()
 	return args.Bool(0), &api.WriteMeta{
 		RequestTime: 100,

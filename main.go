@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"os/signal"
@@ -76,7 +77,7 @@ func main() {
 	}
 
 	//Start leader election routine
-	cluster.InitiateLeaderElection(appConfig.Server, serviceId, consulClusterController)
+	cluster.InitiateLeaderElection(context.Background(), appConfig.Server, serviceId, consulClusterController)
 	go signalHandler(sessionRenewalChannel, serviceId, consulClusterController)
 
 	//connect to leader

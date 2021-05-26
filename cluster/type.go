@@ -13,7 +13,7 @@ type Leader struct {
 
 type ClusterController interface {
 	CreateSession(config.Consul, chan struct{}) error
-	AquireLock(Node, string) (bool, error)
+	AcquireLock(Node, string) (bool, error)
 	GetLeader(string) (Node, error)
 	DestroySession() error
 }
