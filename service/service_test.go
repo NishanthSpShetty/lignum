@@ -1,6 +1,7 @@
 package service
 
 import (
+	"os"
 	"runtime"
 	"testing"
 	"time"
@@ -33,6 +34,7 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 	clusterController.On("DestroySession").Return(mock.Anything)
 
 	service := &Service{
+		signalChannel:         make(chan os.Signal),
 		ServiceId:             uuid.New().String(),
 		Config:                config,
 		ClusterController:     clusterController,
@@ -40,8 +42,8 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 		SessionRenewalChannel: make(chan struct{}),
 	}
 	go service.Start()
-
-	service.Stop()
+	close(service.signalChannel)
+	//give it a second to kill all
 	time.Sleep(time.Millisecond)
 	assert.Equal(t, preRoutine, runtime.NumGoroutine(), "Number of go routine when service stopped will remain same beore startup")
 }

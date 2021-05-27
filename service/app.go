@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"os"
 
 	"github.com/NishanthSpShetty/lignum/api"
 	"github.com/NishanthSpShetty/lignum/cluster"
@@ -16,6 +17,7 @@ import (
 const REPLICATION_QUEUE_SIZE = 1024
 
 type Service struct {
+	signalChannel         chan os.Signal
 	Config                config.Config
 	ServiceId             string
 	SessionRenewalChannel chan struct{}
@@ -32,6 +34,7 @@ func New(config config.Config) (*Service, error) {
 		return nil, errors.Wrap(err, "Service.New")
 	}
 	return &Service{
+		signalChannel:         make(chan os.Signal),
 		ServiceId:             uuid.New().String(),
 		Config:                config,
 		ClusterController:     consulClusterController,
@@ -69,8 +72,8 @@ func (s *Service) Start() error {
 	message.Init(s.Config.Message)
 
 	//start service routines
-	message.StartFlusher(s.Config.Message)
-	message.StartReplicator(s.ReplicationQueue)
+	//	message.StartFlusher(s.Config.Message)
+	//	message.StartReplicator(s.ReplicationQueue)
 
 	//once the cluster is setup we should be able start api service
 	apiServer := api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server)
