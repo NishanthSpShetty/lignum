@@ -7,15 +7,21 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/stretchr/testify/assert"
 )
 
+const dummyServiceId = "DummyServiceId"
+
 func TestGetMessage(t *testing.T) {
 	requestData := GetMessageRequest{From: 0, To: 1}
 	req, _ := json.Marshal(requestData)
-	messageChannel := make(chan message.MessageT)
-	requestHandler := handleMessage(messageChannel)
+
+	messageChannel := make(chan message.MessageT, 10)
+	server := NewServer(dummyServiceId, messageChannel, config.Server{})
+
+	requestHandler := server.handleMessage()
 	responseData := GetMessageResponse{}
 
 	t.Run("returns empty message when no messages are written", func(t *testing.T) {

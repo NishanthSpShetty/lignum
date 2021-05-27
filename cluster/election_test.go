@@ -10,7 +10,7 @@ import (
 
 func Test_LeaderElection(t *testing.T) {
 
-	clusterController := &mockclusteController{ConsulClusterController: &ConsulClusterController{}}
+	clusterController := &MockclusterController{ConsulClusterController: &ConsulClusterController{}}
 	serviceKey := "service/lignum/key/master"
 	node := Node{
 		Id:   "test-node",

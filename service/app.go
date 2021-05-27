@@ -73,5 +73,6 @@ func (s *Service) Start() error {
 	message.StartReplicator(s.ReplicationQueue)
 
 	//once the cluster is setup we should be able start api service
-	return api.StartApiService(s.Config, s.ServiceId, s.ReplicationQueue)
+	apiServer := api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server)
+	return apiServer.Serve()
 }
