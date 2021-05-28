@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -26,6 +27,7 @@ func (s *Service) Stop() {
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to destroy the session ")
 	}
+	s.apiServer.Stop(context.Background())
 	log.Info().Str("ServiceId", s.ServiceId).Msg("Shutting down")
 }
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,15 +17,22 @@ type Server struct {
 	serviceId        string
 	replicationQueue chan<- message.MessageT
 	config           config.Server
+	httpServer       http.Server
+}
+
+func (s *Server) Stop(ctx context.Context) {
+	s.httpServer.Shutdown(ctx)
 }
 
 func NewServer(serviceId string, queue chan<- message.MessageT, config config.Server) *Server {
+
+	address := fmt.Sprintf("%s:%d", config.Host, config.Port)
 	return &Server{
 		serviceId:        serviceId,
 		config:           config,
 		replicationQueue: queue,
+		httpServer:       http.Server{Addr: address},
 	}
-
 }
 
 func (s *Server) registerFollower() http.HandlerFunc {
@@ -67,9 +75,8 @@ func (s *Server) Serve() error {
 		Int("Port", s.config.Port).
 		Msg("Starting HTTP service")
 
-	address := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
 	http.HandleFunc("/ping", s.ping())
 	http.HandleFunc("/api/follower/register", s.registerFollower())
 	http.HandleFunc("/api/message", s.handleMessage())
-	return http.ListenAndServe(address, nil)
+	return s.httpServer.ListenAndServe()
 }
