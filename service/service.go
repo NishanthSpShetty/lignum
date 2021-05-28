@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"os"
+
+	_ "net/http/pprof"
 
 	"github.com/NishanthSpShetty/lignum/api"
 	"github.com/NishanthSpShetty/lignum/cluster"
@@ -16,12 +19,14 @@ import (
 const REPLICATION_QUEUE_SIZE = 1024
 
 type Service struct {
+	signalChannel         chan os.Signal
 	Config                config.Config
 	ServiceId             string
 	SessionRenewalChannel chan struct{}
 	ClusterController     cluster.ClusterController
 	ReplicationQueue      chan message.MessageT
 	Cancels               []context.CancelFunc
+	apiServer             *api.Server
 }
 
 func New(config config.Config) (*Service, error) {
@@ -31,13 +36,17 @@ func New(config config.Config) (*Service, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Service.New")
 	}
-	return &Service{
+
+	s := &Service{
+		signalChannel:         make(chan os.Signal),
 		ServiceId:             uuid.New().String(),
 		Config:                config,
 		ClusterController:     consulClusterController,
 		ReplicationQueue:      make(chan message.MessageT, REPLICATION_QUEUE_SIZE),
 		SessionRenewalChannel: make(chan struct{}),
-	}, nil
+	}
+	s.apiServer = api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server)
+	return s, nil
 }
 
 //startClusterService Start all cluster management related routines
@@ -69,9 +78,10 @@ func (s *Service) Start() error {
 	message.Init(s.Config.Message)
 
 	//start service routines
-	message.StartFlusher(s.Config.Message)
-	message.StartReplicator(s.ReplicationQueue)
+	//	message.StartFlusher(s.Config.Message)
+	//	message.StartReplicator(s.ReplicationQueue)
 
 	//once the cluster is setup we should be able start api service
-	return api.StartApiService(s.Config, s.ServiceId, s.ReplicationQueue)
+
+	return s.apiServer.Serve()
 }
