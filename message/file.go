@@ -32,7 +32,7 @@ func WriteToLogFile(messageConfig config.Message, messages []Message) (int, erro
 	counter := 0
 	for _, message := range messages {
 		counter += 1
-		file.WriteString(fmt.Sprintf("%d=%s", message.Id, message.Message))
+		file.WriteString(fmt.Sprintf("%d=%s", message.Id, message.Data))
 	}
 	return counter, nil
 }
@@ -52,7 +52,7 @@ func decodeRawMessage(raw []byte) []Message {
 			continue
 		}
 		message.Id = id
-		message.Message = splits[1]
+		message.Data = splits[1]
 		messages = append(messages, message)
 	}
 	return messages

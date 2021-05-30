@@ -18,14 +18,15 @@ type Server struct {
 	serviceId        string
 	replicationQueue chan<- message.Message
 	config           config.Server
-	httpServer       http.Server
+	httpServer       *http.Server
+	message          *message.AMessage
 }
 
 func (s *Server) Stop(ctx context.Context) {
 	s.httpServer.Shutdown(ctx)
 }
 
-func NewServer(serviceId string, queue chan<- message.Message, config config.Server) *Server {
+func NewServer(serviceId string, queue chan<- message.Message, config config.Server, message *message.AMessage) *Server {
 
 	address := fmt.Sprintf("%s:%d", config.Host, config.Port)
 	httpServer := http.Server{Addr: address,
@@ -39,7 +40,8 @@ func NewServer(serviceId string, queue chan<- message.Message, config config.Ser
 		serviceId:        serviceId,
 		config:           config,
 		replicationQueue: queue,
-		httpServer:       httpServer,
+		httpServer:       &httpServer,
+		message:          message,
 	}
 }
 

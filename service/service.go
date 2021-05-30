@@ -27,6 +27,7 @@ type Service struct {
 	ReplicationQueue      chan message.Message
 	Cancels               []context.CancelFunc
 	apiServer             *api.Server
+	message               *message.AMessage
 }
 
 func New(config config.Config) (*Service, error) {
@@ -44,8 +45,9 @@ func New(config config.Config) (*Service, error) {
 		ClusterController:     consulClusterController,
 		ReplicationQueue:      make(chan message.Message, REPLICATION_QUEUE_SIZE),
 		SessionRenewalChannel: make(chan struct{}),
+		message:               message.New(config.Message),
 	}
-	s.apiServer = api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server)
+	s.apiServer = api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message)
 	return s, nil
 }
 
@@ -73,9 +75,6 @@ func (s *Service) Start() error {
 		return err
 	}
 	s.signalHandler()
-
-	//initialize the message data structure
-	message.Init(s.Config.Message)
 
 	//start service routines
 	//	message.StartFlusher(s.Config.Message)

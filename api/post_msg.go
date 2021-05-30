@@ -40,7 +40,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	log.Debug().Str("RecievedMessage", msg.Message).Send()
-	message.Put(ctx, msg.Message)
+	s.message.Put(ctx, msg.Message)
 
 	fmt.Fprintf(w, "{\"status\": \"message commited\", \"data\": \"%s\"}", msg.Message)
 }
@@ -66,7 +66,7 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 		log.Error().Uint64("From", from).Uint64("To", to).Msg("invalid range specified")
 		return
 	}
-	messages := message.Get(from, to)
+	messages := s.message.Get(from, to)
 	messag := GetMessageResponse{Messages: messages, Count: len(messages)}
 
 	log.Debug().Interface("RecievedMessage", messageRequest).Send()

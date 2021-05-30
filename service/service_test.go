@@ -39,8 +39,9 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 		ClusterController:     clusterController,
 		ReplicationQueue:      make(chan message.Message, REPLICATION_QUEUE_SIZE),
 		SessionRenewalChannel: make(chan struct{}),
+		message:               message.New(config.Message),
 	}
-	service.apiServer = api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server)
+	service.apiServer = api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server, service.message)
 
 	go service.Start()
 	close(service.signalChannel)

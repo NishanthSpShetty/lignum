@@ -28,8 +28,8 @@ func TestWriteToLogFile(t *testing.T) {
 		MessageDir:                         TempDirectory,
 	}
 	message := Message{
-		Id:      0,
-		Message: "streaming message 1",
+		Id:   0,
+		Data: "streaming message 1",
 	}
 
 	err := createTestDir(messageConfig.MessageDir)
@@ -46,7 +46,7 @@ func TestWriteToLogFile(t *testing.T) {
 		t.Fatalf("WriteMessageCount: Got %d, Expected %d", count, expectedCount)
 	}
 
-	expected := fmt.Sprintf("%d=%s", message.Id, message.Message)
+	expected := fmt.Sprintf("%d=%s", message.Id, message.Data)
 	file := TempDirectory + "/message_001.dat"
 	byts, err := ioutil.ReadFile(file)
 
@@ -67,8 +67,8 @@ func TestWriteToLogFile(t *testing.T) {
 func TestReadFromLogFile(t *testing.T) {
 
 	message := Message{
-		Id:      0,
-		Message: "streaming message 1",
+		Id:   0,
+		Data: "streaming message 1",
 	}
 	err := createTestDir(TempDirectory)
 
@@ -78,7 +78,7 @@ func TestReadFromLogFile(t *testing.T) {
 
 	file := TempDirectory + "/message_001.dat"
 
-	messageToWrite := fmt.Sprintf("%d=%s", message.Id, message.Message)
+	messageToWrite := fmt.Sprintf("%d=%s", message.Id, message.Data)
 	ioutil.WriteFile(file, []byte(messageToWrite), os.ModePerm)
 	got := ReadFromLogFile(TempDirectory)
 	expected := []Message{message}

@@ -19,7 +19,8 @@ func TestGetMessage(t *testing.T) {
 	req, _ := json.Marshal(requestData)
 
 	messageChannel := make(chan message.Message, 10)
-	server := NewServer(dummyServiceId, messageChannel, config.Server{})
+	msg := message.New(config.Message{})
+	server := NewServer(dummyServiceId, messageChannel, config.Server{}, msg)
 
 	requestHandler := server.handleMessage()
 	responseData := GetMessageResponse{}
@@ -29,7 +30,9 @@ func TestGetMessage(t *testing.T) {
 		response := httptest.NewRecorder()
 		requestHandler(response, request)
 		json.Unmarshal(response.Body.Bytes(), &responseData)
-		assert.Equal(t, []string{}, responseData.Messages)
+
+		expected := []message.Message{}
+		assert.Equal(t, expected, responseData.Messages)
 	})
 
 	t.Run("returns expected message when messages are written", func(t *testing.T) {
@@ -37,6 +40,8 @@ func TestGetMessage(t *testing.T) {
 		response := httptest.NewRecorder()
 		requestHandler(response, request)
 		json.Unmarshal(response.Body.Bytes(), &responseData)
-		assert.Equal(t, []string{}, responseData.Messages)
+
+		expected := []message.Message{}
+		assert.Equal(t, expected, responseData.Messages)
 	})
 }
