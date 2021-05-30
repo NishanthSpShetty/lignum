@@ -1,6 +1,7 @@
 package message
 
 import (
+	"context"
 	"time"
 
 	"github.com/NishanthSpShetty/lignum/config"
@@ -9,12 +10,12 @@ import (
 
 var count = 0
 
-type MessageT struct {
+type Message struct {
 	Id      int
 	Message string
 }
 
-var messages []MessageT
+var messages []Message
 
 func Init(messageConfig config.Message) {
 	log.Info().
@@ -26,8 +27,8 @@ func Init(messageConfig config.Message) {
 	count = len(messages)
 }
 
-func Put(msg string) {
-	messages = append(messages, MessageT{count, msg})
+func Put(ctx context.Context, msg string) {
+	messages = append(messages, Message{count, msg})
 }
 
 func Get(from, to int) []string {

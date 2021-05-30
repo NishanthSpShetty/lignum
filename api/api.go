@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/NishanthSpShetty/lignum/cluster"
 	"github.com/NishanthSpShetty/lignum/config"
@@ -15,7 +16,7 @@ import (
 
 type Server struct {
 	serviceId        string
-	replicationQueue chan<- message.MessageT
+	replicationQueue chan<- message.Message
 	config           config.Server
 	httpServer       http.Server
 }
@@ -24,14 +25,21 @@ func (s *Server) Stop(ctx context.Context) {
 	s.httpServer.Shutdown(ctx)
 }
 
-func NewServer(serviceId string, queue chan<- message.MessageT, config config.Server) *Server {
+func NewServer(serviceId string, queue chan<- message.Message, config config.Server) *Server {
 
 	address := fmt.Sprintf("%s:%d", config.Host, config.Port)
+	httpServer := http.Server{Addr: address,
+		//shamelessly copied following config from internet, will revisit this later
+		ReadTimeout:       1 * time.Second,
+		WriteTimeout:      1 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+	}
 	return &Server{
 		serviceId:        serviceId,
 		config:           config,
 		replicationQueue: queue,
-		httpServer:       http.Server{Addr: address},
+		httpServer:       httpServer,
 	}
 }
 

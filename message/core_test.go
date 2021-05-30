@@ -21,7 +21,7 @@ func Test_messagePut(t *testing.T) {
 	id := messages[0].Id
 	message := messages[0].Message
 	if message != msg || id != 0 {
-		t.Fatalf("expected %+v, got %+v", MessageT{0, msg}, messages[0])
+		t.Fatalf("expected %+v, got %+v", Message{0, msg}, messages[0])
 	}
 }
 

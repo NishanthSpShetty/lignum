@@ -37,7 +37,7 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 		ServiceId:             uuid.New().String(),
 		Config:                config,
 		ClusterController:     clusterController,
-		ReplicationQueue:      make(chan message.MessageT, REPLICATION_QUEUE_SIZE),
+		ReplicationQueue:      make(chan message.Message, REPLICATION_QUEUE_SIZE),
 		SessionRenewalChannel: make(chan struct{}),
 	}
 	service.apiServer = api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server)

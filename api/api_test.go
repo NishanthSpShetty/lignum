@@ -18,7 +18,7 @@ func TestGetMessage(t *testing.T) {
 	requestData := GetMessageRequest{From: 0, To: 1}
 	req, _ := json.Marshal(requestData)
 
-	messageChannel := make(chan message.MessageT, 10)
+	messageChannel := make(chan message.Message, 10)
 	server := NewServer(dummyServiceId, messageChannel, config.Server{})
 
 	requestHandler := server.handleMessage()

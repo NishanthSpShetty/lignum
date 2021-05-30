@@ -18,7 +18,7 @@ How do we structure message file in the message directory?
 
 //WriteToLogFile werite the mesages to log file.
 // doesnt handle consecutive writes well, meaning it will write the all the messages from the beginning on each write
-func WriteToLogFile(messageConfig config.Message, messages []MessageT) (int, error) {
+func WriteToLogFile(messageConfig config.Message, messages []Message) (int, error) {
 
 	filename := "message_001.dat"
 	path := messageConfig.MessageDir + "/" + filename
@@ -37,11 +37,11 @@ func WriteToLogFile(messageConfig config.Message, messages []MessageT) (int, err
 	return counter, nil
 }
 
-func decodeRawMessage(raw []byte) []MessageT {
+func decodeRawMessage(raw []byte) []Message {
 
-	messages := make([]MessageT, 0)
+	messages := make([]Message, 0)
 	for _, line := range strings.Split(string(raw), "\n") {
-		message := MessageT{}
+		message := Message{}
 		splits := strings.Split(line, "=")
 		if len(splits) != 2 {
 			continue
@@ -59,7 +59,7 @@ func decodeRawMessage(raw []byte) []MessageT {
 }
 
 //ReadFromLogFile
-func ReadFromLogFile(messageDirectory string) []MessageT {
+func ReadFromLogFile(messageDirectory string) []Message {
 	//load all mesage files from the given directory,
 	filename := "message_001.dat"
 

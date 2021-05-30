@@ -30,6 +30,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 
 	decoder := json.NewDecoder(req.Body)
 	decoder.DisallowUnknownFields()
+	ctx := req.Context()
 
 	err := decoder.Decode(&msg)
 	if err != nil {
@@ -38,7 +39,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	log.Debug().Str("RecievedMessage", msg.Message).Send()
-	message.Put(msg.Message)
+	message.Put(ctx, msg.Message)
 
 	fmt.Fprintf(w, "{status : \"message commited\"\n message : { %v }", "key:value")
 }

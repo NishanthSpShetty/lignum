@@ -27,7 +27,7 @@ func TestWriteToLogFile(t *testing.T) {
 		MessageFlushIntervalInMilliSeconds: 1,
 		MessageDir:                         TempDirectory,
 	}
-	message := MessageT{
+	message := Message{
 		Id:      0,
 		Message: "streaming message 1",
 	}
@@ -37,7 +37,7 @@ func TestWriteToLogFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot create data directory for the test : %s ", err.Error())
 	}
-	count, err := WriteToLogFile(messageConfig, []MessageT{message})
+	count, err := WriteToLogFile(messageConfig, []Message{message})
 	if err != nil {
 		t.Fatalf("Failed to write to log file : %s", err.Error())
 	}
@@ -66,7 +66,7 @@ func TestWriteToLogFile(t *testing.T) {
 
 func TestReadFromLogFile(t *testing.T) {
 
-	message := MessageT{
+	message := Message{
 		Id:      0,
 		Message: "streaming message 1",
 	}
@@ -81,7 +81,7 @@ func TestReadFromLogFile(t *testing.T) {
 	messageToWrite := fmt.Sprintf("%d=%s", message.Id, message.Message)
 	ioutil.WriteFile(file, []byte(messageToWrite), os.ModePerm)
 	got := ReadFromLogFile(TempDirectory)
-	expected := []MessageT{message}
+	expected := []Message{message}
 
 	if !reflect.DeepEqual(got, expected) {
 		t.Fatalf("Got %v, Expected %v", got, message)
