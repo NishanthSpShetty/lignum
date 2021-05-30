@@ -36,12 +36,38 @@ func Init(messageConfig config.Message) {
 
 func Put(ctx context.Context, msg string) {
 	messages = append(messages, Message{counter.Next(), msg})
-	fmt.Println("messages")
-	fmt.Println(messages)
+	//	fmt.Println("messages")
+	//	fmt.Println(messages)
 }
 
-func Get(from, to int) []string {
-	return []string{}
+//Get return the value for given range (from, to)
+//returns value starting with offset `from` to `to` (exclusive)
+// Must: from < to
+func Get(from, to uint64) []Message {
+	// 2, 5 => 2,3,4
+	msgLen := uint64(len(messages))
+
+	if msgLen == 0 {
+		return []Message{}
+	}
+	if to > msgLen {
+		to = msgLen
+	}
+	msgs := make([]Message, to-from)
+	i := 0
+	for _, msg := range messages {
+		fmt.Printf(" %d: %s ", i, msg)
+
+		if msg.Id < from {
+			continue
+		}
+		if msg.Id >= to {
+			break
+		}
+		msgs[i] = msg
+		i++
+	}
+	return msgs
 }
 
 //TODO: move out of here

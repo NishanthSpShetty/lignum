@@ -1,6 +1,7 @@
 package message
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -16,7 +17,7 @@ func TestMain(m *testing.M) {
 func Test_messagePut(t *testing.T) {
 
 	msg := "streaming message 1"
-	Put(msg)
+	Put(context.Background(), msg)
 
 	id := messages[0].Id
 	message := messages[0].Message
@@ -27,7 +28,7 @@ func Test_messagePut(t *testing.T) {
 
 func Test_messageGet(t *testing.T) {
 	msg := "streaming message 1"
-	Put(msg)
+	Put(context.Background(), msg)
 
 	gotValue := Get(0, 1)
 	if len(gotValue) == 0 || gotValue[0] != msg {

@@ -11,18 +11,18 @@ import (
 
 // request message struct
 type PutMessageRequest struct {
-	Message string
+	Message string `json:"message"`
 }
 
 type GetMessageRequest struct {
 	//will need range to pick the messages from
-	From int
-	To   int
+	From uint64 `json:"from"`
+	To   uint64 `json:"to"`
 }
 
 //respons message struct
 type GetMessageResponse struct {
-	Messages []string `json:"messages"`
+	Messages []message.Message `json:"messages"`
 }
 
 func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
@@ -57,7 +57,15 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	messages := message.Get(messageRequest.From, messageRequest.To)
+	from := messageRequest.From
+	to := messageRequest.To
+
+	if from < 0 || to <= from {
+		http.Error(w, "invalid messge range (must: from<to)", http.StatusBadRequest)
+		log.Error().Uint64("From", from).Uint64("To", to).Msg("invalid range specified")
+		return
+	}
+	messages := message.Get(from, to)
 	messag := GetMessageResponse{Messages: messages}
 
 	log.Debug().Interface("RecievedMessage", messageRequest).Send()

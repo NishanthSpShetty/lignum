@@ -1,11 +1,16 @@
 #!/bin/bash
 echo "Generating messages "
 
-dmesg | while read msg
+count=0
+
+while read msg
 do 
-    echo  "{ \"Message\":\"${msg}\" }";
     curl --request POST \
         --url http://localhost:8080/api/message \
         --header 'Content-Type: application/json' \
-        --data "{ \"Message\":\"${msg}\" }" ;
-    done
+        --data "{ \"message\":\"${msg}\" }" ;
+            (( count++ ))
+        done < <(dmesg)
+        echo "Sent $count messages"
+
+
