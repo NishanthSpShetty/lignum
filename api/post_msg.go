@@ -23,6 +23,7 @@ type GetMessageRequest struct {
 //respons message struct
 type GetMessageResponse struct {
 	Messages []message.Message `json:"messages"`
+	Count    int               `json:"count"`
 }
 
 func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
@@ -41,7 +42,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 	log.Debug().Str("RecievedMessage", msg.Message).Send()
 	message.Put(ctx, msg.Message)
 
-	fmt.Fprintf(w, "{status : \"message commited\"\n message : { %v }", "key:value")
+	fmt.Fprintf(w, "{\"status\": \"message commited\", \"data\": \"%s\"}", msg.Message)
 }
 
 func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
@@ -66,7 +67,7 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	messages := message.Get(from, to)
-	messag := GetMessageResponse{Messages: messages}
+	messag := GetMessageResponse{Messages: messages, Count: len(messages)}
 
 	log.Debug().Interface("RecievedMessage", messageRequest).Send()
 	json.NewEncoder(w).Encode(messag)
