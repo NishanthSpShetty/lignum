@@ -2,17 +2,22 @@ package message
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/rs/zerolog/log"
 )
 
-var count = 0
+var counter *Counter
 
 type Message struct {
-	Id      int
+	Id      uint64
 	Message string
+}
+
+func (m Message) String() string {
+	return fmt.Sprintf("{ID: %v, Msg: %s}\n", m.Id, m.Message)
 }
 
 var messages []Message
@@ -24,17 +29,22 @@ func Init(messageConfig config.Message) {
 
 	//	message = make(MessageT)
 	messages = ReadFromLogFile(messageConfig.MessageDir)
-	count = len(messages)
+	count := len(messages)
+	counter = NewCounterWithValue(uint64(count))
+
 }
 
 func Put(ctx context.Context, msg string) {
-	messages = append(messages, Message{count, msg})
+	messages = append(messages, Message{counter.Next(), msg})
+	fmt.Println("messages")
+	fmt.Println(messages)
 }
 
 func Get(from, to int) []string {
 	return []string{}
 }
 
+//TODO: move out of here
 //StartFlusher start flusher routine to write the messages to file
 func StartFlusher(messageConfig config.Message) {
 

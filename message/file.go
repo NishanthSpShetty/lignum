@@ -46,7 +46,7 @@ func decodeRawMessage(raw []byte) []Message {
 		if len(splits) != 2 {
 			continue
 		}
-		id, err := strconv.Atoi(splits[0])
+		id, err := strconv.ParseUint(splits[0], 10, 64)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to read message")
 			continue

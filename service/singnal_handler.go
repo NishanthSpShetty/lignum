@@ -19,6 +19,8 @@ func (s *Service) Stop() {
 		cancel()
 	}
 	//close all channels
+	//FIXME: getting error on double close
+	//find out where it is closed
 	close(s.SessionRenewalChannel)
 	close(s.ReplicationQueue)
 
