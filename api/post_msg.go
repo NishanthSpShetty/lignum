@@ -41,7 +41,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Debug().Str("RecievedMessage", msg.Message).Send()
+	log.Debug().Str("Data", msg.Message).Str("Topic", msg.Topic).Msg("message recieved")
 	s.message.Put(ctx, msg.Topic, msg.Message)
 
 	fmt.Fprintf(w, "{\"status\": \"message commited\", \"data\": \"%s\"}", msg.Message)
@@ -71,7 +71,7 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 
 	if !s.message.TopicExist(messageRequest.Topic) {
 		http.Error(w, "topic does not exist", http.StatusBadRequest)
-		log.Error().Str("Topic", messageRequest.Topic).Msg("invalid range specified")
+		log.Error().Str("Topic", messageRequest.Topic).Msg("topic does not exist")
 		return
 	}
 
