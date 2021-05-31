@@ -8,23 +8,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const DummyTopic = "dummy-topic"
+
 func Test_messagePut(t *testing.T) {
 
 	msg := "streaming message 1"
 	message := &AMessage{
-		counter:  NewCounter(),
-		messages: make([]Message, 0),
+		counter:    NewCounter(),
+		messageMap: make(map[string][]Message, 1),
 	}
-	message.Put(context.Background(), msg)
+	message.Put(context.Background(), DummyTopic, msg)
 
-	id := message.messages[0].Id
-	data := message.messages[0].Data
+	id := message.messageMap[DummyTopic][0].Id
+	data := message.messageMap[DummyTopic][0].Data
 	if data != msg || id != 0 {
-		t.Fatalf("expected %+v, got %+v", Message{0, msg}, message.messages[0])
+		t.Fatalf("expected %+v, got %+v", Message{0, msg}, message.GetMessages(DummyTopic)[0])
 	}
 }
 
 var counter *Counter
+
+func withDummyTopic(m []Message) map[string][]Message {
+	return map[string][]Message{DummyTopic: m}
+}
 
 func makeMessage() Message {
 	id := counter.Next()
@@ -69,7 +75,7 @@ func Test_messageGet(t *testing.T) {
 			name: "returns list of messages for a given range when there are messages",
 			args: args{from: 0, to: 10},
 			message: &AMessage{
-				messages: makeMessages(10),
+				messageMap: withDummyTopic(makeMessages(10)),
 			},
 			expected: makeMessages(10),
 		},
@@ -78,7 +84,7 @@ func Test_messageGet(t *testing.T) {
 			name: "returns list of messages for a given positive range when there are messages",
 			args: args{from: 1, to: 10},
 			message: &AMessage{
-				messages: makeMessages(10),
+				messageMap: withDummyTopic(makeMessages(10)),
 			},
 			expected: makeMessages(10)[1:10],
 		},
@@ -87,7 +93,7 @@ func Test_messageGet(t *testing.T) {
 			name: "returns list of messages for a given positive range when there are messages and `to` is less than available messages",
 			args: args{from: 1, to: 8},
 			message: &AMessage{
-				messages: makeMessages(10),
+				messageMap: withDummyTopic(makeMessages(10)),
 			},
 			expected: makeMessages(10)[1:8],
 		},
@@ -95,7 +101,7 @@ func Test_messageGet(t *testing.T) {
 			name: "returns list of all messages when range provided is more than available message",
 			args: args{from: 0, to: 100},
 			message: &AMessage{
-				messages: makeMessages(50),
+				messageMap: withDummyTopic(makeMessages(50)),
 			},
 			expected: makeMessages(50),
 		},
@@ -103,7 +109,7 @@ func Test_messageGet(t *testing.T) {
 			name: "returns list of messages `from` till end of the message when `to` in range provided is more than available message and from is positive",
 			args: args{from: 8, to: 100},
 			message: &AMessage{
-				messages: makeMessages(20),
+				messageMap: withDummyTopic(makeMessages(20)),
 			},
 			expected: makeMessages(20)[8:20],
 		},
@@ -111,7 +117,7 @@ func Test_messageGet(t *testing.T) {
 
 	for _, tt := range testCases {
 
-		actual := tt.message.Get(tt.args.from, tt.args.to)
+		actual := tt.message.Get(DummyTopic, tt.args.from, tt.args.to)
 
 		assert.Equal(t, tt.expected, actual, "Message.Get: %s", tt.name)
 	}

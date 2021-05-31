@@ -11,13 +11,15 @@ import (
 
 // request message struct
 type PutMessageRequest struct {
+	Topic   string `json:"topic"`
 	Message string `json:"message"`
 }
 
 type GetMessageRequest struct {
 	//will need range to pick the messages from
-	From uint64 `json:"from"`
-	To   uint64 `json:"to"`
+	Topic string `json:"topic"`
+	From  uint64 `json:"from"`
+	To    uint64 `json:"to"`
 }
 
 //respons message struct
@@ -40,7 +42,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	log.Debug().Str("RecievedMessage", msg.Message).Send()
-	s.message.Put(ctx, msg.Message)
+	s.message.Put(ctx, msg.Topic, msg.Message)
 
 	fmt.Fprintf(w, "{\"status\": \"message commited\", \"data\": \"%s\"}", msg.Message)
 }
@@ -66,7 +68,14 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 		log.Error().Uint64("From", from).Uint64("To", to).Msg("invalid range specified")
 		return
 	}
-	messages := s.message.Get(from, to)
+
+	if !s.message.TopicExist(messageRequest.Topic) {
+		http.Error(w, "topic does not exist", http.StatusBadRequest)
+		log.Error().Str("Topic", messageRequest.Topic).Msg("invalid range specified")
+		return
+	}
+
+	messages := s.message.Get(messageRequest.Topic, from, to)
 	messag := GetMessageResponse{Messages: messages, Count: len(messages)}
 
 	log.Debug().Interface("RecievedMessage", messageRequest).Send()

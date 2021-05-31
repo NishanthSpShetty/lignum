@@ -17,30 +17,41 @@ func (m Message) String() string {
 }
 
 type AMessage struct {
-	messages []Message
-	counter  *Counter
+	counter    *Counter
+	messageMap map[string][]Message
 }
 
-func New(messageConfig config.Message) *AMessage {
-	messages := ReadFromLogFile(messageConfig.MessageDir)
-	count := len(messages)
+func New(msgConfig config.Message) *AMessage {
+	//TODO: restore from the file when we add persistence
+	//	messages := ReadFromLogFile(messageConfig.MessageDir)
+	count := 0 // len(messages)
 	counter := NewCounterWithValue(uint64(count))
 	return &AMessage{
-		messages: messages,
-		counter:  counter,
+		counter:    counter,
+		messageMap: make(map[string][]Message, msgConfig.InitialSize),
 	}
 }
 
-func (m *AMessage) Put(ctx context.Context, msg string) {
-	m.messages = append(m.messages, Message{m.counter.Next(), msg})
+func (m *AMessage) GetMessages(topic string) []Message {
+	return m.messageMap[topic]
+}
+
+func (m *AMessage) TopicExist(topic string) bool {
+	_, ok := m.messageMap[topic]
+	return ok
+}
+
+func (m *AMessage) Put(ctx context.Context, topic string, msg string) {
+	m.messageMap[topic] = append(m.GetMessages(topic), Message{m.counter.Next(), msg})
 }
 
 //Get return the value for given range (from, to)
 //returns value starting with offset `from` to `to` (exclusive)
 //Must: from < to
-func (m *AMessage) Get(from, to uint64) []Message {
+func (m *AMessage) Get(topic string, from, to uint64) []Message {
 	// 2, 5 => 2,3,4
-	msgLen := uint64(len(m.messages))
+	messages := m.GetMessages(topic)
+	msgLen := uint64(len(messages))
 
 	if msgLen == 0 {
 		return []Message{}
@@ -50,7 +61,7 @@ func (m *AMessage) Get(from, to uint64) []Message {
 	}
 	msgs := make([]Message, to-from)
 	i := 0
-	for _, msg := range m.messages {
+	for _, msg := range messages {
 		if msg.Id < from {
 			continue
 		}
