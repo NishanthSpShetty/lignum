@@ -51,8 +51,6 @@ func (m *AMessage) Get(from, to uint64) []Message {
 	msgs := make([]Message, to-from)
 	i := 0
 	for _, msg := range m.messages {
-		fmt.Printf(" %d: %s ", i, msg)
-
 		if msg.Id < from {
 			continue
 		}
