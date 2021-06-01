@@ -22,7 +22,7 @@ func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
 		return err
 	}
 	response, err := ioutil.ReadAll(resp.Body)
-	//TODO: We will just log whatever we recieve from the leader for now
+	//TODO: We will just log whatever we receive from the leader for now
 	log.Debug().Bytes("ConnectLeaderResponse", response).Send()
 	return err
 }

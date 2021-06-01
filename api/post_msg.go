@@ -41,7 +41,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Debug().Str("Data", msg.Message).Str("Topic", msg.Topic).Msg("message recieved")
+	log.Debug().Str("Data", msg.Message).Str("Topic", msg.Topic).Msg("message received")
 	s.message.Put(ctx, msg.Topic, msg.Message)
 
 	fmt.Fprintf(w, "{\"status\": \"message commited\", \"data\": \"%s\"}", msg.Message)
@@ -78,6 +78,6 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	messages := s.message.Get(messageRequest.Topic, from, to)
 	messag := GetMessageResponse{Messages: messages, Count: len(messages)}
 
-	log.Debug().Interface("RecievedMessage", messageRequest).Send()
+	log.Debug().Interface("ReceivedMessage", messageRequest).Send()
 	json.NewEncoder(w).Encode(messag)
 }
