@@ -28,7 +28,7 @@ func New(msgConfig config.Message) *AMessage {
 	counter := NewCounterWithValue(uint64(count))
 	return &AMessage{
 		counter:    counter,
-		messageMap: make(map[string][]Message, msgConfig.InitialSizePerTopic),
+		messageMap: make(map[string][]Message),
 	}
 }
 
