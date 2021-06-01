@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	"time"
 
 	//Suggestion : sf13/viper Config solution
 	"gopkg.in/yaml.v2"
@@ -23,9 +22,10 @@ type Consul struct {
 }
 
 type Message struct {
-	InitialSize                        int64         `yaml:"initial-size"`
-	MessageDir                         string        `yaml:"message-dir"`
-	MessageFlushIntervalInMilliSeconds time.Duration `yaml:"message-flush-interval-in-ms"`
+	InitialSizePerTopic int64 `yaml:"initial-size-per-topic"`
+	//TODO: required for persistence
+	//MessageDir          string `yaml:"message-dir"`
+	//MessageFlushIntervalInMilliSeconds time.Duration `yaml:"message-flush-interval-in-ms"`
 }
 
 type Config struct {
