@@ -41,6 +41,13 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	if msg.Topic == "" {
+		http.Error(w, "message topic not specified", http.StatusBadRequest)
+		log.Error().Msg("message topic not specified")
+		return
+	}
+
 	log.Debug().Str("Data", msg.Message).Str("Topic", msg.Topic).Msg("message received")
 	s.message.Put(ctx, msg.Topic, msg.Message)
 
@@ -67,6 +74,13 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "invalid messge range (must: from<to)", http.StatusBadRequest)
 		log.Error().Uint64("From", from).Uint64("To", to).Msg("invalid range specified")
 		return
+	}
+
+	if messageRequest.Topic == "" {
+		http.Error(w, "message topic not specified", http.StatusBadRequest)
+		log.Error().Msg("message topic not specified")
+		return
+
 	}
 
 	if !s.message.TopicExist(messageRequest.Topic) {
