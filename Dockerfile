@@ -4,8 +4,7 @@ FROM golang:1.16
 WORKDIR /go/src/app
 COPY . .
 
-RUN go get -d -v ./...
-RUN go build -o ./lignum
+RUN go get -d -v ./... && go build -o ./lignum
 CMD  [ "./lignum", "-config", "config.yml" ]
 
 EXPOSE 8080
