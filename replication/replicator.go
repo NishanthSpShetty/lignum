@@ -30,7 +30,7 @@ func (r *Replicator) StartReplicator() {
 	log.Info().Msg("Replicator service is running..")
 	go func() {
 		for msg := range r.replicationQueue {
-			log.Debug().Interface("Message", msg).Msg("Recieved message for replication ")
+			log.Debug().Interface("Message", msg).Msg("Received message for replication ")
 		}
 	}()
 }
