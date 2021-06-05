@@ -61,16 +61,16 @@ func Test_messagePut(t *testing.T) {
 			message: &MessageStore{
 				topic: make(map[string]*Topic)},
 			args: args{
-				topic: "test-new",
+				topic: "test_new",
 				msg:   "this is test log 001",
 			},
 			getargs:  getargs{from: 0, to: 1},
 			expected: []Message{{Id: 0, Data: "this is test log 001"}},
 		},
 		{name: "Messages will be appended to existing topic",
-			message: createMsgStore("test-new", 1),
+			message: createMsgStore("test_new", 1),
 			args: args{
-				topic: "test-new",
+				topic: "test_new",
 				msg:   "this is test log 001",
 			},
 			getargs:  getargs{from: 0, to: 2},
@@ -80,7 +80,7 @@ func Test_messagePut(t *testing.T) {
 
 			message: createMsgStore("test-old", 1),
 			args: args{
-				topic: "test-new",
+				topic: "test_new",
 				msg:   "this is test log 001",
 			},
 			getargs:  getargs{from: 0, to: 1},
