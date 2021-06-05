@@ -5,10 +5,12 @@ import (
 	"fmt"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/rs/zerolog/log"
 )
 
 type Message struct {
-	Id   uint64
+	Id uint64
+	//TODO: consider []byte here
 	Data string
 }
 
@@ -16,40 +18,71 @@ func (m Message) String() string {
 	return fmt.Sprintf("{ID: %v, Msg: %s}\n", m.Id, m.Data)
 }
 
-type AMessage struct {
-	counter    *Counter
-	messageMap map[string][]Message
+type Topic struct {
+	counter *Counter
+	name    string
+	msg     []Message
 }
 
-func New(msgConfig config.Message) *AMessage {
+func (t *Topic) GetMessages() []Message {
+	return t.msg
+}
+
+func (t *Topic) Push(msg string) {
+	message := Message{Id: t.counter.Next(), Data: msg}
+	t.msg = append(t.msg, message)
+}
+
+type MessageStore struct {
+	topic map[string]*Topic
+}
+
+func New(msgConfig config.Message) *MessageStore {
 	//TODO: restore from the file when we add persistence
 	//	messages := ReadFromLogFile(messageConfig.MessageDir)
-	count := 0 // len(messages)
-	counter := NewCounterWithValue(uint64(count))
-	return &AMessage{
-		counter:    counter,
-		messageMap: make(map[string][]Message),
+	return &MessageStore{
+		topic: make(map[string]*Topic),
 	}
 }
 
-func (m *AMessage) GetMessages(topic string) []Message {
-	return m.messageMap[topic]
+func (m *MessageStore) GetMessages(topicName string) []Message {
+
+	topic, ok := m.topic[topicName]
+	if !ok {
+		return []Message{}
+	}
+	return topic.GetMessages()
 }
 
-func (m *AMessage) TopicExist(topic string) bool {
-	_, ok := m.messageMap[topic]
+func (m *MessageStore) TopicExist(topic string) bool {
+	_, ok := m.topic[topic]
 	return ok
 }
 
-func (m *AMessage) Put(ctx context.Context, topic string, msg string) {
-	m.messageMap[topic] = append(m.GetMessages(topic), Message{m.counter.Next(), msg})
+func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) {
+	//check if the topic exist
+	topic, ok := m.topic[topic_name]
+
+	//create new topic if it doesnt exist
+	if !ok {
+		log.Info().Str("Topic", topic_name).Msg("topic does not exist, creating")
+		topic = &Topic{
+			name:    topic_name,
+			counter: NewCounter(),
+			msg:     make([]Message, 0),
+		}
+		m.topic[topic_name] = topic
+	}
+
+	//push message into topic
+	topic.Push(msg)
 }
 
 //Get return the value for given range (from, to)
 //returns value starting with offset `from` to `to` (exclusive)
 //Must: from < to
-func (m *AMessage) Get(topic string, from, to uint64) []Message {
-	// 2, 5 => 2,3,4
+func (m *MessageStore) Get(topic string, from, to uint64) []Message {
+	// 2, 5 => 2,3,5
 	messages := m.GetMessages(topic)
 	msgLen := uint64(len(messages))
 

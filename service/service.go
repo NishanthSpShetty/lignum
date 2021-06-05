@@ -27,7 +27,7 @@ type Service struct {
 	ReplicationQueue      chan message.Message
 	Cancels               []context.CancelFunc
 	apiServer             *api.Server
-	message               *message.AMessage
+	message               *message.MessageStore
 }
 
 func New(config config.Config) (*Service, error) {
