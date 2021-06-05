@@ -3,7 +3,7 @@ echo "Generating messages "
 
 count=0
 
-while read msg
+while read -r msg
 do 
     curl --request POST \
         --url http://localhost:8080/api/message \
