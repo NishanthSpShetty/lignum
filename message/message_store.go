@@ -24,6 +24,14 @@ type Topic struct {
 	msg     []Message
 }
 
+func (t *Topic) GetName() string {
+	return t.name
+}
+
+func (t *Topic) GetCurrentOffset() uint64 {
+	return t.counter.value
+}
+
 func (t *Topic) GetMessages() []Message {
 	return t.msg
 }
@@ -43,6 +51,14 @@ func New(msgConfig config.Message) *MessageStore {
 	return &MessageStore{
 		topic: make(map[string]*Topic),
 	}
+}
+
+func (m *MessageStore) GetTopics() []*Topic {
+	topics := make([]*Topic, 0)
+	for _, v := range m.topic {
+		topics = append(topics, v)
+	}
+	return topics
 }
 
 func (m *MessageStore) GetMessages(topicName string) []Message {

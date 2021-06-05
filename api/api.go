@@ -88,5 +88,6 @@ func (s *Server) Serve() error {
 	http.HandleFunc("/ping", s.ping())
 	http.HandleFunc("/api/follower/register", s.registerFollower())
 	http.HandleFunc("/api/message", s.handleMessage())
+	http.HandleFunc("/api/topic", s.TopicHandler())
 	return s.httpServer.ListenAndServe()
 }
