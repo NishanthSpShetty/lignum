@@ -11,6 +11,7 @@ import (
 	"github.com/NishanthSpShetty/lignum/cluster"
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
 
@@ -89,5 +90,6 @@ func (s *Server) Serve() error {
 	http.HandleFunc("/api/follower/register", s.registerFollower())
 	http.HandleFunc("/api/message", s.handleMessage())
 	http.HandleFunc("/api/topic", s.TopicHandler())
+	http.Handle("/metrics", promhttp.Handler())
 	return s.httpServer.ListenAndServe()
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/NishanthSpShetty/lignum/metrics"
 	"github.com/rs/zerolog/log"
 )
 
@@ -29,6 +30,7 @@ type GetMessageResponse struct {
 }
 
 func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
+	metrics.IncrementPostRequest()
 	var msg PutMessageRequest
 
 	decoder := json.NewDecoder(req.Body)

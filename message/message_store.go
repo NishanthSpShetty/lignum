@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/metrics"
 	"github.com/rs/zerolog/log"
 )
 
@@ -37,6 +38,7 @@ func (t *Topic) GetMessages() []Message {
 }
 
 func (t *Topic) Push(msg string) {
+	metrics.IncrementMessageCount(t.name)
 	message := Message{Id: t.counter.Next(), Data: msg}
 	t.msg = append(t.msg, message)
 }
@@ -87,6 +89,7 @@ func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) {
 			counter: NewCounter(),
 			msg:     make([]Message, 0),
 		}
+		metrics.IncrementTopic()
 		m.topic[topic_name] = topic
 	}
 
