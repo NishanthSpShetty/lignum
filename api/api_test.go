@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,7 +26,7 @@ func TestGetMessage(t *testing.T) {
 	messageChannel := make(chan message.Message, 10)
 	msg := message.New(config.Message{})
 
-	server := NewServer(dummyServiceId, messageChannel, config.Server{}, msg)
+	server := NewServer(dummyServiceId, messageChannel, config.Server{}, msg, follower.New())
 
 	requestHandler := server.handleMessage()
 	responseData := GetMessageResponse{}

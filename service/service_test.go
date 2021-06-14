@@ -8,6 +8,7 @@ import (
 	"github.com/NishanthSpShetty/lignum/api"
 	"github.com/NishanthSpShetty/lignum/cluster"
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -40,8 +41,9 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 		ReplicationQueue:      make(chan message.Message, REPLICATION_QUEUE_SIZE),
 		SessionRenewalChannel: make(chan struct{}),
 		message:               message.New(config.Message),
+		follower:              follower.New(),
 	}
-	service.apiServer = api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server, service.message)
+	service.apiServer = api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server, service.message, service.follower)
 
 	go service.Start()
 	close(service.signalChannel)

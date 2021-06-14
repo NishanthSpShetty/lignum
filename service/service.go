@@ -9,6 +9,7 @@ import (
 	"github.com/NishanthSpShetty/lignum/api"
 	"github.com/NishanthSpShetty/lignum/cluster"
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -28,6 +29,7 @@ type Service struct {
 	Cancels               []context.CancelFunc
 	apiServer             *api.Server
 	message               *message.MessageStore
+	follower              *follower.FollowerRegistry
 }
 
 func New(config config.Config) (*Service, error) {
@@ -46,8 +48,9 @@ func New(config config.Config) (*Service, error) {
 		ReplicationQueue:      make(chan message.Message, REPLICATION_QUEUE_SIZE),
 		SessionRenewalChannel: make(chan struct{}),
 		message:               message.New(config.Message),
+		follower:              follower.New(),
 	}
-	s.apiServer = api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message)
+	s.apiServer = api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.follower)
 	return s, nil
 }
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/NishanthSpShetty/lignum/cluster"
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
@@ -21,13 +22,14 @@ type Server struct {
 	config           config.Server
 	httpServer       *http.Server
 	message          *message.MessageStore
+	follower         *follower.FollowerRegistry
 }
 
 func (s *Server) Stop(ctx context.Context) {
 	s.httpServer.Shutdown(ctx)
 }
 
-func NewServer(serviceId string, queue chan<- message.Message, config config.Server, message *message.MessageStore) *Server {
+func NewServer(serviceId string, queue chan<- message.Message, config config.Server, message *message.MessageStore, follower *follower.FollowerRegistry) *Server {
 
 	address := fmt.Sprintf("%s:%d", config.Host, config.Port)
 	httpServer := http.Server{Addr: address,
@@ -43,6 +45,7 @@ func NewServer(serviceId string, queue chan<- message.Message, config config.Ser
 		replicationQueue: queue,
 		httpServer:       &httpServer,
 		message:          message,
+		follower:         follower,
 	}
 }
 
@@ -52,8 +55,7 @@ func (s *Server) registerFollower() http.HandlerFunc {
 		log.Info().Bytes("RequestBody", requestBody).Msg("Request received for follower registration")
 		node := cluster.Node{}
 		json.Unmarshal(requestBody, &node)
-		//TODO: this is accessing some global state, looks odd between the flow
-		cluster.AddFollower(node)
+		s.follower.Register(node)
 		fmt.Fprintf(w, "Follower registered. Node : [ %v ]\n", node)
 	}
 }
