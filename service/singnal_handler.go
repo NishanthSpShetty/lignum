@@ -19,8 +19,6 @@ func (s *Service) Stop() {
 		cancel()
 	}
 	//close all channels
-	//FIXME: getting error on double close
-	//find out where it is closed
 	close(s.SessionRenewalChannel)
 	close(s.ReplicationQueue)
 
@@ -29,6 +27,7 @@ func (s *Service) Stop() {
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to destroy the session ")
 	}
+	s.SetStopped()
 	s.apiServer.Stop(context.Background())
 	log.Info().Str("ServiceId", s.ServiceId).Msg("Shutting down")
 }

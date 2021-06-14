@@ -30,6 +30,7 @@ type Service struct {
 	apiServer             *api.Server
 	message               *message.MessageStore
 	follower              *follower.FollowerRegistry
+	running               bool
 }
 
 func New(config config.Config) (*Service, error) {
@@ -69,6 +70,18 @@ func (s *Service) startClusterService(ctx context.Context) error {
 	return nil
 }
 
+func (s *Service) SetStarted() {
+	s.running = true
+}
+
+func (s *Service) SetStopped() {
+	s.running = false
+}
+
+func (s *Service) Stopped() bool {
+	return !s.running
+}
+
 func (s *Service) Start() error {
 
 	log.Info().Str("ServiceID", s.ServiceId).Msg("Starting lignum - distributed messaging service")
@@ -83,7 +96,8 @@ func (s *Service) Start() error {
 	//	message.StartFlusher(s.Config.Message)
 	//	message.StartReplicator(s.ReplicationQueue)
 
+	//mark service as running
+	s.SetStarted()
 	//once the cluster is setup we should be able start api service
-
 	return s.apiServer.Serve()
 }

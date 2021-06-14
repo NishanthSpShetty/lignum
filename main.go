@@ -42,8 +42,10 @@ func main() {
 	err = service.Start()
 
 	if err != nil {
-		log.Error().Err(err).Msg("failed to start service")
-		service.Stop()
+		log.Error().Err(err).Send()
+		if !service.Stopped() {
+			service.Stop()
+		}
 		return
 	}
 
