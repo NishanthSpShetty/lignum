@@ -28,7 +28,6 @@ func main() {
 
 	appConfig, err := config.GetConfig(*configFile)
 	if err != nil {
-		//o	 ("Failed to read config", err)
 		log.Error().Err(err).Msg("Failed to read config")
 		return
 	}

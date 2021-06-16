@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"os"
+	"time"
 
 	_ "net/http/pprof"
 
@@ -82,17 +83,24 @@ func (s *Service) Stopped() bool {
 	return !s.running
 }
 
+func (s *Service) addCancel(fn context.CancelFunc) {
+	s.Cancels = append(s.Cancels, fn)
+}
+
 func (s *Service) Start() error {
 
 	log.Info().Str("ServiceID", s.ServiceId).Msg("Starting lignum - distributed messaging service")
 
-	err := s.startClusterService(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	s.addCancel(cancel)
+	err := s.startClusterService(ctx)
 	if err != nil {
 		return err
 	}
 	s.signalHandler()
 
 	//start service routines
+	s.follower.StartHealthCheck(ctx, 100*time.Millisecond)
 	//	message.StartFlusher(s.Config.Message)
 	//	message.StartReplicator(s.ReplicationQueue)
 

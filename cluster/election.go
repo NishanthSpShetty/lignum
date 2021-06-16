@@ -16,7 +16,7 @@ import (
 var isLeader = false
 
 func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
-	leaderEndpoint := fmt.Sprintf("http://%s:%d%s", host, port, "/service/api/follower/register")
+	leaderEndpoint := fmt.Sprintf("http://%s:%d%s", host, port, "/api/follower/register")
 	resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return err
