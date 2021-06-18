@@ -2,8 +2,11 @@ package cluster
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/rs/zerolog/log"
 )
 
 //Leader has port information of the leader
@@ -25,8 +28,8 @@ type Node struct {
 	Port int    `json:"port"`
 }
 
-func (nodeConfig Node) Json() ([]byte, error) {
-	return json.Marshal(nodeConfig)
+func (n Node) Json() ([]byte, error) {
+	return json.Marshal(n)
 }
 
 func NewNode(id string, host string, port int) Node {
@@ -35,4 +38,21 @@ func NewNode(id string, host string, port int) Node {
 		Host: host,
 		Port: port,
 	}
+}
+
+func (n *Node) Ping(client http.Client) bool {
+
+	pingUrl := fmt.Sprintf("http://%s:%d/ping", n.Host, n.Port)
+	response, err := client.Get(pingUrl)
+	if err != nil {
+		json, _ := n.Json()
+		log.Error().RawJSON("node", json).Err(err).Msg("ping failed")
+		return false
+	}
+
+	if response.StatusCode == http.StatusOK {
+		return true
+	}
+	//anything else return false, not expecting any other value apart from status OK(200)
+	return false
 }

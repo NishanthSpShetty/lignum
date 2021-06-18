@@ -24,7 +24,7 @@ func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
 	return err
 }
 
-func connectToLeader(serviceKey string, serviceId string, clusteController ClusterController, requestBody []byte) {
+func connectToLeader(serviceKey string, serviceId string, clusteController ClusterController, requestBody []byte, client http.Client) {
 
 	if !state.isLeader() {
 
@@ -44,10 +44,14 @@ func connectToLeader(serviceKey string, serviceId string, clusteController Clust
 			} else {
 				//we are connected to leader,
 				state.setConnectedToLeader(true)
+				state.setLeaderNode(&leaderNode)
 			}
 		} else {
 			//check if we can ping connected leader
 			log.Debug().Msg("pinging leader")
+			if !state.getLeader().Ping(client) {
+				state.setConnectedToLeader(false)
+			}
 
 		}
 
@@ -61,6 +65,13 @@ func ConnectToLeader(ctx context.Context, appConfig config.Server, connectionInt
 	thisNode := NewNode(serviceId, appConfig.Host, appConfig.Port)
 	requestBody, _ := thisNode.Json()
 	ticker := time.NewTicker(connectionInterval)
+
+	client := http.Client{
+		Transport: &http.Transport{
+			DisableCompression: true,
+		},
+		Timeout: 5 * time.Millisecond,
+	}
 	go func() {
 		log.Debug().Msg("starting leader follower routine")
 		for {
@@ -69,7 +80,7 @@ func ConnectToLeader(ctx context.Context, appConfig config.Server, connectionInt
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				connectToLeader(appConfig.ServiceKey, serviceId, clusteController, requestBody)
+				connectToLeader(appConfig.ServiceKey, serviceId, clusteController, requestBody, client)
 			}
 		}
 	}()

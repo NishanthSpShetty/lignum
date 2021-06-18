@@ -67,7 +67,7 @@ func (s *Service) startClusterService(ctx context.Context) error {
 	cluster.InitiateLeaderElection(ctx, s.Config.Server, s.ServiceId, s.ClusterController)
 
 	//connect to leader
-	interval := 10 * time.Millisecond
+	interval := 1 * time.Second
 	cluster.ConnectToLeader(ctx, s.Config.Server, interval, s.ServiceId, s.ClusterController)
 	return nil
 }
@@ -101,7 +101,7 @@ func (s *Service) Start() error {
 	s.signalHandler()
 
 	//start service routines
-	s.follower.StartHealthCheck(ctx, 100*time.Millisecond)
+	s.follower.StartHealthCheck(ctx, 1*time.Second)
 	//	message.StartFlusher(s.Config.Message)
 	//	message.StartReplicator(s.ReplicationQueue)
 

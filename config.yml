@@ -2,7 +2,7 @@
 
 server:
   host: "0.0.0.0"
-  port: 8980
+  port: 8091
   service-key: "service/lignum/key/master"
 
 consul:

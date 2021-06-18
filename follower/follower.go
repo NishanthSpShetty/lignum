@@ -39,19 +39,8 @@ func New() *FollowerRegistry {
 	}
 }
 
-func isActive(client http.Client, node cluster.Node) bool {
-	pingUrl := fmt.Sprintf("http://%s:%d/ping", node.Host, node.Port)
-	response, err := client.Get(pingUrl)
-	if err != nil {
-		log.Error().Err(err).Msg("ping failed")
-		return false
-	}
-
-	if response.StatusCode == http.StatusOK {
-		return true
-	}
-	//anything else return false, not expecting any other value apart from status OK(200)
-	return false
+func isActive(client http.Client, node *cluster.Node) bool {
+	return node.Ping(client)
 }
 
 func (f *FollowerRegistry) healthCheck(client http.Client) {
@@ -62,7 +51,7 @@ func (f *FollowerRegistry) healthCheck(client http.Client) {
 		//if we marked node as unhealthy, dont check again.
 		//TODO: have some multiple tries before considering the node as dead.
 		//timeouts can happen even when the node is healthy
-		if !follower.healthy || !isActive(client, follower.node) {
+		if !follower.healthy || !isActive(client, &follower.node) {
 			//mark the follower as not healthy,
 			//TODO: remove the dead followers in cleanup
 			follower.healthy = false
