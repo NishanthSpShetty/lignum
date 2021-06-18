@@ -12,9 +12,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//isLeader mark it as true when the current node becomes the leader
-var isLeader = false
-
 func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
 	leaderEndpoint := fmt.Sprintf("http://%s:%d%s", host, port, "/api/follower/register")
 	resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
@@ -27,39 +24,55 @@ func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
 	return err
 }
 
-//connectToLeader Connect this service as a follower to the elected leader.
-//this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
-func ConnectToLeader(appConfig config.Server, serviceId string, clusteController ClusterController) {
+func connectToLeader(serviceKey string, serviceId string, clusteController ClusterController, requestBody []byte) {
 
-	thisNode := NewNode(serviceId, appConfig.Host, appConfig.Port)
-	requestBody, _ := thisNode.Json()
-	for {
-		if !isLeader {
+	if !state.isLeader() {
+
+		if !state.isConnectedLeader() {
 			//loop if the current node becomes the leader
 			log.Info().Msg("Registering this service as a follower to the cluster leader...")
 			//get the leader information and send a follow request.
-			leaderNode, err := clusteController.GetLeader(appConfig.ServiceKey)
+			leaderNode, err := clusteController.GetLeader(serviceKey)
 			if err != nil {
 				log.Error().Err(err).Send()
-				//TODO: give it a second and loop back??
-				time.Sleep(1 * time.Second)
-				continue
+				return
 			}
 			err = sendConnectRequestLeader(leaderNode.Host, leaderNode.Port, requestBody)
 
 			if err != nil {
 				log.Error().Err(err).Msg("Failed to register with the leader ")
-				//FIXME : this is possible when the leader elections are still going on and we call GetLeader.
-				// should it return or not?
 			} else {
-				//registered successfully, return?
-				return
+				//we are connected to leader,
+				state.setConnectedToLeader(true)
 			}
 		} else {
-			log.Info().Msg("Im the leader....")
-			return
+			//check if we can ping connected leader
+			log.Debug().Msg("pinging leader")
+
 		}
+
 	}
+}
+
+//ConnectToLeader Connect this service as a follower to the elected leader.
+//this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
+func ConnectToLeader(ctx context.Context, appConfig config.Server, connectionInterval time.Duration, serviceId string, clusteController ClusterController) {
+
+	thisNode := NewNode(serviceId, appConfig.Host, appConfig.Port)
+	requestBody, _ := thisNode.Json()
+	ticker := time.NewTicker(connectionInterval)
+	go func() {
+		log.Debug().Msg("starting leader follower routine")
+		for {
+			select {
+			case <-ctx.Done():
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				connectToLeader(appConfig.ServiceKey, serviceId, clusteController, requestBody)
+			}
+		}
+	}()
 }
 
 func tryAcquireLock(node Node, c ClusterController, serviceKey string) (bool, error) {
@@ -71,7 +84,7 @@ func tryAcquireLock(node Node, c ClusterController, serviceKey string) (bool, er
 	}
 
 	if acquired {
-		isLeader = acquired
+		state.markLeader()
 		log.Info().Msg("Lock acquired and marking the node as leader")
 	}
 	return acquired, nil
@@ -83,12 +96,13 @@ func leaderElection(ctx context.Context, node Node, c ClusterController, service
 	consulLockPingInterval := 10 * time.Millisecond
 	ticker := time.NewTicker(consulLockPingInterval)
 	//start polling to acquire the lock indefinitely
-	acquired := isLeader
+	acquired := state.isLeader()
 	var err error
 	for {
 		select {
 		case <-ticker.C:
 			if acquired {
+				ticker.Stop()
 				return
 			}
 			acquired, err = tryAcquireLock(node, c, serviceKey)
@@ -104,6 +118,7 @@ func leaderElection(ctx context.Context, node Node, c ClusterController, service
 
 		case <-ctx.Done():
 			log.Info().Err(ctx.Err()).Msg("context closed, shutting down leader election worker")
+			ticker.Stop()
 			return
 		}
 	}

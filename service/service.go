@@ -67,7 +67,8 @@ func (s *Service) startClusterService(ctx context.Context) error {
 	cluster.InitiateLeaderElection(ctx, s.Config.Server, s.ServiceId, s.ClusterController)
 
 	//connect to leader
-	cluster.ConnectToLeader(s.Config.Server, s.ServiceId, s.ClusterController)
+	interval := 10 * time.Millisecond
+	cluster.ConnectToLeader(ctx, s.Config.Server, interval, s.ServiceId, s.ClusterController)
 	return nil
 }
 
