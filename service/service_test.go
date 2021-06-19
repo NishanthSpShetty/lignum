@@ -30,7 +30,8 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 	clusterController := &cluster.MockclusterController{
 		ConsulClusterController: &cluster.ConsulClusterController{}}
 	clusterController.On("CreateSession").Return(mock.Anything)
-	clusterController.On("AcquireLock").Return(mock.Anything)
+	clusterController.On("CreateSession").Return(mock.Anything)
+	clusterController.On("AcquireLock").Return(true)
 	clusterController.On("DestroySession").Return(mock.Anything)
 
 	service := &Service{

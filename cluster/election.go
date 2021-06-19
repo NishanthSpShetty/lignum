@@ -12,9 +12,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
+func sendConnectRequestLeader(client http.Client, host string, port int, requestBody []byte) error {
 	leaderEndpoint := fmt.Sprintf("http://%s:%d%s", host, port, "/api/follower/register")
-	resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
+	resp, err := client.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
 	return err
 }
 
-func connectToLeader(serviceKey string, serviceId string, clusteController ClusterController, requestBody []byte, client http.Client) {
+func connectToLeader(serviceKey string, clusteController ClusterController, requestBody []byte, client http.Client) {
 
 	if !state.isLeader() {
 
@@ -37,7 +37,7 @@ func connectToLeader(serviceKey string, serviceId string, clusteController Clust
 				log.Error().Err(err).Send()
 				return
 			}
-			err = sendConnectRequestLeader(leaderNode.Host, leaderNode.Port, requestBody)
+			err = sendConnectRequestLeader(client, leaderNode.Host, leaderNode.Port, requestBody)
 
 			if err != nil {
 				log.Error().Err(err).Msg("Failed to register with the leader ")
@@ -58,9 +58,9 @@ func connectToLeader(serviceKey string, serviceId string, clusteController Clust
 	}
 }
 
-//ConnectToLeader Connect this service as a follower to the elected leader.
+//FollowerRegistrationRoutine Connect this service as a follower to the elected leader.
 //this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
-func ConnectToLeader(ctx context.Context, appConfig config.Server, connectionInterval time.Duration, serviceId string, clusteController ClusterController) {
+func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Server, connectionInterval time.Duration, serviceId string, clusteController ClusterController) {
 
 	thisNode := NewNode(serviceId, appConfig.Host, appConfig.Port)
 	requestBody, _ := thisNode.Json()
@@ -80,7 +80,7 @@ func ConnectToLeader(ctx context.Context, appConfig config.Server, connectionInt
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				connectToLeader(appConfig.ServiceKey, serviceId, clusteController, requestBody, client)
+				connectToLeader(appConfig.ServiceKey, clusteController, requestBody, client)
 			}
 		}
 	}()

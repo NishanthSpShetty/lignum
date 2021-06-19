@@ -68,7 +68,7 @@ func (s *Service) startClusterService(ctx context.Context) error {
 
 	//connect to leader
 	interval := 1 * time.Second
-	cluster.ConnectToLeader(ctx, s.Config.Server, interval, s.ServiceId, s.ClusterController)
+	cluster.FollowerRegistrationRoutine(ctx, s.Config.Server, interval, s.ServiceId, s.ClusterController)
 	return nil
 }
 
