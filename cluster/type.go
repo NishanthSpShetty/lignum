@@ -23,13 +23,22 @@ type ClusterController interface {
 
 //NodeNodeConfig contains the node information
 type Node struct {
-	Id   string `json:"id"`
-	Host string `json:"host"`
-	Port int    `json:"port"`
+	Id    string `json:"id"`
+	Host  string `json:"host"`
+	Port  int    `json:"port"`
+	_json []byte
 }
 
-func (n Node) Json() ([]byte, error) {
+func (n Node) getJson() ([]byte, error) {
 	return json.Marshal(n)
+
+}
+
+func (n Node) Json() []byte {
+	if n._json == nil {
+		n._json, _ = json.Marshal(n)
+	}
+	return n._json
 }
 
 func NewNode(id string, host string, port int) Node {
@@ -45,8 +54,7 @@ func (n *Node) Ping(client http.Client) bool {
 	pingUrl := fmt.Sprintf("http://%s:%d/ping", n.Host, n.Port)
 	response, err := client.Get(pingUrl)
 	if err != nil {
-		json, _ := n.Json()
-		log.Error().RawJSON("node", json).Err(err).Msg("ping failed")
+		log.Error().RawJSON("node", n.Json()).Err(err).Msg("ping failed")
 		return false
 	}
 

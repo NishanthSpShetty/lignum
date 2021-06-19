@@ -27,10 +27,10 @@ func New(queue <-chan message.Message) *Replicator {
 //StartReplicator start replication routine to replicate the messages to all nodes
 func (r *Replicator) StartReplicator() {
 
-	log.Info().Msg("Replicator service is running..")
+	log.Info().Msg("replicator service is running..")
 	go func() {
 		for msg := range r.replicationQueue {
-			log.Debug().Interface("Message", msg).Msg("Received message for replication ")
+			log.Debug().Interface("Message", msg).Msg("received message for replication ")
 		}
 	}()
 }

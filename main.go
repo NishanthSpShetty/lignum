@@ -28,11 +28,11 @@ func main() {
 
 	appConfig, err := config.GetConfig(*configFile)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to read config")
+		log.Error().Err(err).Msg("failed to read config")
 		return
 	}
 
-	log.Debug().Interface("Config", appConfig).Msg("Loaded app config")
+	log.Debug().Interface("Config", appConfig).Msg("loaded app config")
 	service, err := service.New(appConfig)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to initialise service")

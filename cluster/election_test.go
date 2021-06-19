@@ -71,7 +71,7 @@ func Test_ConnectToLeader(t *testing.T) {
 		Host: "localhost",
 		Port: 8080,
 	}
-	thisNodeData, _ := node.Json()
+	thisNodeData := node.Json()
 
 	mockURL, _ := url.Parse(mockServer.URL)
 	port, _ := strconv.Atoi(mockURL.Port())

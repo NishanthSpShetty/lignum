@@ -159,7 +159,7 @@ func Test_GetLeader(t *testing.T) {
 
 	testservicekey := "test-service-key"
 	testsessionid := "testsessionid"
-	lockData, _ := node.Json()
+	lockData := node.Json()
 
 	type args struct {
 		serviceKey string

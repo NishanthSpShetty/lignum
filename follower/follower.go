@@ -75,13 +75,13 @@ func (f *FollowerRegistry) StartHealthCheck(ctx context.Context, healthCheckFreq
 		Timeout: 5 * time.Millisecond,
 	}
 	go func() {
-		log.Debug().Msg("starting healthCheck service")
+		log.Debug().Msg("starting health check service")
 		ticker := time.NewTicker(healthCheckFrequency)
 
 		for {
 			select {
 			case <-ctx.Done():
-				fmt.Println("cancle healthCheck")
+				log.Debug().Msg("stopping follwer health check service")
 				ticker.Stop()
 				return
 			case <-ticker.C:

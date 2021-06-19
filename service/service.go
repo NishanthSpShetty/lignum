@@ -90,7 +90,7 @@ func (s *Service) addCancel(fn context.CancelFunc) {
 
 func (s *Service) Start() error {
 
-	log.Info().Str("ServiceID", s.ServiceId).Msg("Starting lignum - distributed messaging service")
+	log.Info().Str("ServiceID", s.ServiceId).Msg("starting lignum - distributed messaging service")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.addCancel(cancel)

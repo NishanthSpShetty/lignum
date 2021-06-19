@@ -52,7 +52,7 @@ func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sess
 	log.Debug().
 		Str("SessionId", sessionId).
 		Str("Duration", writeMeta.RequestTime.String()).
-		Msg("Consul session created")
+		Msg("consul session created")
 
 	c.renewSessionPeriodically(sessionId, consulConfig.SessionRenewalTTL, sessionRenewalChannel)
 	c.SessionId = sessionId
@@ -79,11 +79,7 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
 
 func (c *ConsulClusterController) AcquireLock(node Node, serviceKey string) (bool, error) {
 
-	lockData, err := node.Json()
-
-	if err != nil {
-		return false, err
-	}
+	lockData := node.Json()
 
 	kvPair := &api.KVPair{
 		Key:     serviceKey,
@@ -101,7 +97,7 @@ func (c *ConsulClusterController) AcquireLock(node Node, serviceKey string) (boo
 			Str("Duration", writeMeta.RequestTime.String()).
 			RawJSON("Node", lockData).
 			Bool("Acquired", acquired).
-			Msg("Consul lock aquired on the session")
+			Msg("consul lock aquired on the session")
 	}
 	return acquired, err
 
