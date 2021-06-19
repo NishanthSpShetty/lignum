@@ -39,7 +39,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 
 	err := decoder.Decode(&msg)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to read request body %s ")
+		log.Error().Err(err).Msg("failed to read request body %s ")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -65,7 +65,7 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	err := decoder.Decode(&messageRequest)
 
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to read request body")
+		log.Error().Err(err).Msg("failed to read request body")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

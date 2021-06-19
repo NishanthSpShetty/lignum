@@ -12,7 +12,7 @@ import (
 func (s *Service) Stop() {
 	log.Info().
 		Str("ServiceID", s.ServiceId).
-		Msg("Stopping all routines, channels")
+		Msg("stopping all routines, channels")
 
 	//call all cancelfunctions
 	for _, cancel := range s.Cancels {
@@ -25,11 +25,11 @@ func (s *Service) Stop() {
 	err := s.ClusterController.DestroySession()
 
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to destroy the session ")
+		log.Error().Err(err).Msg("failed to destroy the session ")
 	}
 	s.SetStopped()
 	s.apiServer.Stop(context.Background())
-	log.Info().Str("ServiceId", s.ServiceId).Msg("Shutting down")
+	log.Info().Str("ServiceId", s.ServiceId).Msg("shutting down")
 }
 
 func (s *Service) signalHandler() {

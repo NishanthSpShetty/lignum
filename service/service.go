@@ -67,8 +67,8 @@ func (s *Service) startClusterService(ctx context.Context) error {
 	cluster.InitiateLeaderElection(ctx, s.Config.Server, s.ServiceId, s.ClusterController)
 
 	//connect to leader
-	interval := 10 * time.Millisecond
-	cluster.ConnectToLeader(ctx, s.Config.Server, interval, s.ServiceId, s.ClusterController)
+	interval := 1 * time.Second
+	cluster.FollowerRegistrationRoutine(ctx, s.Config.Server, interval, s.ServiceId, s.ClusterController)
 	return nil
 }
 
@@ -90,7 +90,7 @@ func (s *Service) addCancel(fn context.CancelFunc) {
 
 func (s *Service) Start() error {
 
-	log.Info().Str("ServiceID", s.ServiceId).Msg("Starting lignum - distributed messaging service")
+	log.Info().Str("ServiceID", s.ServiceId).Msg("starting lignum - distributed messaging service")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.addCancel(cancel)
@@ -101,7 +101,7 @@ func (s *Service) Start() error {
 	s.signalHandler()
 
 	//start service routines
-	s.follower.StartHealthCheck(ctx, 100*time.Millisecond)
+	s.follower.StartHealthCheck(ctx, 1*time.Second)
 	//	message.StartFlusher(s.Config.Message)
 	//	message.StartReplicator(s.ReplicationQueue)
 

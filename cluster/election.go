@@ -12,9 +12,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
+func sendConnectRequestLeader(client http.Client, host string, port int, requestBody []byte) error {
 	leaderEndpoint := fmt.Sprintf("http://%s:%d%s", host, port, "/api/follower/register")
-	resp, err := http.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
+	resp, err := client.Post(leaderEndpoint, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return err
 	}
@@ -24,52 +24,63 @@ func sendConnectRequestLeader(host string, port int, requestBody []byte) error {
 	return err
 }
 
-func connectToLeader(serviceKey string, serviceId string, clusteController ClusterController, requestBody []byte) {
+func connectToLeader(serviceKey string, clusteController ClusterController, requestBody []byte, httpClient http.Client) {
 
 	if !state.isLeader() {
 
 		if !state.isConnectedLeader() {
 			//loop if the current node becomes the leader
-			log.Info().Msg("Registering this service as a follower to the cluster leader...")
+			log.Info().Msg("registering this service as a follower to the cluster leader.")
 			//get the leader information and send a follow request.
 			leaderNode, err := clusteController.GetLeader(serviceKey)
 			if err != nil {
 				log.Error().Err(err).Send()
 				return
 			}
-			err = sendConnectRequestLeader(leaderNode.Host, leaderNode.Port, requestBody)
+			err = sendConnectRequestLeader(httpClient, leaderNode.Host, leaderNode.Port, requestBody)
 
 			if err != nil {
-				log.Error().Err(err).Msg("Failed to register with the leader ")
+				log.Error().Err(err).Msg("failed to register with the leader ")
 			} else {
 				//we are connected to leader,
 				state.setConnectedToLeader(true)
+				state.setLeaderNode(&leaderNode)
 			}
 		} else {
 			//check if we can ping connected leader
-			log.Debug().Msg("pinging leader")
-
+			if !state.getLeader().Ping(httpClient) {
+				log.Error().Msg("unable to ping the leader, will query leader status again and register the follower")
+				state.setConnectedToLeader(false)
+			}
 		}
-
 	}
 }
 
-//ConnectToLeader Connect this service as a follower to the elected leader.
+//FollowerRegistrationRoutine Connect this service as a follower to the elected leader.
 //this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
-func ConnectToLeader(ctx context.Context, appConfig config.Server, connectionInterval time.Duration, serviceId string, clusteController ClusterController) {
+func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Server, connectionInterval time.Duration, serviceId string, clusteController ClusterController) {
 
 	thisNode := NewNode(serviceId, appConfig.Host, appConfig.Port)
-	requestBody, _ := thisNode.Json()
+	requestBody := thisNode.Json()
 	ticker := time.NewTicker(connectionInterval)
+
+	httpClient := http.Client{
+		Transport: &http.Transport{
+			DisableCompression: true,
+		},
+		Timeout: 5 * time.Millisecond,
+	}
 	go func() {
-		log.Debug().Msg("starting leader follower routine")
+		log.Debug().Msg("starting follower registration routine")
 		for {
 			select {
 			case <-ctx.Done():
+
+				log.Debug().Msg("stopping follower registration routine")
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				connectToLeader(appConfig.ServiceKey, serviceId, clusteController, requestBody)
+				connectToLeader(appConfig.ServiceKey, clusteController, requestBody, httpClient)
 			}
 		}
 	}()
@@ -79,13 +90,13 @@ func tryAcquireLock(node Node, c ClusterController, serviceKey string) (bool, er
 
 	acquired, err := c.AcquireLock(node, serviceKey)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to acquire lock")
+		log.Error().Err(err).Msg("failed to acquire lock")
 		return false, err
 	}
 
 	if acquired {
 		state.markLeader()
-		log.Info().Msg("Lock acquired and marking the node as leader")
+		log.Info().Msg("lock acquired and marking the node as leader")
 	}
 	return acquired, nil
 }
@@ -117,7 +128,7 @@ func leaderElection(ctx context.Context, node Node, c ClusterController, service
 			}
 
 		case <-ctx.Done():
-			log.Info().Err(ctx.Err()).Msg("context closed, shutting down leader election worker")
+			log.Info().Err(ctx.Err()).Msg("shutting down leader election worker")
 			ticker.Stop()
 			return
 		}

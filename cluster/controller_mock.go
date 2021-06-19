@@ -11,8 +11,9 @@ type MockclusterController struct {
 }
 
 func (m *MockclusterController) AcquireLock(node Node, serviceKey string) (bool, error) {
-	m.Called()
-	return true, nil
+	args := m.Called()
+
+	return args.Bool(0), nil
 }
 
 func (m *MockclusterController) CreateSession(consulConfig config.Consul, sessionRenewalChannel chan struct{}) error {
@@ -25,4 +26,9 @@ func (m *MockclusterController) CreateSession(consulConfig config.Consul, sessio
 func (m *MockclusterController) DestroySession() error {
 	m.Called()
 	return nil
+}
+
+func (m *MockclusterController) GetLeader(serviceKey string) (Node, error) {
+	args := m.Called()
+	return args.Get(0).(Node), nil
 }

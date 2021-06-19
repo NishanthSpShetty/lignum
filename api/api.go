@@ -52,7 +52,7 @@ func NewServer(serviceId string, queue chan<- message.Message, config config.Ser
 func (s *Server) registerFollower() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		requestBody, _ := ioutil.ReadAll(req.Body)
-		log.Info().Bytes("RequestBody", requestBody).Msg("Request received for follower registration")
+		log.Info().Bytes("RequestBody", requestBody).Msg("request received for follower registration")
 		node := cluster.Node{}
 		json.Unmarshal(requestBody, &node)
 		s.follower.Register(node)
