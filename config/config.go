@@ -35,7 +35,7 @@ type Follower struct {
 	HealthCheckIntervalInSecond time.Duration `yaml:"healthcheck-interval-in-seconds"`
 	//per follower ping timeout
 	HealthCheckTimeoutInMilliSeconds           time.Duration `yaml:"healthcheck-ping-timeout-in-ms"`
-	RegistrationOrHealthCheckIntervalInSeconds time.Duration `yaml:"registration-healthcheck-interval-in-seconds"`
+	RegistrationOrLeaderCheckIntervalInSeconds time.Duration `yaml:"registration-leader-check-interval-in-seconds"`
 }
 
 type Replication struct {

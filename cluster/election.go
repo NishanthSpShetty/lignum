@@ -62,7 +62,7 @@ func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, s
 
 	thisNode := NewNode(serviceId, appConfig.Server.Host, appConfig.Server.Port)
 	requestBody := thisNode.Json()
-	ticker := time.NewTicker(appConfig.Follower.RegistrationOrHealthCheckIntervalInSeconds)
+	ticker := time.NewTicker(appConfig.Follower.RegistrationOrLeaderCheckIntervalInSeconds)
 
 	httpClient := http.Client{
 		Transport: &http.Transport{

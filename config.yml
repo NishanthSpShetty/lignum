@@ -19,7 +19,7 @@ message:
 follower:
   healthcheck-interval-in-seconds: 1
   healthcheck-ping-timeout-in-ms: 100
-  registration-healthcheck-interval-in-seconds: 1
+  registration-leader-check-interval-in-seconds: 1
 
 replication:
   internal-queue-size: 1024
