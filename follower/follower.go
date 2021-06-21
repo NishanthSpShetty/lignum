@@ -66,17 +66,18 @@ func (f *FollowerRegistry) healthCheck(client http.Client) {
 	}
 }
 
-func (f *FollowerRegistry) StartHealthCheck(ctx context.Context, healthCheckFrequency time.Duration) {
+func (f *FollowerRegistry) StartHealthCheck(ctx context.Context, healthCheckInterval time.Duration, healthCheckTimeout time.Duration) {
 	//create http client
 	client := http.Client{
 		Transport: &http.Transport{
 			DisableCompression: true,
 		},
-		Timeout: 5 * time.Millisecond,
+		// 		Timeout: 5 * time.Millisecond,
+		Timeout: healthCheckTimeout,
 	}
 	go func() {
 		log.Debug().Msg("starting health check service")
-		ticker := time.NewTicker(healthCheckFrequency)
+		ticker := time.NewTicker(healthCheckInterval)
 
 		for {
 			select {

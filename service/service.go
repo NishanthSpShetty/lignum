@@ -9,7 +9,7 @@ import (
 
 	"github.com/NishanthSpShetty/lignum/api"
 	"github.com/NishanthSpShetty/lignum/cluster"
-	"github.com/NishanthSpShetty/lignum/config"
+	c "github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/google/uuid"
@@ -22,7 +22,7 @@ const REPLICATION_QUEUE_SIZE = 1024
 
 type Service struct {
 	signalChannel         chan os.Signal
-	Config                config.Config
+	Config                c.Config
 	ServiceId             string
 	SessionRenewalChannel chan struct{}
 	ClusterController     cluster.ClusterController
@@ -34,7 +34,7 @@ type Service struct {
 	running               bool
 }
 
-func New(config config.Config) (*Service, error) {
+func New(config c.Config) (*Service, error) {
 
 	consulClusterController, err := cluster.InitialiseClusterController(config.Consul)
 
@@ -47,7 +47,7 @@ func New(config config.Config) (*Service, error) {
 		ServiceId:             uuid.New().String(),
 		Config:                config,
 		ClusterController:     consulClusterController,
-		ReplicationQueue:      make(chan message.Message, REPLICATION_QUEUE_SIZE),
+		ReplicationQueue:      make(chan message.Message, config.Replication.InternalQueueSize),
 		SessionRenewalChannel: make(chan struct{}),
 		message:               message.New(config.Message),
 		follower:              follower.New(),
@@ -64,11 +64,10 @@ func (s *Service) startClusterService(ctx context.Context) error {
 		return errors.Wrap(err, "Service.startClusterService")
 	}
 	//Start leader election routine
-	cluster.InitiateLeaderElection(ctx, s.Config.Server, s.ServiceId, s.ClusterController)
+	cluster.InitiateLeaderElection(ctx, s.Config, s.ServiceId, s.ClusterController)
 
 	//connect to leader
-	interval := 1 * time.Second
-	cluster.FollowerRegistrationRoutine(ctx, s.Config.Server, interval, s.ServiceId, s.ClusterController)
+	cluster.FollowerRegistrationRoutine(ctx, s.Config, s.ServiceId, s.ClusterController)
 	return nil
 }
 
@@ -101,7 +100,9 @@ func (s *Service) Start() error {
 	s.signalHandler()
 
 	//start service routines
-	s.follower.StartHealthCheck(ctx, 1*time.Second)
+	healthCheckInterval := s.Config.Follower.HealthCheckIntervalInSecond * time.Second
+	healthCheckTimeout := s.Config.Follower.HealthCheckTimeoutInMilliSeconds * time.Millisecond
+	s.follower.StartHealthCheck(ctx, healthCheckInterval, healthCheckTimeout)
 	//	message.StartFlusher(s.Config.Message)
 	//	message.StartReplicator(s.ReplicationQueue)
 

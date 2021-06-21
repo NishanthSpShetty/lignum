@@ -3,7 +3,6 @@ package cluster
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/hashicorp/consul/api"
@@ -31,8 +30,9 @@ func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterCont
 	return &ConsulClusterController{client: &Client{client}}, nil
 }
 
-func (c *ConsulClusterController) renewSessionPeriodically(sessionId string, ttlS string, sessionRenewalChannel chan struct{}) {
+func (c *ConsulClusterController) renewSessionPeriodically(sessionId string, ttl int, sessionRenewalChannel chan struct{}) {
 	//spawn go routine for renewal and return
+	ttlS := fmt.Sprintf("%ds", ttl)
 	go c.client.RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
 }
 
@@ -40,8 +40,8 @@ func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sess
 
 	sessionEntry := &api.SessionEntry{
 		Name:      consulConfig.ServiceName,
-		TTL:       consulConfig.SessionTTL,
-		LockDelay: 1 * time.Millisecond,
+		TTL:       fmt.Sprintf("%ds", consulConfig.SessionTTLInSeconds),
+		LockDelay: consulConfig.LockDelayInMilliSeconds,
 	}
 
 	sessionId, writeMeta, err := c.client.CreateSession(sessionEntry, nil)
@@ -54,7 +54,7 @@ func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sess
 		Str("Duration", writeMeta.RequestTime.String()).
 		Msg("consul session created")
 
-	c.renewSessionPeriodically(sessionId, consulConfig.SessionRenewalTTL, sessionRenewalChannel)
+	c.renewSessionPeriodically(sessionId, consulConfig.SessionRenewalTTLInSeconds, sessionRenewalChannel)
 	c.SessionId = sessionId
 	return err
 }
