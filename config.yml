@@ -10,7 +10,7 @@ consul:
   port: 8500
   session-ttl-in-seconds: 15
   session-renewal-ttl-in-seconds: 13
-  lock-delay-in-ms: 10 
+  lock-delay-in-ms: 10
   leader-election-interval-in-ms: 10
 
 message:
