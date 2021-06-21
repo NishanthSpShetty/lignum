@@ -8,8 +8,18 @@ server:
 consul:
   host: "localhost"
   port: 8500
-  sessionTTL: "15s"
-  sessionRenewalTTL: "15s"
+  session-ttl-in-seconds: 15
+  session-renewal-ttl-in-seconds: 13
+  lock-delay-in-ms: 10
+  leader-election-interval-in-ms: 10
 
 message:
   initial-size-per-topic: 1000
+
+follower:
+  healthcheck-interval-in-seconds: 1
+  healthcheck-ping-timeout-in-ms: 100
+  registration-leader-check-interval-in-seconds: 1
+
+replication:
+  internal-queue-size: 1024

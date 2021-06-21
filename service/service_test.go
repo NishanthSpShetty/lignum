@@ -16,9 +16,15 @@ import (
 
 func createTestConfig() config.Config {
 	return config.Config{
-		Server:  config.Server{},
-		Consul:  config.Consul{},
+		Server: config.Server{},
+		Consul: config.Consul{
+			LeaderElectionIntervalInMilliSeconds: 100,
+		},
 		Message: config.Message{},
+		Follower: config.Follower{
+			RegistrationOrLeaderCheckIntervalInSeconds: 1,
+			HealthCheckIntervalInSecond:                1,
+		},
 	}
 
 }

@@ -58,17 +58,17 @@ func connectToLeader(serviceKey string, clusteController ClusterController, requ
 
 //FollowerRegistrationRoutine Connect this service as a follower to the elected leader.
 //this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
-func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Server, connectionInterval time.Duration, serviceId string, clusteController ClusterController) {
+func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, serviceId string, clusteController ClusterController) {
 
-	thisNode := NewNode(serviceId, appConfig.Host, appConfig.Port)
+	thisNode := NewNode(serviceId, appConfig.Server.Host, appConfig.Server.Port)
 	requestBody := thisNode.Json()
-	ticker := time.NewTicker(connectionInterval)
+	ticker := time.NewTicker(appConfig.Follower.RegistrationOrLeaderCheckIntervalInSeconds)
 
 	httpClient := http.Client{
 		Transport: &http.Transport{
 			DisableCompression: true,
 		},
-		Timeout: 5 * time.Millisecond,
+		Timeout: appConfig.Follower.HealthCheckTimeoutInMilliSeconds * time.Millisecond,
 	}
 	go func() {
 		log.Debug().Msg("starting follower registration routine")
@@ -80,7 +80,7 @@ func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Server, c
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				connectToLeader(appConfig.ServiceKey, clusteController, requestBody, httpClient)
+				connectToLeader(appConfig.Server.ServiceKey, clusteController, requestBody, httpClient)
 			}
 		}
 	}()
@@ -101,11 +101,10 @@ func tryAcquireLock(node Node, c ClusterController, serviceKey string) (bool, er
 	return acquired, nil
 }
 
-func leaderElection(ctx context.Context, node Node, c ClusterController, serviceKey string) {
+func leaderElection(ctx context.Context, node Node, c ClusterController, serviceKey string, electionInterval time.Duration) {
 
 	loggedOnce := false
-	consulLockPingInterval := 10 * time.Millisecond
-	ticker := time.NewTicker(consulLockPingInterval)
+	ticker := time.NewTicker(electionInterval)
 	//start polling to acquire the lock indefinitely
 	acquired := state.isLeader()
 	var err error
@@ -135,14 +134,14 @@ func leaderElection(ctx context.Context, node Node, c ClusterController, service
 	}
 }
 
-func InitiateLeaderElection(ctx context.Context, serverConfig config.Server, nodeId string, c ClusterController) {
+func InitiateLeaderElection(ctx context.Context, appConfig config.Config, nodeId string, c ClusterController) {
 	node := Node{
 		Id:   nodeId,
-		Host: serverConfig.Host,
-		Port: serverConfig.Port,
+		Host: appConfig.Server.Host,
+		Port: appConfig.Server.Port,
 	}
 
-	tryAcquireLock(node, c, serverConfig.ServiceKey)
+	tryAcquireLock(node, c, appConfig.Server.ServiceKey)
 
-	go leaderElection(ctx, node, c, serverConfig.ServiceKey)
+	go leaderElection(ctx, node, c, appConfig.Server.ServiceKey, appConfig.Consul.LeaderElectionIntervalInMilliSeconds)
 }

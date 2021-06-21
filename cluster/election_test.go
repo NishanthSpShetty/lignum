@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -49,7 +50,7 @@ func Test_LeaderElection(t *testing.T) {
 		Port: 8080,
 	}
 	clusterController.On("AcquireLock", mock.Anything).Return(true)
-	leaderElection(context.Background(), node, clusterController, serviceKey)
+	leaderElection(context.Background(), node, clusterController, serviceKey, 1*time.Second)
 	assert.True(t, state.isLeader(), "This node should be the leader")
 }
 

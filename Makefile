@@ -1,6 +1,7 @@
 BIN_NAME=./bin/lignum
 ALL_GO_FILES=$(shell find . -type f  -name '*.go')
 CONFIG_FILE="config.yml"
+export ENV=development
 
 .PHONY: test
 

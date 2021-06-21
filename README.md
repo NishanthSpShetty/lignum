@@ -51,6 +51,16 @@ update the config.yml and run, make sure consul service is running and `consul` 
 make run
 ```
 
+For development, lignum can log message as simple readable text on the console, set the environemnt variable ENV to development 
+```
+export ENV="development"
+```
+
+To set the log level, use
+```
+export LOG_LEVEL="error"
+```
+
 To create a cluster on single host, change the server port for each instance.
 Lignum will listen on the specified port for incoming traffics
 
