@@ -37,10 +37,11 @@ func (t *Topic) GetMessages() []Message {
 	return t.msg
 }
 
-func (t *Topic) Push(msg string) {
+func (t *Topic) Push(msg string) Message {
 	metrics.IncrementMessageCount(t.name)
 	message := Message{Id: t.counter.Next(), Data: msg}
 	t.msg = append(t.msg, message)
+	return message
 }
 
 type MessageStore struct {
@@ -77,7 +78,7 @@ func (m *MessageStore) TopicExist(topic string) bool {
 	return ok
 }
 
-func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) {
+func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) Message {
 	//check if the topic exist
 	topic, ok := m.topic[topic_name]
 
@@ -94,7 +95,7 @@ func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) {
 	}
 
 	//push message into topic
-	topic.Push(msg)
+	return topic.Push(msg)
 }
 
 //Get return the value for given range (from, to)

@@ -39,7 +39,8 @@ type Follower struct {
 }
 
 type Replication struct {
-	InternalQueueSize int `yaml:"internal-queue-size"`
+	InternalQueueSize           int           `yaml:"internal-queue-size"`
+	ClientTimeoutInMilliSeconds time.Duration `yaml:"client-timeout-in-ms"`
 }
 
 type Config struct {

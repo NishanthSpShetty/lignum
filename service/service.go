@@ -12,6 +12,7 @@ import (
 	c "github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -30,7 +31,8 @@ type Service struct {
 	Cancels               []context.CancelFunc
 	apiServer             *api.Server
 	message               *message.MessageStore
-	follower              *follower.FollowerRegistry
+	followerRegistry      *follower.FollowerRegistry
+	replicator            *replication.Replicator
 	running               bool
 }
 
@@ -50,9 +52,10 @@ func New(config c.Config) (*Service, error) {
 		ReplicationQueue:      make(chan message.Message, config.Replication.InternalQueueSize),
 		SessionRenewalChannel: make(chan struct{}),
 		message:               message.New(config.Message),
-		follower:              follower.New(),
+		followerRegistry:      follower.New(),
 	}
-	s.apiServer = api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.follower)
+	s.replicator = replication.New(s.ReplicationQueue, s.followerRegistry)
+	s.apiServer = api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.followerRegistry)
 	return s, nil
 }
 
@@ -102,7 +105,9 @@ func (s *Service) Start() error {
 	//start service routines
 	healthCheckInterval := s.Config.Follower.HealthCheckIntervalInSecond * time.Second
 	healthCheckTimeout := s.Config.Follower.HealthCheckTimeoutInMilliSeconds * time.Millisecond
-	s.follower.StartHealthCheck(ctx, healthCheckInterval, healthCheckTimeout)
+	clientTimeout := s.Config.Replication.ClientTimeoutInMilliSeconds * time.Millisecond
+	s.followerRegistry.StartHealthCheck(ctx, healthCheckInterval, healthCheckTimeout)
+	s.replicator.StartReplicator(ctx, clientTimeout)
 	//	message.StartFlusher(s.Config.Message)
 	//	message.StartReplicator(s.ReplicationQueue)
 

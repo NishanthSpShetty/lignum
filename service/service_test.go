@@ -48,9 +48,9 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 		ReplicationQueue:      make(chan message.Message, REPLICATION_QUEUE_SIZE),
 		SessionRenewalChannel: make(chan struct{}),
 		message:               message.New(config.Message),
-		follower:              follower.New(),
+		followerRegistry:      follower.New(),
 	}
-	service.apiServer = api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server, service.message, service.follower)
+	service.apiServer = api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server, service.message, service.followerRegistry)
 
 	go service.Start()
 	close(service.signalChannel)
