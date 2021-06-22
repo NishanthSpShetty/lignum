@@ -53,7 +53,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 
 	log.Debug().Str("Data", msg.Message).Str("Topic", msg.Topic).Msg("message received")
 	mesg := s.message.Put(ctx, msg.Topic, msg.Message)
-	//write to replication queue
+	//write messages to replication queue
 	payload := replication.Payload{
 		Topic: msg.Topic,
 		Id:    mesg.Id,

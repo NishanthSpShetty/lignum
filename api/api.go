@@ -91,7 +91,7 @@ func (s *Server) Serve() error {
 
 	http.HandleFunc("/ping", s.ping())
 	http.HandleFunc("/api/follower/register", s.registerFollower())
-	http.HandleFunc("/internal/api/replicate", s.registerFollower())
+	http.HandleFunc("/internal/api/replicate", s.replicate())
 	http.HandleFunc("/api/message", s.handleMessage())
 	http.HandleFunc("/api/topic", s.TopicHandler())
 	http.Handle("/metrics", promhttp.Handler())

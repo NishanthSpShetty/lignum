@@ -17,6 +17,11 @@ var httpPostRequestCounter = promauto.NewCounter(prometheus.CounterOpts{
 	Help: "number of post request",
 })
 
+var httpReplicateRequestCounter = promauto.NewCounter(prometheus.CounterOpts{
+	Name: "lignum_replicate_message_request",
+	Help: "number of replication message request",
+})
+
 var TopicMessageCounter = make(map[string]prometheus.Counter)
 
 func IncrementTopic() {
@@ -25,6 +30,10 @@ func IncrementTopic() {
 
 func IncrementPostRequest() {
 	httpPostRequestCounter.Inc()
+}
+
+func IncrementReplicationRequest() {
+	httpReplicateRequestCounter.Inc()
 }
 
 func IncrementMessageCount(topic string) {
@@ -39,5 +48,4 @@ func IncrementMessageCount(topic string) {
 		TopicMessageCounter[topic] = counter
 	}
 	counter.Inc()
-
 }
