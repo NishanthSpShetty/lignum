@@ -27,7 +27,7 @@ type Service struct {
 	ServiceId             string
 	SessionRenewalChannel chan struct{}
 	ClusterController     cluster.ClusterController
-	ReplicationQueue      chan message.Message
+	ReplicationQueue      chan replication.Payload
 	Cancels               []context.CancelFunc
 	apiServer             *api.Server
 	message               *message.MessageStore
@@ -49,7 +49,7 @@ func New(config c.Config) (*Service, error) {
 		ServiceId:             uuid.New().String(),
 		Config:                config,
 		ClusterController:     consulClusterController,
-		ReplicationQueue:      make(chan message.Message, config.Replication.InternalQueueSize),
+		ReplicationQueue:      make(chan replication.Payload, config.Replication.InternalQueueSize),
 		SessionRenewalChannel: make(chan struct{}),
 		message:               message.New(config.Message),
 		followerRegistry:      follower.New(),

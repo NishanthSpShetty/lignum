@@ -41,7 +41,6 @@ func New(queue <-chan Payload, followerRegistry *follower.FollowerRegistry) *Rep
 
 //StartReplicator start replication routine to replicate the messages to all nodes
 func (r *Replicator) StartReplicator(ctx context.Context, replicationTimeoutInMs time.Duration) {
-
 	r.client = http.Client{
 		Transport: &http.Transport{
 			DisableCompression: true,

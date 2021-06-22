@@ -11,6 +11,7 @@ import (
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +24,7 @@ func TestGetMessage(t *testing.T) {
 	requestData := GetMessageRequest{Topic: DummyTopic, From: 0, To: 1}
 	req, _ := json.Marshal(requestData)
 
-	messageChannel := make(chan message.Message, 10)
+	messageChannel := make(chan replication.Payload, 10)
 	msg := message.New(config.Message{})
 
 	server := NewServer(dummyServiceId, messageChannel, config.Server{}, msg, follower.New())
