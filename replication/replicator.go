@@ -28,9 +28,17 @@ func New(queue <-chan message.Message) *Replicator {
 func (r *Replicator) StartReplicator() {
 
 	log.Info().Msg("replicator service is running..")
+	//this is a live replication, so when the leader recieves the message it will write the same to the follower.
+	//This doesnt care for what the replication state of the follower
+	//follower must catch up with leader if there is a lag
 	go func() {
 		for msg := range r.replicationQueue {
 			log.Debug().Interface("Message", msg).Msg("received message for replication ")
+			r.send(msg)
 		}
 	}()
+}
+
+func (r *Replicator) send(msg message.Message) {
+
 }

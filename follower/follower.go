@@ -13,24 +13,35 @@ import (
 type Follower struct {
 	node    cluster.Node
 	healthy bool
+	//ready for replication
+	ready bool
 }
 
 type FollowerRegistry struct {
 	follower map[string]*Follower
 }
 
+func (f *Follower) IsHealthy() bool    { return f.healthy }
+func (f *Follower) IsReady() bool      { return f.ready }
+func (f *Follower) Node() cluster.Node { return f.node }
+
 func (f *FollowerRegistry) Register(n cluster.Node) {
 	//we know that the node is healthy when registering itself
-	f.follower[n.Id] = &Follower{node: n, healthy: true}
+	//for now we will mark the follower node as replication ready node
+	f.follower[n.Id] = &Follower{node: n, healthy: true, ready: true}
 	fmt.Println("registered")
 }
 
-func (f *FollowerRegistry) List() []cluster.Node {
+func (f *FollowerRegistry) ListNodes() []cluster.Node {
 	l := make([]cluster.Node, 0)
 	for _, follower := range f.follower {
 		l = append(l, follower.node)
 	}
 	return l
+}
+
+func (f *FollowerRegistry) List() map[string]*Follower {
+	return f.follower
 }
 
 func New() *FollowerRegistry {
