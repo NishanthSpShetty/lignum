@@ -21,7 +21,10 @@ type FollowerRegistry struct {
 	follower map[string]*Follower
 }
 
-func (f *Follower) IsHealthy() bool    { return f.healthy }
+func (f *Follower) IsHealthy() bool { return f.healthy }
+
+//IsReady return true when follower is ready to recieve replicate message.
+//currently we will  use healthy flag to mark as ready
 func (f *Follower) IsReady() bool      { return f.ready }
 func (f *Follower) Node() cluster.Node { return f.node }
 
