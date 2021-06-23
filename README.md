@@ -1,26 +1,37 @@
 ## Lignum : Distributed Log store (akin kafka)
 
-Lignum is a distributed message queue, implementing kafka in go using Consul as cluster management tool.
+Lignum is a distributed message queue, implementing something like kafka in go using Consul as cluster management service.
 
 ![Status](https://github.com/NishanthSpShetty/lignum/actions/workflows/go.yml/badge.svg)
 [![NishanthSpShetty](https://circleci.com/gh/NishanthSpShetty/lignum.svg?style=svg&circle-token=4de78d34762f2fe9f94fdbfc8cb5d29b146e813b)](https://app.circleci.com/pipelines/github/NishanthSpShetty/lignum)
 [![CodeFactor](https://www.codefactor.io/repository/github/nishanthspshetty/lignum/badge?s=82e5d72d47892bd920b35d26664d7d3b0643cdd8)](https://www.codefactor.io/repository/github/nishanthspshetty/lignum)
 
+### Motivation
+I set out myself to learn distributed system, while doing so started with distributed lock using consul and expanded the project to build logger and eventually decided to build something like kafka. So here I am now.
+
+### Architecture diagram
+![Lignum cluster](https://github.com/NishanthSpShetty/lignum/blob/master/resources/diagrams/lignum_system_design.png)
+
+
 ### Functionality
 Simple message queue inspired by Kafka, which can be used to
-   * send messages to topic.
-   * consume messages from topic.
-
+   * Send messages to topic.
+   * Consume messages from topic.
+   * Message is replicated to all nodes. meaning any node can be used to read message from the topic. compared to kafka where topic has leader and replicated to few set of nodes in a cluster.
+   
+   
 ### Cluster
 * Lignum can operate in cluster mode without needing any special setup.
 * Cluster management is facilitated by consul.
 * Each node will connect to consul to get the leader, if no leader found one of the node will be elected as leader.
 * All other node will register itself as follower to the leader.
-* Message sent to leader, will be replicated to follower node [WIP]
+* Message sent to leader, will be replicated to follower node.
+* If the leader goes down, any one of the follower gets elected as a leader.
 
 
 
-Lignum message has the following characterstics
+
+#### Lignum message has the following characterstics
 
 1. Topic
 
@@ -154,5 +165,11 @@ the above message will return 3 messages if presents, if the message is less tha
   "count": 3
 }
 ```
+
 > NOTE: Lignum doesnt store any data about the consumer. 
 ---
+
+*For TODO's and progress on the project refer [laundrylist](https://github.com/NishanthSpShetty/lignum/blob/master/laundrylist.md) or [lignum project](https://github.com/NishanthSpShetty/lignum/projects/1)*
+
+---
+
