@@ -3,6 +3,7 @@ package replication
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -17,6 +18,11 @@ type Payload struct {
 	//should this be in payload
 	Id   uint64
 	Data string
+}
+
+func (p Payload) Json() []byte {
+	data, _ := json.Marshal(p)
+	return data
 }
 
 //ReplicationState Contains the information on the followers replciation state
@@ -69,15 +75,15 @@ func (r *Replicator) replicate(payload Payload) {
 	}
 }
 
-func (r *Replicator) send(node cluster.Node, msg Payload) {
+func (r *Replicator) send(node cluster.Node, payload Payload) {
 
 	url := fmt.Sprintf("http://%s:%d/internal/api/replicate", node.Host, node.Port)
 	contentType := "application/json"
 
-	response, err := r.client.Post(url, contentType, bytes.NewBuffer([]byte{}))
+	response, err := r.client.Post(url, contentType, bytes.NewBuffer(payload.Json()))
 	if err != nil {
 		log.Error().RawJSON("node", node.Json()).Err(err).Msg("failed to send message to follower")
-		//should add some retrier
+		//should add some retrier mechanism
 	}
 
 	if response.StatusCode == http.StatusOK {
