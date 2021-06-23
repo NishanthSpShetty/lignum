@@ -26,7 +26,15 @@ func (s *Server) handleReplicate(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	fmt.Printf("Got replication payload %v\n", payload)
+	err = s.message.Replicate(payload)
+	if err != nil {
+		log.Debug().Err(err).Send()
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
 	w.WriteHeader(http.StatusOK)
+
 }
 
 func (s *Server) replicate() http.HandlerFunc {

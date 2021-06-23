@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -84,9 +85,15 @@ func (r *Replicator) send(node cluster.Node, payload Payload) {
 	if err != nil {
 		log.Error().RawJSON("node", node.Json()).Err(err).Msg("failed to send message to follower")
 		//should add some retrier mechanism
+		return
 	}
-
+	b, _ := ioutil.ReadAll(response.Body)
+	reason := string(b)
+	if response.StatusCode == http.StatusBadRequest {
+		log.Error().Str("Reason", reason).RawJSON("Node", node.Json()).Msg("follower rejected replication message")
+	}
 	if response.StatusCode == http.StatusOK {
 		log.Debug().Msg("msg sent to follower")
 	}
+	response.Body.Close()
 }

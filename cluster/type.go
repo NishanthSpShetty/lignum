@@ -57,6 +57,7 @@ func (n *Node) Ping(client http.Client) bool {
 		log.Error().RawJSON("node", n.Json()).Err(err).Msg("ping failed")
 		return false
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusOK {
 		return true
