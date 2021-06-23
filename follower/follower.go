@@ -13,24 +13,38 @@ import (
 type Follower struct {
 	node    cluster.Node
 	healthy bool
+	//ready for replication
+	ready bool
 }
 
 type FollowerRegistry struct {
 	follower map[string]*Follower
 }
 
+func (f *Follower) IsHealthy() bool { return f.healthy }
+
+//IsReady return true when follower is ready to recieve replicate message.
+//currently we will  use healthy flag to mark as ready
+func (f *Follower) IsReady() bool      { return f.healthy }
+func (f *Follower) Node() cluster.Node { return f.node }
+
 func (f *FollowerRegistry) Register(n cluster.Node) {
 	//we know that the node is healthy when registering itself
-	f.follower[n.Id] = &Follower{node: n, healthy: true}
+	//for now we will mark the follower node as replication ready node
+	f.follower[n.Id] = &Follower{node: n, healthy: true, ready: true}
 	fmt.Println("registered")
 }
 
-func (f *FollowerRegistry) List() []cluster.Node {
+func (f *FollowerRegistry) ListNodes() []cluster.Node {
 	l := make([]cluster.Node, 0)
 	for _, follower := range f.follower {
 		l = append(l, follower.node)
 	}
 	return l
+}
+
+func (f *FollowerRegistry) List() map[string]*Follower {
+	return f.follower
 }
 
 func New() *FollowerRegistry {
@@ -51,9 +65,13 @@ func (f *FollowerRegistry) healthCheck(client http.Client) {
 		//if we marked node as unhealthy, dont check again.
 		//TODO: have some multiple tries before considering the node as dead.
 		//timeouts can happen even when the node is healthy
-		if !follower.healthy || !isActive(client, &follower.node) {
+		if !follower.healthy {
+			dead += 1
+			continue
+		}
+		if !isActive(client, &follower.node) {
 			//mark the follower as not healthy,
-			//TODO: remove the dead followers in cleanup
+			//TODO: remove the dead followers in cleanup process
 			follower.healthy = false
 			dead += 1
 			continue

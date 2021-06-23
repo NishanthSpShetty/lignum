@@ -12,13 +12,14 @@ import (
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
 
 type Server struct {
 	serviceId        string
-	replicationQueue chan<- message.Message
+	replicationQueue chan<- replication.Payload
 	config           config.Server
 	httpServer       *http.Server
 	message          *message.MessageStore
@@ -29,7 +30,7 @@ func (s *Server) Stop(ctx context.Context) {
 	s.httpServer.Shutdown(ctx)
 }
 
-func NewServer(serviceId string, queue chan<- message.Message, config config.Server, message *message.MessageStore, follower *follower.FollowerRegistry) *Server {
+func NewServer(serviceId string, queue chan<- replication.Payload, config config.Server, message *message.MessageStore, follower *follower.FollowerRegistry) *Server {
 
 	address := fmt.Sprintf("%s:%d", config.Host, config.Port)
 	httpServer := http.Server{Addr: address,
@@ -90,6 +91,7 @@ func (s *Server) Serve() error {
 
 	http.HandleFunc("/ping", s.ping())
 	http.HandleFunc("/api/follower/register", s.registerFollower())
+	http.HandleFunc("/internal/api/replicate", s.replicate())
 	http.HandleFunc("/api/message", s.handleMessage())
 	http.HandleFunc("/api/topic", s.TopicHandler())
 	http.Handle("/metrics", promhttp.Handler())

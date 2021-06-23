@@ -2,7 +2,7 @@
 
 server:
   host: "0.0.0.0"
-  port: 8091
+  port: 8080
   service-key: "service/lignum/key/master"
 
 consul:
@@ -23,3 +23,4 @@ follower:
 
 replication:
   internal-queue-size: 1024
+  client-timeout-in-ms: 25

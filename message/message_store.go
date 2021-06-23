@@ -6,8 +6,11 @@ import (
 
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/metrics"
+	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/rs/zerolog/log"
 )
+
+const errBadReplicationStateFmtStr = "bad replication state, expected sequence: %d, got sequence %d"
 
 type Message struct {
 	Id uint64
@@ -37,10 +40,11 @@ func (t *Topic) GetMessages() []Message {
 	return t.msg
 }
 
-func (t *Topic) Push(msg string) {
+func (t *Topic) Push(msg string) Message {
 	metrics.IncrementMessageCount(t.name)
 	message := Message{Id: t.counter.Next(), Data: msg}
 	t.msg = append(t.msg, message)
+	return message
 }
 
 type MessageStore struct {
@@ -77,24 +81,30 @@ func (m *MessageStore) TopicExist(topic string) bool {
 	return ok
 }
 
-func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) {
+func (m *MessageStore) createNewTopic(topic_name string) *Topic {
+
+	topic := &Topic{
+		name:    topic_name,
+		counter: NewCounter(),
+		msg:     make([]Message, 0),
+	}
+	metrics.IncrementTopic()
+	m.topic[topic_name] = topic
+	return topic
+}
+
+func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) Message {
 	//check if the topic exist
 	topic, ok := m.topic[topic_name]
 
 	//create new topic if it doesnt exist
 	if !ok {
 		log.Info().Str("Topic", topic_name).Msg("topic does not exist, creating")
-		topic = &Topic{
-			name:    topic_name,
-			counter: NewCounter(),
-			msg:     make([]Message, 0),
-		}
-		metrics.IncrementTopic()
-		m.topic[topic_name] = topic
+		topic = m.createNewTopic(topic_name)
 	}
 
 	//push message into topic
-	topic.Push(msg)
+	return topic.Push(msg)
 }
 
 //Get return the value for given range (from, to)
@@ -124,6 +134,24 @@ func (m *MessageStore) Get(topic string, from, to uint64) []Message {
 		i++
 	}
 	return msgs
+}
+
+func (m *MessageStore) Replicate(payload replication.Payload) error {
+	topic, ok := m.topic[payload.Topic]
+
+	if !ok {
+		topic = m.createNewTopic(payload.Topic)
+	}
+
+	//assert that we got expected message sequence.
+	if topic.counter.value != payload.Id {
+		return fmt.Errorf(errBadReplicationStateFmtStr, topic.counter.value, payload.Id)
+	}
+
+	//metrics.IncrementMessageCount(t.name)
+	message := Message{Id: topic.counter.Next(), Data: payload.Data}
+	topic.msg = append(topic.msg, message)
+	return nil
 }
 
 //TODO: move out of here

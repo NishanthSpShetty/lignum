@@ -7,6 +7,7 @@ import (
 
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/NishanthSpShetty/lignum/metrics"
+	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/rs/zerolog/log"
 )
 
@@ -51,7 +52,14 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 	}
 
 	log.Debug().Str("Data", msg.Message).Str("Topic", msg.Topic).Msg("message received")
-	s.message.Put(ctx, msg.Topic, msg.Message)
+	mesg := s.message.Put(ctx, msg.Topic, msg.Message)
+	//write messages to replication queue
+	payload := replication.Payload{
+		Topic: msg.Topic,
+		Id:    mesg.Id,
+		Data:  mesg.Data,
+	}
+	s.replicationQueue <- payload
 
 	fmt.Fprintf(w, "{\"status\": \"message commited\", \"data\": \"%s\"}", msg.Message)
 }
