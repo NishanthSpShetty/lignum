@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/NishanthSpShetty/lignum/metrics"
@@ -25,7 +24,6 @@ func (s *Server) handleReplicate(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("Got replication payload %v\n", payload)
 	err = s.message.Replicate(payload)
 	if err != nil {
 		log.Debug().Err(err).Send()
@@ -34,6 +32,7 @@ func (s *Server) handleReplicate(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+	log.Debug().Msg("replication message processed")
 
 }
 

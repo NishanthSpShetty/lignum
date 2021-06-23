@@ -25,7 +25,7 @@ func (f *Follower) IsHealthy() bool { return f.healthy }
 
 //IsReady return true when follower is ready to recieve replicate message.
 //currently we will  use healthy flag to mark as ready
-func (f *Follower) IsReady() bool      { return f.ready }
+func (f *Follower) IsReady() bool      { return f.healthy }
 func (f *Follower) Node() cluster.Node { return f.node }
 
 func (f *FollowerRegistry) Register(n cluster.Node) {
@@ -65,9 +65,13 @@ func (f *FollowerRegistry) healthCheck(client http.Client) {
 		//if we marked node as unhealthy, dont check again.
 		//TODO: have some multiple tries before considering the node as dead.
 		//timeouts can happen even when the node is healthy
-		if !follower.healthy || !isActive(client, &follower.node) {
+		if !follower.healthy {
+			dead += 1
+			continue
+		}
+		if !isActive(client, &follower.node) {
 			//mark the follower as not healthy,
-			//TODO: remove the dead followers in cleanup
+			//TODO: remove the dead followers in cleanup process
 			follower.healthy = false
 			dead += 1
 			continue
