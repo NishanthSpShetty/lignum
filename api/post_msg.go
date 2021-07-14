@@ -81,7 +81,7 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	to := messageRequest.To
 
 	if from < 0 || to <= from {
-		http.Error(w, "invalid messge range (must: from<to)", http.StatusBadRequest)
+		http.Error(w, "invalid message range (must: from<to)", http.StatusBadRequest)
 		log.Error().Uint64("From", from).Uint64("To", to).Msg("invalid range specified")
 		return
 	}

@@ -3,6 +3,7 @@ package message
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/metrics"
@@ -23,9 +24,13 @@ func (m Message) String() string {
 }
 
 type Topic struct {
-	counter *Counter
-	name    string
-	msg     []Message
+	counter       *Counter
+	name          string
+	messageBuffer []Message
+	//number of messages allowed to stay in memory
+	msgBufferSize int
+	bufferIdx     int
+	lock          sync.Mutex
 }
 
 func (t *Topic) GetName() string {
@@ -37,25 +42,43 @@ func (t *Topic) GetCurrentOffset() uint64 {
 }
 
 func (t *Topic) GetMessages() []Message {
-	return t.msg
+	return t.messageBuffer
+}
+
+func (t *Topic) resetMessageBuffer() {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	t.messageBuffer = make([]Message, t.msgBufferSize)
+	t.bufferIdx = 0
 }
 
 func (t *Topic) Push(msg string) Message {
 	metrics.IncrementMessageCount(t.name)
+
+	if t.counter.value%uint64(t.msgBufferSize) == 0 {
+		// we have filled the message store buffer, flush to file
+		t.resetMessageBuffer()
+	}
 	message := Message{Id: t.counter.Next(), Data: msg}
-	t.msg = append(t.msg, message)
+
+	t.lock.Lock()
+	t.messageBuffer[t.bufferIdx] = message
+	t.bufferIdx++
+	t.lock.Unlock()
 	return message
 }
 
 type MessageStore struct {
-	topic map[string]*Topic
+	topic             map[string]*Topic
+	messageBufferSize int
 }
 
 func New(msgConfig config.Message) *MessageStore {
 	//TODO: restore from the file when we add persistence
 	//	messages := ReadFromLogFile(messageConfig.MessageDir)
 	return &MessageStore{
-		topic: make(map[string]*Topic),
+		topic:             make(map[string]*Topic),
+		messageBufferSize: 1024,
 	}
 }
 
@@ -81,12 +104,13 @@ func (m *MessageStore) TopicExist(topic string) bool {
 	return ok
 }
 
-func (m *MessageStore) createNewTopic(topic_name string) *Topic {
+func (m *MessageStore) createNewTopic(topic_name string, msgBufferSize int) *Topic {
 
 	topic := &Topic{
-		name:    topic_name,
-		counter: NewCounter(),
-		msg:     make([]Message, 0),
+		name:          topic_name,
+		counter:       NewCounter(),
+		messageBuffer: make([]Message, msgBufferSize),
+		msgBufferSize: msgBufferSize,
 	}
 	metrics.IncrementTopic()
 	m.topic[topic_name] = topic
@@ -100,7 +124,7 @@ func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) M
 	//create new topic if it doesnt exist
 	if !ok {
 		log.Info().Str("Topic", topic_name).Msg("topic does not exist, creating")
-		topic = m.createNewTopic(topic_name)
+		topic = m.createNewTopic(topic_name, m.messageBufferSize)
 	}
 
 	//push message into topic
@@ -140,7 +164,7 @@ func (m *MessageStore) Replicate(payload replication.Payload) error {
 	topic, ok := m.topic[payload.Topic]
 
 	if !ok {
-		topic = m.createNewTopic(payload.Topic)
+		topic = m.createNewTopic(payload.Topic, m.messageBufferSize)
 	}
 
 	//assert that we got expected message sequence.
@@ -150,7 +174,7 @@ func (m *MessageStore) Replicate(payload replication.Payload) error {
 
 	//metrics.IncrementMessageCount(t.name)
 	message := Message{Id: topic.counter.Next(), Data: payload.Data}
-	topic.msg = append(topic.msg, message)
+	topic.messageBuffer = append(topic.messageBuffer, message)
 	return nil
 }
 

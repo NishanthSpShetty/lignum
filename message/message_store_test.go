@@ -17,9 +17,9 @@ func withTopic(m []Message, topic string) map[string][]Message {
 func createMsgStore(name string, count int) *MessageStore {
 	return &MessageStore{
 		topic: map[string]*Topic{name: {
-			counter: NewCounterWithValue(uint64(count)),
-			msg:     makeMessages(count),
-			name:    "test_new",
+			counter:       NewCounterWithValue(uint64(count)),
+			messageBuffer: makeMessages(count),
+			name:          "test_new",
 		}},
 	}
 }
