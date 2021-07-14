@@ -20,6 +20,7 @@ func createMsgStore(name string, count int) *MessageStore {
 			counter:       NewCounterWithValue(uint64(count)),
 			messageBuffer: makeMessages(count),
 			name:          "test_new",
+			msgBufferSize: count,
 		}},
 	}
 }
@@ -59,7 +60,8 @@ func Test_messagePut(t *testing.T) {
 	}{
 		{name: "Topic gets created for the new topic and message",
 			message: &MessageStore{
-				topic: make(map[string]*Topic)},
+				messageBufferSize: 10,
+				topic:             make(map[string]*Topic)},
 			args: args{
 				topic: "test_new",
 				msg:   "this is test log 001",
