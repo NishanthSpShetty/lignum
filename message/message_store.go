@@ -28,7 +28,7 @@ type Topic struct {
 	name          string
 	messageBuffer []Message
 	//number of messages allowed to stay in memory
-	msgBufferSize int
+	msgBufferSize int64
 	bufferIdx     int
 	lock          sync.Mutex
 }
@@ -52,12 +52,14 @@ func (t *Topic) resetMessageBuffer() {
 	t.bufferIdx = 0
 }
 
-func (t *Topic) Push(msg string) Message {
+func (m *MessageStore) Push(t *Topic, msg string) Message {
 	metrics.IncrementMessageCount(t.name)
 
 	if t.counter.value%uint64(t.msgBufferSize) == 0 {
 		// we have filled the message store buffer, flush to file
+		msgBuffer := t.messageBuffer
 		t.resetMessageBuffer()
+		WriteToLogFile(m.dataDir, t.name, msgBuffer)
 	}
 	message := Message{Id: t.counter.Next(), Data: msg}
 
@@ -70,7 +72,8 @@ func (t *Topic) Push(msg string) Message {
 
 type MessageStore struct {
 	topic             map[string]*Topic
-	messageBufferSize int
+	messageBufferSize int64
+	dataDir           string
 }
 
 func New(msgConfig config.Message) *MessageStore {
@@ -78,7 +81,8 @@ func New(msgConfig config.Message) *MessageStore {
 	//	messages := ReadFromLogFile(messageConfig.MessageDir)
 	return &MessageStore{
 		topic:             make(map[string]*Topic),
-		messageBufferSize: 1024,
+		messageBufferSize: msgConfig.InitialSizePerTopic,
+		dataDir:           msgConfig.DataDir,
 	}
 }
 
@@ -104,7 +108,7 @@ func (m *MessageStore) TopicExist(topic string) bool {
 	return ok
 }
 
-func (m *MessageStore) createNewTopic(topic_name string, msgBufferSize int) *Topic {
+func (m *MessageStore) createNewTopic(topic_name string, msgBufferSize int64) *Topic {
 
 	topic := &Topic{
 		name:          topic_name,
@@ -128,7 +132,7 @@ func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) M
 	}
 
 	//push message into topic
-	return topic.Push(msg)
+	return m.Push(topic, msg)
 }
 
 //Get return the value for given range (from, to)
@@ -176,28 +180,4 @@ func (m *MessageStore) Replicate(payload replication.Payload) error {
 	message := Message{Id: topic.counter.Next(), Data: payload.Data}
 	topic.messageBuffer = append(topic.messageBuffer, message)
 	return nil
-}
-
-//TODO: move out of here
-//StartFlusher start flusher routine to write the messages to file
-func StartFlusher(messageConfig config.Message) {
-
-	//	go func(messageConfig config.Message) {
-	//		for {
-	//			time.Sleep(messageConfig.MessageFlushIntervalInMilliSeconds * time.Millisecond)
-	//
-	//			//keep looping on the above sleep interval when the message size is zero
-	//			if len(m.messages) == 0 {
-	//				continue
-	//			}
-	//
-	//			count, err := WriteToLogFile(messageConfig, m.messages)
-	//			if err != nil {
-	//				log.Error().Err(err).Msg("failed to write the messages to file")
-	//				continue
-	//			}
-	//			log.Debug().Int("Count", count).Msg("Wrote %d messages to file")
-	//
-	//		}
-	//	}(messageConfig)
 }

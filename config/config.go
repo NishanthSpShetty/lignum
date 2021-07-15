@@ -25,10 +25,8 @@ type Consul struct {
 }
 
 type Message struct {
-	InitialSizePerTopic int64 `yaml:"initial-size-per-topic"`
-	//TODO: required for persistence
-	//MessageDir          string `yaml:"message-dir"`
-	//MessageFlushIntervalInMilliSeconds time.Duration `yaml:"message-flush-interval-in-ms"`
+	InitialSizePerTopic int64  `yaml:"initial-size-per-topic"`
+	DataDir             string `yaml:"data-dir"`
 }
 
 type Follower struct {
