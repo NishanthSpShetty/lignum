@@ -29,7 +29,7 @@ type Topic struct {
 	messageBuffer []Message
 	//number of messages allowed to stay in memory
 	msgBufferSize int64
-	bufferIdx     int
+	bufferIdx     int64
 	lock          sync.Mutex
 }
 
@@ -42,7 +42,11 @@ func (t *Topic) GetCurrentOffset() uint64 {
 }
 
 func (t *Topic) GetMessages() []Message {
-	return t.messageBuffer
+	return t.messageBuffer[:t.bufferIdx]
+}
+
+func (t *Topic) getMessageSizeInBuffer() int64 {
+	return t.bufferIdx
 }
 
 func (t *Topic) resetMessageBuffer() {
@@ -138,11 +142,15 @@ func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) M
 //Get return the value for given range (from, to)
 //returns value starting with offset `from` to `to` (exclusive)
 //Must: from < to
-func (m *MessageStore) Get(topic string, from, to uint64) []Message {
+func (m *MessageStore) Get(topicName string, from, to uint64) []Message {
 	// 2, 5 => 2,3,5
-	messages := m.GetMessages(topic)
-	msgLen := uint64(len(messages))
+	topic, ok := m.topic[topicName]
 
+	if !ok {
+		return []Message{}
+	}
+
+	msgLen := uint64(topic.getMessageSizeInBuffer())
 	if msgLen == 0 {
 		return []Message{}
 	}
@@ -151,6 +159,7 @@ func (m *MessageStore) Get(topic string, from, to uint64) []Message {
 	}
 	msgs := make([]Message, to-from)
 	i := 0
+	messages := topic.GetMessages()
 	for _, msg := range messages {
 		if msg.Id < from {
 			continue

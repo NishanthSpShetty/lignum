@@ -25,7 +25,7 @@ func TestGetMessage(t *testing.T) {
 	req, _ := json.Marshal(requestData)
 
 	messageChannel := make(chan replication.Payload, 10)
-	msg := message.New(config.Message{})
+	msg := message.New(config.Message{InitialSizePerTopic: 10})
 
 	server := NewServer(dummyServiceId, messageChannel, config.Server{}, msg, follower.New())
 

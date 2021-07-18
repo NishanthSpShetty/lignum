@@ -14,13 +14,15 @@ func withTopic(m []Message, topic string) map[string][]Message {
 	return map[string][]Message{topic: m}
 }
 
-func createMsgStore(name string, count int) *MessageStore {
+func createMsgStore(name string, count, msgBufferSize int64) *MessageStore {
 	return &MessageStore{
+		messageBufferSize: msgBufferSize,
 		topic: map[string]*Topic{name: {
 			counter:       NewCounterWithValue(uint64(count)),
-			messageBuffer: makeMessages(count),
+			messageBuffer: makeMessages(count, msgBufferSize),
 			name:          "test_new",
-			msgBufferSize: count,
+			bufferIdx:     count,
+			msgBufferSize: msgBufferSize,
 		}},
 	}
 }
@@ -30,10 +32,10 @@ func makeMessage() Message {
 	return Message{Id: id, Data: fmt.Sprintf("this is message %d", id)}
 }
 
-func makeMessages(count int) []Message {
+func makeMessages(count int64, bufferSize int64) []Message {
 	counter = NewCounter()
-	list := make([]Message, count)
-	for i := 0; i < count; i++ {
+	list := make([]Message, bufferSize)
+	for i := int64(0); i < count; i++ {
 		list[i] = makeMessage()
 	}
 	return list
@@ -70,17 +72,17 @@ func Test_messagePut(t *testing.T) {
 			expected: []Message{{Id: 0, Data: "this is test log 001"}},
 		},
 		{name: "Messages will be appended to existing topic",
-			message: createMsgStore("test_new", 1),
+			message: createMsgStore("test_new", 1, 10),
 			args: args{
 				topic: "test_new",
-				msg:   "this is test log 001",
+				msg:   "this is test log 002",
 			},
 			getargs:  getargs{from: 0, to: 2},
-			expected: append(makeMessages(1), Message{Id: 1, Data: "this is test log 001"}),
+			expected: append(makeMessages(1, 10)[:1], Message{Id: 1, Data: "this is test log 002"}),
 		},
 		{name: "new topic will be created along with existing topics",
 
-			message: createMsgStore("test-old", 1),
+			message: createMsgStore("test-old", 1, 10),
 			args: args{
 				topic: "test_new",
 				msg:   "this is test log 001",
@@ -124,34 +126,34 @@ func Test_messageGet(t *testing.T) {
 		{
 			name:     "returns list of messages for a given range when there are messages",
 			args:     args{from: 0, to: 10},
-			message:  createMsgStore("test", 10),
-			expected: makeMessages(10),
+			message:  createMsgStore("test", 10, 10),
+			expected: makeMessages(10, 10),
 		},
 
 		{
 			name:     "returns list of messages for a given positive range when there are messages",
 			args:     args{from: 1, to: 10},
-			message:  createMsgStore("test", 10),
-			expected: makeMessages(10)[1:10],
+			message:  createMsgStore("test", 10, 10),
+			expected: makeMessages(10, 10)[1:10],
 		},
 
 		{
 			name:     "returns list of messages for a given positive range when there are messages and `to` is less than available messages",
 			args:     args{from: 1, to: 8},
-			message:  createMsgStore("test", 10),
-			expected: makeMessages(10)[1:8],
+			message:  createMsgStore("test", 10, 10),
+			expected: makeMessages(10, 10)[1:8],
 		},
 		{
 			name:     "returns list of all messages when range provided is more than available message",
 			args:     args{from: 0, to: 100},
-			message:  createMsgStore("test", 50),
-			expected: makeMessages(50),
+			message:  createMsgStore("test", 50, 50),
+			expected: makeMessages(50, 50),
 		},
 		{
 			name:     "returns list of messages `from` till end of the message when `to` in range provided is more than available message and from is positive",
 			args:     args{from: 8, to: 100},
-			message:  createMsgStore("test", 20),
-			expected: makeMessages(20)[8:20],
+			message:  createMsgStore("test", 20, 20),
+			expected: makeMessages(20, 20)[8:20],
 		},
 	}
 
