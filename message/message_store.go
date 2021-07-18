@@ -63,7 +63,7 @@ func (m *MessageStore) Push(t *Topic, msg string) Message {
 		// we have filled the message store buffer, flush to file
 		msgBuffer := t.messageBuffer
 		t.resetMessageBuffer()
-		WriteToLogFile(m.dataDir, t.name, msgBuffer)
+		writeToLogFile(m.dataDir, t.name, msgBuffer)
 	}
 	message := Message{Id: t.counter.Next(), Data: msg}
 

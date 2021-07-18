@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
 
@@ -16,14 +18,34 @@ import (
 const DEFAULT_BUFFER_SIZE = 1024 * 8
 
 func getTopicDatDir(dataDir string, topic string) string {
+	if !strings.HasSuffix(dataDir, "/") {
+		dataDir += "/"
+	}
 	return dataDir + topic + "/"
 }
 
-func WriteToLogFile(dataDir string, topic string, messages []Message) (int, error) {
+//check if the directory exist create otherwise
+func createPath(path string) error {
+	_, err := os.Stat(path)
 
-	start_offset := messages[0].Id
-	filename := fmt.Sprintf("%s_%d.log", topic, start_offset)
-	path := dataDir + "/" + filename
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(path, 0770)
+	}
+	return err
+}
+
+func writeToLogFile(dataDir string, topic string, messages []Message) (int, error) {
+
+	path := getTopicDatDir(dataDir, topic)
+	err := createPath(path)
+
+	if err != nil {
+		return 0, err
+	}
+
+	fileOffset := messages[0].Id
+	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
+
 	file, err := os.Create(path)
 	defer file.Close()
 
@@ -60,6 +82,42 @@ func WriteToLogFile(dataDir string, topic string, messages []Message) (int, erro
 	}
 
 	return counter, nil
+}
+
+func readFromLog(dataDir, topic string, fileOffset int64) ([]Message, error) {
+	//path should exist
+	path := getTopicDatDir(dataDir, topic)
+	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	buf := make([]byte, DEFAULT_BUFFER_SIZE)
+	reader := bufio.NewReader(file)
+	var n int
+	var bufWriteError error
+	//should we create a buffer of fixed size?
+	buffer := new(bytes.Buffer)
+	for {
+		n, err = reader.Read(buf)
+		if n == 0 {
+			if err == io.EOF {
+				err = nil
+				break
+			} else if err != nil {
+				break
+			}
+		}
+		_, bufWriteError = buffer.Write(buf[:n])
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read log file")
+	}
+	if bufWriteError != nil {
+		return nil, errors.Wrap(bufWriteError, "failed to write log buffer")
+	}
+	return decodeRawMessage(buffer.Bytes()), nil
+
 }
 
 func decodeRawMessage(raw []byte) []Message {
