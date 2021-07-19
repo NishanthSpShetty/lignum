@@ -3,7 +3,6 @@ package message
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/metrics"
@@ -12,67 +11,6 @@ import (
 )
 
 const errBadReplicationStateFmtStr = "bad replication state, expected sequence: %d, got sequence %d"
-
-type Message struct {
-	Id uint64
-	//TODO: consider []byte here
-	Data string
-}
-
-func (m Message) String() string {
-	return fmt.Sprintf("{ID: %v, Msg: %s}\n", m.Id, m.Data)
-}
-
-type Topic struct {
-	counter       *Counter
-	name          string
-	messageBuffer []Message
-	//number of messages allowed to stay in memory
-	msgBufferSize int64
-	bufferIdx     int64
-	lock          sync.Mutex
-}
-
-func (t *Topic) GetName() string {
-	return t.name
-}
-
-func (t *Topic) GetCurrentOffset() uint64 {
-	return t.counter.value
-}
-
-func (t *Topic) GetMessages() []Message {
-	return t.messageBuffer[:t.bufferIdx]
-}
-
-func (t *Topic) getMessageSizeInBuffer() int64 {
-	return t.bufferIdx
-}
-
-func (t *Topic) resetMessageBuffer() {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	t.messageBuffer = make([]Message, t.msgBufferSize)
-	t.bufferIdx = 0
-}
-
-func (m *MessageStore) Push(t *Topic, msg string) Message {
-	metrics.IncrementMessageCount(t.name)
-
-	if t.counter.value%uint64(t.msgBufferSize) == 0 {
-		// we have filled the message store buffer, flush to file
-		msgBuffer := t.messageBuffer
-		t.resetMessageBuffer()
-		writeToLogFile(m.dataDir, t.name, msgBuffer)
-	}
-	message := Message{Id: t.counter.Next(), Data: msg}
-
-	t.lock.Lock()
-	t.messageBuffer[t.bufferIdx] = message
-	t.bufferIdx++
-	t.lock.Unlock()
-	return message
-}
 
 type MessageStore struct {
 	topic             map[string]*Topic
@@ -98,15 +36,6 @@ func (m *MessageStore) GetTopics() []*Topic {
 	return topics
 }
 
-func (m *MessageStore) GetMessages(topicName string) []Message {
-
-	topic, ok := m.topic[topicName]
-	if !ok {
-		return []Message{}
-	}
-	return topic.GetMessages()
-}
-
 func (m *MessageStore) TopicExist(topic string) bool {
 	_, ok := m.topic[topic]
 	return ok
@@ -123,6 +52,24 @@ func (m *MessageStore) createNewTopic(topic_name string, msgBufferSize int64) *T
 	metrics.IncrementTopic()
 	m.topic[topic_name] = topic
 	return topic
+}
+
+func (m *MessageStore) Push(t *Topic, msg string) Message {
+	metrics.IncrementMessageCount(t.name)
+
+	if t.counter.value%uint64(t.msgBufferSize) == 0 {
+		// we have filled the message store buffer, flush to file
+		msgBuffer := t.messageBuffer
+		t.resetMessageBuffer()
+		writeToLogFile(m.dataDir, t.name, msgBuffer)
+	}
+	message := Message{Id: t.counter.Next(), Data: msg}
+
+	t.lock.Lock()
+	t.messageBuffer[t.bufferIdx] = message
+	t.bufferIdx++
+	t.lock.Unlock()
+	return message
 }
 
 func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) Message {
@@ -150,27 +97,7 @@ func (m *MessageStore) Get(topicName string, from, to uint64) []Message {
 		return []Message{}
 	}
 
-	msgLen := uint64(topic.getMessageSizeInBuffer())
-	if msgLen == 0 {
-		return []Message{}
-	}
-	if to > msgLen {
-		to = msgLen
-	}
-	msgs := make([]Message, to-from)
-	i := 0
-	messages := topic.GetMessages()
-	for _, msg := range messages {
-		if msg.Id < from {
-			continue
-		}
-		if msg.Id >= to {
-			break
-		}
-		msgs[i] = msg
-		i++
-	}
-	return msgs
+	return topic.GetMessages(from, to)
 }
 
 func (m *MessageStore) Replicate(payload replication.Payload) error {

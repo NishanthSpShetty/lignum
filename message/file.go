@@ -140,6 +140,7 @@ func readFromLog(dataDir, topic string, fileOffset int64) ([]Message, error) {
 
 }
 
+//decodeRawMessage naively implement the decoding the message written in raw bytes
 func decodeRawMessage(raw []byte) []Message {
 
 	messages := make([]Message, 0)
