@@ -20,8 +20,8 @@ type Topic struct {
 	name          string
 	messageBuffer []Message
 	//number of messages allowed to stay in memory
-	msgBufferSize int64
-	bufferIdx     int64
+	msgBufferSize uint64
+	bufferIdx     uint64
 	lock          sync.Mutex
 }
 
@@ -37,8 +37,22 @@ func (t *Topic) getBufferedMessage() []Message {
 	return t.messageBuffer[:t.bufferIdx]
 }
 
-func (t *Topic) GetMessages(from, to uint64) []Message {
+func (t *Topic) getBufferStartOffset() uint64 {
+	return t.messageBuffer[0].Id
+}
 
+func (t *Topic) getFileOffset(id uint64) uint64 {
+	if id == 0 || t.msgBufferSize == 0 {
+		return 0
+	}
+
+	mod := id % t.msgBufferSize
+	return id - mod
+}
+
+func (t *Topic) readFromBuffer(from, to uint64) []Message {
+
+	//if both offset points to inbuffer messages, read from buffer.
 	msgLen := uint64(t.getMessageSizeInBuffer())
 	if msgLen == 0 {
 		return nil
@@ -62,7 +76,34 @@ func (t *Topic) GetMessages(from, to uint64) []Message {
 	return msgs
 }
 
-func (t *Topic) getMessageSizeInBuffer() int64 {
+//GetMessages get all messages written to the topic.
+//If message ranges lie within buffered messages, return them, if not check if it already written to files.
+func (t *Topic) GetMessages(from, to uint64) []Message {
+
+	fromOffset := t.getFileOffset(from)
+	toOffset := t.getFileOffset(to)
+
+	currentInbufferOffset := t.getBufferStartOffset()
+	fromInBuffer := false
+	toInBuffer := true
+
+	if fromOffset == currentInbufferOffset {
+		//start range is in buffer
+		fromInBuffer = true
+
+	}
+	if toOffset == currentInbufferOffset {
+		//buffer end offset is in buffer,
+		toInBuffer = true
+	}
+
+	if fromInBuffer && toInBuffer {
+		return t.readFromBuffer(from, to)
+	}
+	return nil
+}
+
+func (t *Topic) getMessageSizeInBuffer() uint64 {
 	return t.bufferIdx
 }
 

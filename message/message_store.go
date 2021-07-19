@@ -14,7 +14,7 @@ const errBadReplicationStateFmtStr = "bad replication state, expected sequence: 
 
 type MessageStore struct {
 	topic             map[string]*Topic
-	messageBufferSize int64
+	messageBufferSize uint64
 	dataDir           string
 }
 
@@ -41,27 +41,27 @@ func (m *MessageStore) TopicExist(topic string) bool {
 	return ok
 }
 
-func (m *MessageStore) createNewTopic(topic_name string, msgBufferSize int64) *Topic {
+func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *Topic {
 
 	topic := &Topic{
-		name:          topic_name,
+		name:          topicName,
 		counter:       NewCounter(),
 		messageBuffer: make([]Message, msgBufferSize),
 		msgBufferSize: msgBufferSize,
 	}
 	metrics.IncrementTopic()
-	m.topic[topic_name] = topic
+	m.topic[topicName] = topic
 	return topic
 }
 
-func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) Message {
+func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) Message {
 	//check if the topic exist
-	topic, ok := m.topic[topic_name]
+	topic, ok := m.topic[topicName]
 
 	//create new topic if it doesnt exist
 	if !ok {
-		log.Info().Str("Topic", topic_name).Msg("topic does not exist, creating")
-		topic = m.createNewTopic(topic_name, m.messageBufferSize)
+		log.Info().Str("Topic", topicName).Msg("topic does not exist, creating")
+		topic = m.createNewTopic(topicName, m.messageBufferSize)
 	}
 
 	metrics.IncrementMessageCount(topic.name)

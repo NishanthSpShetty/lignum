@@ -14,7 +14,7 @@ func withTopic(m []Message, topic string) map[string][]Message {
 	return map[string][]Message{topic: m}
 }
 
-func createMsgStore(name string, count, msgBufferSize int64) *MessageStore {
+func createMsgStore(name string, count, msgBufferSize uint64) *MessageStore {
 	return &MessageStore{
 		messageBufferSize: msgBufferSize,
 		topic: map[string]*Topic{name: {
@@ -32,10 +32,10 @@ func makeMessage() Message {
 	return Message{Id: id, Data: fmt.Sprintf("this is message %d", id)}
 }
 
-func makeMessages(count int64, bufferSize int64) []Message {
+func makeMessages(count, bufferSize uint64) []Message {
 	counter = NewCounter()
 	list := make([]Message, bufferSize)
-	for i := int64(0); i < count; i++ {
+	for i := uint64(0); i < count; i++ {
 		list[i] = makeMessage()
 	}
 	return list

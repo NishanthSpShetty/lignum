@@ -85,7 +85,7 @@ func writeToLogFile(dataDir string, topic string, messages []Message) (int, erro
 	return counter, nil
 }
 
-func readFromLog(dataDir, topic string, fileOffset int64) ([]Message, error) {
+func readFromLog(dataDir, topic string, fileOffset uint64) ([]Message, error) {
 	//path should exist
 	path := getTopicDatDir(dataDir, topic)
 	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)

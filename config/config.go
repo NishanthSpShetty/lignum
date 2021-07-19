@@ -25,7 +25,7 @@ type Consul struct {
 }
 
 type Message struct {
-	InitialSizePerTopic int64  `yaml:"initial-size-per-topic"`
+	InitialSizePerTopic uint64 `yaml:"initial-size-per-topic"`
 	DataDir             string `yaml:"data-dir"`
 }
 
