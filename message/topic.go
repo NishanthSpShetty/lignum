@@ -72,3 +72,14 @@ func (t *Topic) resetMessageBuffer() {
 	t.messageBuffer = make([]Message, t.msgBufferSize)
 	t.bufferIdx = 0
 }
+
+func (t *Topic) Push(msg string) Message {
+	message := Message{Id: t.counter.Next(), Data: msg}
+
+	t.lock.Lock()
+	t.messageBuffer[t.bufferIdx] = message
+	t.bufferIdx++
+	t.lock.Unlock()
+	return message
+
+}

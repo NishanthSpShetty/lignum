@@ -137,7 +137,6 @@ func readFromLog(dataDir, topic string, fileOffset int64) ([]Message, error) {
 		return nil, errors.Wrap(bufWriteError, "failed to write log buffer")
 	}
 	return decodeRawMessage(buffer.Bytes()), nil
-
 }
 
 //decodeRawMessage naively implement the decoding the message written in raw bytes

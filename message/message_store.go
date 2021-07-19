@@ -54,24 +54,6 @@ func (m *MessageStore) createNewTopic(topic_name string, msgBufferSize int64) *T
 	return topic
 }
 
-func (m *MessageStore) Push(t *Topic, msg string) Message {
-	metrics.IncrementMessageCount(t.name)
-
-	if t.counter.value%uint64(t.msgBufferSize) == 0 {
-		// we have filled the message store buffer, flush to file
-		msgBuffer := t.messageBuffer
-		t.resetMessageBuffer()
-		writeToLogFile(m.dataDir, t.name, msgBuffer)
-	}
-	message := Message{Id: t.counter.Next(), Data: msg}
-
-	t.lock.Lock()
-	t.messageBuffer[t.bufferIdx] = message
-	t.bufferIdx++
-	t.lock.Unlock()
-	return message
-}
-
 func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) Message {
 	//check if the topic exist
 	topic, ok := m.topic[topic_name]
@@ -82,8 +64,15 @@ func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) M
 		topic = m.createNewTopic(topic_name, m.messageBufferSize)
 	}
 
-	//push message into topic
-	return m.Push(topic, msg)
+	metrics.IncrementMessageCount(topic.name)
+
+	if topic.counter.value%uint64(topic.msgBufferSize) == 0 {
+		// we have filled the message store buffer, flush to file
+		msgBuffer := topic.messageBuffer
+		topic.resetMessageBuffer()
+		writeToLogFile(m.dataDir, topic.name, msgBuffer)
+	}
+	return topic.Push(msg)
 }
 
 //Get return the value for given range (from, to)
