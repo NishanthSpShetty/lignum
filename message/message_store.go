@@ -48,6 +48,7 @@ func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *T
 		counter:       NewCounter(),
 		messageBuffer: make([]Message, msgBufferSize),
 		msgBufferSize: msgBufferSize,
+		dataDir:       m.dataDir,
 	}
 	metrics.IncrementTopic()
 	m.topic[topicName] = topic

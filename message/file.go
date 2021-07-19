@@ -16,13 +16,13 @@ import (
 //Number is picked from the rust program for copying large files, 8kb seems to perform well.
 //Should be benchmarked and updated accordignly if needed.
 const DEFAULT_READ_CHUNK_SIZE = 1024 * 4
-const MESSAGE_KEY_VAL_SEPERATOR = "="
+const MESSAGE_KEY_VAL_SEPERATOR = "|#|"
 
 func getTopicDatDir(dataDir string, topic string) string {
 	if !strings.HasSuffix(dataDir, "/") {
 		dataDir += "/"
 	}
-	return dataDir + topic + "/"
+	return dataDir + topic
 }
 
 //check if the directory exist create otherwise
@@ -64,7 +64,7 @@ func writeToLogFile(dataDir string, topic string, messages []Message) (int, erro
 	counter := 0
 	for _, message := range messages {
 		counter += 1
-		buf.WriteString(fmt.Sprintf("%d%s%s", message.Id, MESSAGE_KEY_VAL_SEPERATOR, message.Data))
+		buf.WriteString(fmt.Sprintf("%d%s%s\n", message.Id, MESSAGE_KEY_VAL_SEPERATOR, message.Data))
 	}
 	n, err := fw.Write(buf.Bytes())
 	if err != nil {
@@ -89,6 +89,7 @@ func readFromLog(dataDir, topic string, fileOffset uint64) ([]Message, error) {
 	//path should exist
 	path := getTopicDatDir(dataDir, topic)
 	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
+	log.Debug().Str("path", path).Str("topic", topic).Msg("reading log file")
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -136,6 +137,7 @@ func readFromLog(dataDir, topic string, fileOffset uint64) ([]Message, error) {
 	if bufWriteError != nil {
 		return nil, errors.Wrap(bufWriteError, "failed to write log buffer")
 	}
+
 	return decodeRawMessage(buffer.Bytes()), nil
 }
 
@@ -143,10 +145,12 @@ func readFromLog(dataDir, topic string, fileOffset uint64) ([]Message, error) {
 func decodeRawMessage(raw []byte) []Message {
 
 	messages := make([]Message, 0)
+	i := 0
 	for _, line := range strings.Split(string(raw), "\n") {
 		message := Message{}
 		splits := strings.Split(line, MESSAGE_KEY_VAL_SEPERATOR)
 		if len(splits) != 2 {
+			fmt.Printf("lots of split %d, %v\n", len(splits), splits)
 			continue
 		}
 		id, err := strconv.ParseUint(splits[0], 10, 64)
@@ -157,6 +161,7 @@ func decodeRawMessage(raw []byte) []Message {
 		message.Id = id
 		message.Data = splits[1]
 		messages = append(messages, message)
+		i += 1
 	}
 	return messages
 }
