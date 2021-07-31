@@ -11,6 +11,7 @@ import (
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/stretchr/testify/assert"
 )
@@ -50,7 +51,7 @@ func TestGetMessage(t *testing.T) {
 		requestHandler(response, request)
 		json.Unmarshal(response.Body.Bytes(), &responseData)
 
-		expected := []message.Message{{Id: 0, Data: dummyMsg}}
+		expected := []*types.Message{{Id: 0, Data: dummyMsg}}
 		assert.Equal(t, expected, responseData.Messages)
 	})
 }

@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/NishanthSpShetty/lignum/message/buffer"
+	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -35,7 +37,7 @@ func createPath(path string) error {
 	return err
 }
 
-func writeToLogFile(dataDir string, topic string, messages []Message) (int, error) {
+func writeToLogFile(dataDir string, topic string, messages []types.Message) (int, error) {
 
 	path := getTopicDatDir(dataDir, topic)
 	err := createPath(path)
@@ -85,7 +87,7 @@ func writeToLogFile(dataDir string, topic string, messages []Message) (int, erro
 	return counter, nil
 }
 
-func readFromLog(dataDir, topic string, fileOffset uint64) ([]Message, error) {
+func readFromLog(dataDir, topic string, fileOffset uint64) ([]*types.Message, error) {
 	//path should exist
 	path := getTopicDatDir(dataDir, topic)
 	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
@@ -115,10 +117,10 @@ func readFromLog(dataDir, topic string, fileOffset uint64) ([]Message, error) {
 	//Refer : https://github.com/NishanthSpShetty/bench_disk_io.go
 
 	//TODO: look into reuse of this buffer
-	buffer := bytes.NewBuffer(make([]byte, 1024*1024))
+	byteBuf := bytes.NewBuffer(make([]byte, 1024*1024))
 	//calling reset will make buffer.Write reuse the underlying buffer.
 	//if not called, on write it will grow the underlying buffer causing allocation
-	buffer.Reset()
+	byteBuf.Reset()
 	for {
 		n, err = reader.Read(buf)
 		if n == 0 {
@@ -129,7 +131,7 @@ func readFromLog(dataDir, topic string, fileOffset uint64) ([]Message, error) {
 				break
 			}
 		}
-		_, bufWriteError = buffer.Write(buf[:n])
+		_, bufWriteError = byteBuf.Write(buf[:n])
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read log file")
@@ -138,16 +140,16 @@ func readFromLog(dataDir, topic string, fileOffset uint64) ([]Message, error) {
 		return nil, errors.Wrap(bufWriteError, "failed to write log buffer")
 	}
 
-	return decodeRawMessage(buffer.Bytes()), nil
+	return decodeRawMessage(byteBuf.Bytes()), nil
 }
 
 //decodeRawMessage naively implement the decoding the message written in raw bytes
-func decodeRawMessage(raw []byte) []Message {
+func decodeRawMessage(raw []byte) []*types.Message {
 
-	messages := make([]Message, 0)
+	buf := buffer.NewBuffer(16)
 	i := 0
 	for _, line := range strings.Split(string(raw), "\n") {
-		message := Message{}
+		message := types.Message{}
 		splits := strings.Split(line, MESSAGE_KEY_VAL_SEPERATOR)
 		if len(splits) != 2 {
 			fmt.Printf("lots of split %d, %v\n", len(splits), splits)
@@ -160,8 +162,8 @@ func decodeRawMessage(raw []byte) []Message {
 		}
 		message.Id = id
 		message.Data = splits[1]
-		messages = append(messages, message)
+		buf.Write(&message)
 		i += 1
 	}
-	return messages
+	return buf.Slice()
 }

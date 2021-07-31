@@ -14,7 +14,8 @@ consul:
   leader-election-interval-in-ms: 10
 
 message:
-  initial-size-per-topic: 1000
+  initial-size-per-topic: 10
+  data-dir: "data/"
 
 follower:
   healthcheck-interval-in-seconds: 1

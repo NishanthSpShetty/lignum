@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/metrics"
 	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/rs/zerolog/log"
@@ -46,7 +47,7 @@ func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *T
 	topic := &Topic{
 		name:          topicName,
 		counter:       NewCounter(),
-		messageBuffer: make([]Message, msgBufferSize),
+		messageBuffer: make([]types.Message, msgBufferSize),
 		msgBufferSize: msgBufferSize,
 		dataDir:       m.dataDir,
 	}
@@ -55,7 +56,7 @@ func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *T
 	return topic
 }
 
-func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) Message {
+func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) types.Message {
 	//check if the topic exist
 	topic, ok := m.topic[topicName]
 
@@ -79,12 +80,12 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) Me
 //Get return the value for given range (from, to)
 //returns value starting with offset `from` to `to` (exclusive)
 //Must: from < to
-func (m *MessageStore) Get(topicName string, from, to uint64) []Message {
+func (m *MessageStore) Get(topicName string, from, to uint64) []*types.Message {
 	// 2, 5 => 2,3,5
 	topic, ok := m.topic[topicName]
 
 	if !ok {
-		return []Message{}
+		return nil
 	}
 
 	return topic.GetMessages(from, to)
@@ -103,7 +104,7 @@ func (m *MessageStore) Replicate(payload replication.Payload) error {
 	}
 
 	//metrics.IncrementMessageCount(t.name)
-	message := Message{Id: topic.counter.Next(), Data: payload.Data}
+	message := types.Message{Id: topic.counter.Next(), Data: payload.Data}
 	topic.messageBuffer = append(topic.messageBuffer, message)
 	return nil
 }

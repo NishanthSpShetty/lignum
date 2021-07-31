@@ -5,13 +5,23 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/stretchr/testify/assert"
 )
 
 var counter *Counter
 
-func withTopic(m []Message, topic string) map[string][]Message {
-	return map[string][]Message{topic: m}
+func withTopic(m []types.Message, topic string) map[string][]types.Message {
+	return map[string][]types.Message{topic: m}
+}
+
+func seedMessages(count, bufferSize uint64) []types.Message {
+	counter = NewCounter()
+	list := make([]types.Message, bufferSize)
+	for i := uint64(0); i < count; i++ {
+		list[i] = *makeMessage()
+	}
+	return list
 }
 
 func createMsgStore(name string, count, msgBufferSize uint64) *MessageStore {
@@ -19,7 +29,7 @@ func createMsgStore(name string, count, msgBufferSize uint64) *MessageStore {
 		messageBufferSize: msgBufferSize,
 		topic: map[string]*Topic{name: {
 			counter:       NewCounterWithValue(uint64(count)),
-			messageBuffer: makeMessages(count, msgBufferSize),
+			messageBuffer: seedMessages(count, msgBufferSize),
 			name:          "test_new",
 			bufferIdx:     count,
 			msgBufferSize: msgBufferSize,
@@ -27,14 +37,14 @@ func createMsgStore(name string, count, msgBufferSize uint64) *MessageStore {
 	}
 }
 
-func makeMessage() Message {
+func makeMessage() *types.Message {
 	id := counter.Next()
-	return Message{Id: id, Data: fmt.Sprintf("this is message %d", id)}
+	return &types.Message{Id: id, Data: fmt.Sprintf("this is message %d", id)}
 }
 
-func makeMessages(count, bufferSize uint64) []Message {
+func makeMessages(count, bufferSize uint64) []*types.Message {
 	counter = NewCounter()
-	list := make([]Message, bufferSize)
+	list := make([]*types.Message, bufferSize)
 	for i := uint64(0); i < count; i++ {
 		list[i] = makeMessage()
 	}
@@ -58,7 +68,7 @@ func Test_messagePut(t *testing.T) {
 		message  *MessageStore
 		args     args
 		getargs  getargs
-		expected []Message
+		expected []*types.Message
 	}{
 		{name: "Topic gets created for the new topic and message",
 			message: &MessageStore{
@@ -69,7 +79,7 @@ func Test_messagePut(t *testing.T) {
 				msg:   "this is test log 001",
 			},
 			getargs:  getargs{from: 0, to: 1},
-			expected: []Message{{Id: 0, Data: "this is test log 001"}},
+			expected: []*types.Message{{Id: 0, Data: "this is test log 001"}},
 		},
 		{name: "Messages will be appended to existing topic",
 			message: createMsgStore("test_new", 1, 10),
@@ -78,7 +88,7 @@ func Test_messagePut(t *testing.T) {
 				msg:   "this is test log 002",
 			},
 			getargs:  getargs{from: 0, to: 2},
-			expected: append(makeMessages(1, 10)[:1], Message{Id: 1, Data: "this is test log 002"}),
+			expected: append(makeMessages(1, 10)[:1], &types.Message{Id: 1, Data: "this is test log 002"}),
 		},
 		{name: "new topic will be created along with existing topics",
 
@@ -88,7 +98,7 @@ func Test_messagePut(t *testing.T) {
 				msg:   "this is test log 001",
 			},
 			getargs:  getargs{from: 0, to: 1},
-			expected: []Message{{Id: 0, Data: "this is test log 001"}},
+			expected: []*types.Message{{Id: 0, Data: "this is test log 001"}},
 		},
 	}
 
@@ -108,19 +118,19 @@ func Test_messageGet(t *testing.T) {
 		name     string
 		args     args
 		message  *MessageStore
-		expected []Message
+		expected []*types.Message
 	}{
 		{
 			name:     "returns empty list of messages when range is equal",
 			args:     args{from: 1, to: 1},
 			message:  &MessageStore{},
-			expected: []Message{},
+			expected: nil,
 		},
 		{
 			name:     "returns empty list of messages when there are no messages",
 			args:     args{from: 1, to: 10},
 			message:  &MessageStore{},
-			expected: []Message{},
+			expected: nil,
 		},
 
 		{

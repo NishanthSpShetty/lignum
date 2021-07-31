@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/prometheus/common/log"
 )
 
@@ -25,7 +26,7 @@ func TestWriteToLogFile(t *testing.T) {
 		InitialSizePerTopic: 10,
 		DataDir:             TempDirectory,
 	}
-	message := Message{
+	message := types.Message{
 		Id:   0,
 		Data: "streaming message 1",
 	}
@@ -36,7 +37,7 @@ func TestWriteToLogFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot create data directory for the test : %s ", err.Error())
 	}
-	count, err := writeToLogFile(messageConfig.DataDir, topic, []Message{message})
+	count, err := writeToLogFile(messageConfig.DataDir, topic, []types.Message{message})
 	if err != nil {
 		t.Fatalf("Failed to write to log file : %s", err.Error())
 	}
@@ -45,7 +46,7 @@ func TestWriteToLogFile(t *testing.T) {
 		t.Fatalf("WriteMessageCount: Got %d, Expected %d", count, expectedCount)
 	}
 
-	expected := []Message{message}
+	expected := []*types.Message{&message}
 
 	got, err := readFromLog(TempDirectory, "test_topic", 0)
 
