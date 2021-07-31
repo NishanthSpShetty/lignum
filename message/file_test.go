@@ -48,7 +48,7 @@ func TestWriteToLogFile(t *testing.T) {
 
 	expected := []*types.Message{&message}
 
-	got, err := readFromLog(TempDirectory, "test_topic", 0)
+	got, err := readFromLog(TempDirectory, "test_topic", 0, 0, 10)
 
 	if err != nil {
 		t.Fatal(err)

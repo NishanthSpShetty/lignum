@@ -73,7 +73,7 @@ func (t *Topic) readFromLogs(fromOffset, toOffset, from, to uint64) []*types.Mes
 
 	msgBuffer := buffer.NewBuffer(int(to - from))
 	for eachOffset := fromOffset; eachOffset <= toOffset; eachOffset += t.msgBufferSize {
-		msg, err := readFromLog(t.dataDir, t.name, eachOffset)
+		msg, err := readFromLog(t.dataDir, t.name, eachOffset, from, to)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to read message from the log files")
 			return nil

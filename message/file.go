@@ -87,7 +87,7 @@ func writeToLogFile(dataDir string, topic string, messages []types.Message) (int
 	return counter, nil
 }
 
-func readFromLog(dataDir, topic string, fileOffset uint64) ([]*types.Message, error) {
+func readFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.Message, error) {
 	//path should exist
 	path := getTopicDatDir(dataDir, topic)
 	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
@@ -140,11 +140,11 @@ func readFromLog(dataDir, topic string, fileOffset uint64) ([]*types.Message, er
 		return nil, errors.Wrap(bufWriteError, "failed to write log buffer")
 	}
 
-	return decodeRawMessage(byteBuf.Bytes()), nil
+	return decodeRawMessage(byteBuf.Bytes(), from, to), nil
 }
 
 //decodeRawMessage naively implement the decoding the message written in raw bytes
-func decodeRawMessage(raw []byte) []*types.Message {
+func decodeRawMessage(raw []byte, from, to uint64) []*types.Message {
 
 	buf := buffer.NewBuffer(16)
 	i := 0
@@ -160,6 +160,12 @@ func decodeRawMessage(raw []byte) []*types.Message {
 			log.Error().Err(err).Msg("failed to read message")
 			continue
 		}
+
+		//skip any messages which arent part of the given range.
+		if id < from || id >= to {
+			continue
+		}
+
 		message.Id = id
 		message.Data = splits[1]
 		buf.Write(&message)
