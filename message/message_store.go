@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/metrics"
 	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/rs/zerolog/log"
@@ -12,50 +13,19 @@ import (
 
 const errBadReplicationStateFmtStr = "bad replication state, expected sequence: %d, got sequence %d"
 
-type Message struct {
-	Id uint64
-	//TODO: consider []byte here
-	Data string
-}
-
-func (m Message) String() string {
-	return fmt.Sprintf("{ID: %v, Msg: %s}\n", m.Id, m.Data)
-}
-
-type Topic struct {
-	counter *Counter
-	name    string
-	msg     []Message
-}
-
-func (t *Topic) GetName() string {
-	return t.name
-}
-
-func (t *Topic) GetCurrentOffset() uint64 {
-	return t.counter.value
-}
-
-func (t *Topic) GetMessages() []Message {
-	return t.msg
-}
-
-func (t *Topic) Push(msg string) Message {
-	metrics.IncrementMessageCount(t.name)
-	message := Message{Id: t.counter.Next(), Data: msg}
-	t.msg = append(t.msg, message)
-	return message
-}
-
 type MessageStore struct {
-	topic map[string]*Topic
+	topic             map[string]*Topic
+	messageBufferSize uint64
+	dataDir           string
 }
 
 func New(msgConfig config.Message) *MessageStore {
 	//TODO: restore from the file when we add persistence
 	//	messages := ReadFromLogFile(messageConfig.MessageDir)
 	return &MessageStore{
-		topic: make(map[string]*Topic),
+		topic:             make(map[string]*Topic),
+		messageBufferSize: msgConfig.InitialSizePerTopic,
+		dataDir:           msgConfig.DataDir,
 	}
 }
 
@@ -67,80 +37,65 @@ func (m *MessageStore) GetTopics() []*Topic {
 	return topics
 }
 
-func (m *MessageStore) GetMessages(topicName string) []Message {
-
-	topic, ok := m.topic[topicName]
-	if !ok {
-		return []Message{}
-	}
-	return topic.GetMessages()
-}
-
 func (m *MessageStore) TopicExist(topic string) bool {
 	_, ok := m.topic[topic]
 	return ok
 }
 
-func (m *MessageStore) createNewTopic(topic_name string) *Topic {
+func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *Topic {
 
 	topic := &Topic{
-		name:    topic_name,
-		counter: NewCounter(),
-		msg:     make([]Message, 0),
+		name:          topicName,
+		counter:       NewCounter(),
+		messageBuffer: make([]types.Message, msgBufferSize),
+		msgBufferSize: msgBufferSize,
+		dataDir:       m.dataDir,
 	}
 	metrics.IncrementTopic()
-	m.topic[topic_name] = topic
+	m.topic[topicName] = topic
 	return topic
 }
 
-func (m *MessageStore) Put(ctx context.Context, topic_name string, msg string) Message {
+func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) types.Message {
 	//check if the topic exist
-	topic, ok := m.topic[topic_name]
+	topic, ok := m.topic[topicName]
 
 	//create new topic if it doesnt exist
 	if !ok {
-		log.Info().Str("Topic", topic_name).Msg("topic does not exist, creating")
-		topic = m.createNewTopic(topic_name)
+		log.Info().Str("Topic", topicName).Msg("topic does not exist, creating")
+		topic = m.createNewTopic(topicName, m.messageBufferSize)
 	}
 
-	//push message into topic
+	metrics.IncrementMessageCount(topic.name)
+
+	if topic.counter.value%uint64(topic.msgBufferSize) == 0 {
+		// we have filled the message store buffer, flush to file
+		msgBuffer := topic.messageBuffer
+		topic.resetMessageBuffer()
+		writeToLogFile(m.dataDir, topic.name, msgBuffer)
+	}
 	return topic.Push(msg)
 }
 
 //Get return the value for given range (from, to)
 //returns value starting with offset `from` to `to` (exclusive)
 //Must: from < to
-func (m *MessageStore) Get(topic string, from, to uint64) []Message {
+func (m *MessageStore) Get(topicName string, from, to uint64) []*types.Message {
 	// 2, 5 => 2,3,5
-	messages := m.GetMessages(topic)
-	msgLen := uint64(len(messages))
+	topic, ok := m.topic[topicName]
 
-	if msgLen == 0 {
-		return []Message{}
+	if !ok {
+		return nil
 	}
-	if to > msgLen {
-		to = msgLen
-	}
-	msgs := make([]Message, to-from)
-	i := 0
-	for _, msg := range messages {
-		if msg.Id < from {
-			continue
-		}
-		if msg.Id >= to {
-			break
-		}
-		msgs[i] = msg
-		i++
-	}
-	return msgs
+
+	return topic.GetMessages(from, to)
 }
 
 func (m *MessageStore) Replicate(payload replication.Payload) error {
 	topic, ok := m.topic[payload.Topic]
 
 	if !ok {
-		topic = m.createNewTopic(payload.Topic)
+		topic = m.createNewTopic(payload.Topic, m.messageBufferSize)
 	}
 
 	//assert that we got expected message sequence.
@@ -149,31 +104,7 @@ func (m *MessageStore) Replicate(payload replication.Payload) error {
 	}
 
 	//metrics.IncrementMessageCount(t.name)
-	message := Message{Id: topic.counter.Next(), Data: payload.Data}
-	topic.msg = append(topic.msg, message)
+	message := types.Message{Id: topic.counter.Next(), Data: payload.Data}
+	topic.messageBuffer = append(topic.messageBuffer, message)
 	return nil
-}
-
-//TODO: move out of here
-//StartFlusher start flusher routine to write the messages to file
-func StartFlusher(messageConfig config.Message) {
-
-	//	go func(messageConfig config.Message) {
-	//		for {
-	//			time.Sleep(messageConfig.MessageFlushIntervalInMilliSeconds * time.Millisecond)
-	//
-	//			//keep looping on the above sleep interval when the message size is zero
-	//			if len(m.messages) == 0 {
-	//				continue
-	//			}
-	//
-	//			count, err := WriteToLogFile(messageConfig, m.messages)
-	//			if err != nil {
-	//				log.Error().Err(err).Msg("failed to write the messages to file")
-	//				continue
-	//			}
-	//			log.Debug().Int("Count", count).Msg("Wrote %d messages to file")
-	//
-	//		}
-	//	}(messageConfig)
 }

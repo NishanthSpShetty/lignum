@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/metrics"
 	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/rs/zerolog/log"
@@ -26,8 +26,8 @@ type GetMessageRequest struct {
 
 //respons message struct
 type GetMessageResponse struct {
-	Messages []message.Message `json:"messages"`
-	Count    int               `json:"count"`
+	Messages []*types.Message `json:"messages"`
+	Count    int              `json:"count"`
 }
 
 func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
@@ -81,7 +81,7 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	to := messageRequest.To
 
 	if from < 0 || to <= from {
-		http.Error(w, "invalid messge range (must: from<to)", http.StatusBadRequest)
+		http.Error(w, "invalid message range (must: from<to)", http.StatusBadRequest)
 		log.Error().Uint64("From", from).Uint64("To", to).Msg("invalid range specified")
 		return
 	}
@@ -100,6 +100,7 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	}
 
 	messages := s.message.Get(messageRequest.Topic, from, to)
+	//TODO: handle nil return values
 	messag := GetMessageResponse{Messages: messages, Count: len(messages)}
 
 	log.Debug().Interface("ReceivedMessage", messageRequest).Send()
