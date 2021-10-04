@@ -60,6 +60,7 @@ func (r *Replicator) StartReplicator(ctx context.Context, replicationTimeoutInMs
 	//This doesnt care for what the replication state of the follower
 	//follower must catch up with leader if there is a lag
 	go func() {
+		//when queue is closed, the following looping would stop, effectively stopping the routine
 		for payload := range r.replicationQueue {
 			log.Debug().Interface("Payload", payload).Msg("received message for replication ")
 			r.replicate(payload)

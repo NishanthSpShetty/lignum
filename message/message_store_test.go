@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/NishanthSpShetty/lignum/message/types"
+	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,6 +28,7 @@ func seedMessages(count, bufferSize uint64) []types.Message {
 func createMsgStore(name string, count, msgBufferSize uint64) *MessageStore {
 	return &MessageStore{
 		messageBufferSize: msgBufferSize,
+		walChannel:        make(chan<- wal.Payload, 100),
 		topic: map[string]*Topic{name: {
 			counter:       NewCounterWithValue(uint64(count)),
 			messageBuffer: seedMessages(count, msgBufferSize),
@@ -73,6 +75,7 @@ func Test_messagePut(t *testing.T) {
 		{name: "Topic gets created for the new topic and message",
 			message: &MessageStore{
 				messageBufferSize: 10,
+				walChannel:        make(chan<- wal.Payload, 10),
 				topic:             make(map[string]*Topic)},
 			args: args{
 				topic: "test_new",

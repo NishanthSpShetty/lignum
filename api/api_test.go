@@ -13,6 +13,7 @@ import (
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/replication"
+	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +27,8 @@ func TestGetMessage(t *testing.T) {
 	req, _ := json.Marshal(requestData)
 
 	messageChannel := make(chan replication.Payload, 10)
-	msg := message.New(config.Message{InitialSizePerTopic: 10})
+	walChannel := make(chan wal.Payload, 10)
+	msg := message.New(config.Message{InitialSizePerTopic: 10}, walChannel)
 
 	server := NewServer(dummyServiceId, messageChannel, config.Server{}, msg, follower.New())
 

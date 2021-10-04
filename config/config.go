@@ -41,12 +41,17 @@ type Replication struct {
 	ClientTimeoutInMilliSeconds time.Duration `yaml:"client-timeout-in-ms"`
 }
 
+type Wal struct {
+	QueueSize int `yaml:"queue-size"`
+}
+
 type Config struct {
 	Server      Server      `yaml:"server"`
 	Consul      Consul      `yaml:"consul"`
 	Message     Message     `yaml:"message"`
 	Follower    Follower    `yaml:"follower"`
 	Replication Replication `yaml:"replication"`
+	Wal         Wal         `yaml:"wal"`
 }
 
 func GetConfig(fileName string) (Config, error) {

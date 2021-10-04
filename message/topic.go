@@ -5,6 +5,7 @@ import (
 
 	"github.com/NishanthSpShetty/lignum/message/buffer"
 	"github.com/NishanthSpShetty/lignum/message/types"
+	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/rs/zerolog/log"
 )
 
@@ -73,7 +74,7 @@ func (t *Topic) readFromLogs(fromOffset, toOffset, from, to uint64) []*types.Mes
 
 	msgBuffer := buffer.NewBuffer(int(to - from))
 	for eachOffset := fromOffset; eachOffset <= toOffset; eachOffset += t.msgBufferSize {
-		msg, err := readFromLog(t.dataDir, t.name, eachOffset, from, to)
+		msg, err := wal.ReadFromLog(t.dataDir, t.name, eachOffset, from, to)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to read message from the log files")
 			return nil
@@ -152,8 +153,7 @@ func (t *Topic) resetMessageBuffer() {
 	t.bufferIdx = 0
 }
 
-func (t *Topic) Push(msg string) types.Message {
-	message := types.Message{Id: t.counter.Next(), Data: msg}
+func (t *Topic) Push(message types.Message) types.Message {
 
 	t.lock.Lock()
 	t.messageBuffer[t.bufferIdx] = message

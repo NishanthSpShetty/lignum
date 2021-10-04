@@ -8,6 +8,7 @@ import (
 	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/metrics"
 	"github.com/NishanthSpShetty/lignum/replication"
+	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/rs/zerolog/log"
 )
 
@@ -17,15 +18,17 @@ type MessageStore struct {
 	topic             map[string]*Topic
 	messageBufferSize uint64
 	dataDir           string
+	walChannel        chan<- wal.Payload
 }
 
-func New(msgConfig config.Message) *MessageStore {
+func New(msgConfig config.Message, walChannel chan<- wal.Payload) *MessageStore {
 	//TODO: restore from the file when we add persistence
 	//	messages := ReadFromLogFile(messageConfig.MessageDir)
 	return &MessageStore{
 		topic:             make(map[string]*Topic),
 		messageBufferSize: msgConfig.InitialSizePerTopic,
 		dataDir:           msgConfig.DataDir,
+		walChannel:        walChannel,
 	}
 }
 
@@ -70,11 +73,20 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) ty
 
 	if topic.counter.value%uint64(topic.msgBufferSize) == 0 {
 		// we have filled the message store buffer, flush to file
-		msgBuffer := topic.messageBuffer
+		//		msgBuffer := topic.messageBuffer
+		//		writeToLogFile(m.dataDir, topic.name, msgBuffer)
+		//promote current wal file and reset the buffer
 		topic.resetMessageBuffer()
-		writeToLogFile(m.dataDir, topic.name, msgBuffer)
 	}
-	return topic.Push(msg)
+
+	_msg := types.Message{Id: topic.counter.Next(), Data: msg}
+	//push the message onto wal writer queue
+	m.walChannel <- wal.Payload{
+		Topic: topicName,
+		Id:    _msg.Id,
+		Data:  _msg.Data,
+	}
+	return topic.Push(_msg)
 }
 
 //Get return the value for given range (from, to)

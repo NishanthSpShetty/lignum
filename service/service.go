@@ -13,6 +13,7 @@ import (
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/NishanthSpShetty/lignum/replication"
+	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -33,6 +34,7 @@ type Service struct {
 	message               *message.MessageStore
 	followerRegistry      *follower.FollowerRegistry
 	replicator            *replication.Replicator
+	wal                   *wal.Wal
 	running               bool
 }
 
@@ -43,6 +45,7 @@ func New(config c.Config) (*Service, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Service.New")
 	}
+	walChannel := make(chan wal.Payload, config.Wal.QueueSize)
 
 	s := &Service{
 		signalChannel:         make(chan os.Signal),
@@ -51,9 +54,10 @@ func New(config c.Config) (*Service, error) {
 		ClusterController:     consulClusterController,
 		ReplicationQueue:      make(chan replication.Payload, config.Replication.InternalQueueSize),
 		SessionRenewalChannel: make(chan struct{}),
-		message:               message.New(config.Message),
+		message:               message.New(config.Message, walChannel),
 		followerRegistry:      follower.New(),
 	}
+	s.wal = wal.New(config.Wal, walChannel)
 	s.replicator = replication.New(s.ReplicationQueue, s.followerRegistry)
 	s.apiServer = api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.followerRegistry)
 	return s, nil
@@ -108,9 +112,8 @@ func (s *Service) Start() error {
 	clientTimeout := s.Config.Replication.ClientTimeoutInMilliSeconds * time.Millisecond
 	s.followerRegistry.StartHealthCheck(ctx, healthCheckInterval, healthCheckTimeout)
 	s.replicator.StartReplicator(ctx, clientTimeout)
-	//	message.StartFlusher(s.Config.Message)
-	//	message.StartReplicator(s.ReplicationQueue)
 
+	s.wal.StartWalWriter(ctx)
 	//mark service as running
 	s.SetStarted()
 	//once the cluster is setup we should be able start api service

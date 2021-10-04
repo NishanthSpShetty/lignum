@@ -1,4 +1,4 @@
-package message
+package wal
 
 import (
 	"os"
@@ -37,7 +37,7 @@ func TestWriteToLogFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot create data directory for the test : %s ", err.Error())
 	}
-	count, err := writeToLogFile(messageConfig.DataDir, topic, []types.Message{message})
+	count, err := WriteToLogFile(messageConfig.DataDir, topic, []types.Message{message})
 	if err != nil {
 		t.Fatalf("Failed to write to log file : %s", err.Error())
 	}
@@ -48,7 +48,7 @@ func TestWriteToLogFile(t *testing.T) {
 
 	expected := []*types.Message{&message}
 
-	got, err := readFromLog(TempDirectory, "test_topic", 0, 0, 10)
+	got, err := ReadFromLog(TempDirectory, "test_topic", 0, 0, 10)
 
 	if err != nil {
 		t.Fatal(err)

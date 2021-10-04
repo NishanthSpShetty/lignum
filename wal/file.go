@@ -1,4 +1,4 @@
-package message
+package wal
 
 import (
 	"bufio"
@@ -37,7 +37,7 @@ func createPath(path string) error {
 	return err
 }
 
-func writeToLogFile(dataDir string, topic string, messages []types.Message) (int, error) {
+func WriteToLogFile(dataDir string, topic string, messages []types.Message) (int, error) {
 
 	path := getTopicDatDir(dataDir, topic)
 	err := createPath(path)
@@ -87,7 +87,7 @@ func writeToLogFile(dataDir string, topic string, messages []types.Message) (int
 	return counter, nil
 }
 
-func readFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.Message, error) {
+func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.Message, error) {
 	//path should exist
 	path := getTopicDatDir(dataDir, topic)
 	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
