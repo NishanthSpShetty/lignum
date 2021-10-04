@@ -152,7 +152,6 @@ func decodeRawMessage(raw []byte, from, to uint64) []*types.Message {
 		message := types.Message{}
 		splits := strings.Split(line, MESSAGE_KEY_VAL_SEPERATOR)
 		if len(splits) != 2 {
-			fmt.Printf("lots of split %d, %v\n", len(splits), splits)
 			continue
 		}
 		id, err := strconv.ParseUint(splits[0], 10, 64)

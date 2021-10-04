@@ -59,7 +59,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 		Id:    mesg.Id,
 		Data:  mesg.Data,
 	}
-	s.replicationQueue <- payload
+	s.walWriterQueue <- payload
 
 	fmt.Fprintf(w, "{\"status\": \"message commited\", \"data\": \"%s\"}", msg.Message)
 }

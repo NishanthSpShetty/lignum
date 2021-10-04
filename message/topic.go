@@ -160,5 +160,4 @@ func (t *Topic) Push(msg string) types.Message {
 	t.bufferIdx++
 	t.lock.Unlock()
 	return message
-
 }
