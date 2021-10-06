@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/rs/zerolog/log"
@@ -28,18 +29,21 @@ func (p Payload) Json() []byte {
 }
 
 type Wal struct {
-	dataDir   string
-	walQueue  <-chan Payload
-	walWriter map[string]*bufio.Writer
-	walFile   map[string]*os.File
+	dataDir  string
+	walQueue <-chan Payload
+	walFile  sync.Map
+}
+
+type WalFile struct {
+	file   *os.File
+	writer *bufio.Writer
 }
 
 func New(conf config.Wal, logDir string, queue <-chan Payload) *Wal {
 	return &Wal{
-		dataDir:   logDir,
-		walQueue:  queue,
-		walWriter: make(map[string]*bufio.Writer),
-		walFile:   make(map[string]*os.File),
+		dataDir:  logDir,
+		walQueue: queue,
+		walFile:  sync.Map{},
 	}
 }
 
@@ -53,49 +57,78 @@ func (w *Wal) createFile(dataDir string, topic string, id uint64) (*os.File, err
 	}
 
 	fileOffset := id
-	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
+	path = fmt.Sprintf("%s/%s_%d.qwal", path, topic, fileOffset)
 
 	file, err := os.Create(path)
 	return file, err
 }
 
+func (w *Wal) getWriter(topic string) *bufio.Writer {
+	wf, ok := w.walFile.Load(topic)
+	if ok {
+		return wf.(*WalFile).writer
+	}
+	return nil
+}
+
 //getWalWriter return the WAL writer if present.
 // create new file and WAL writer for the given topic
 func (w *Wal) getWalWriter(payload Payload) *bufio.Writer {
-	if f, ok := w.walWriter[payload.Topic]; ok {
-		return f
+	if f, ok := w.walFile.Load(payload.Topic); ok {
+		return f.(*WalFile).writer
 	}
 	f, err := w.createFile(w.dataDir, payload.Topic, payload.Id)
 	if err != nil {
-		log.Err(err).Str("topic", payload.Topic).Uint64("offset", payload.Id).Msg("failed to create new wal file")
+		log.Error().Err(err).Str("topic", payload.Topic).Uint64("offset", payload.Id).Msg("failed to create new wal file")
 		return nil
 	}
 	writer := bufio.NewWriter(f)
-	w.walWriter[payload.Topic] = writer
-	w.walFile[payload.Topic] = f
+	w.walFile.Store(payload.Topic, &WalFile{file: f, writer: writer})
 	return writer
 }
 
 //getWalFile return the *os.File for the topic WAL file
 func (w *Wal) getWalFile(topic string) *os.File {
 	//TODO: what if does not exist, this should never be called though
-	return w.walFile[topic]
+	if wf, ok := w.walFile.Load(topic); ok && wf != nil {
+		return wf.(*WalFile).file
+	}
+	return nil
+}
+
+func (w *Wal) ResetWal(topic string) {
+	w.walFile.Delete(topic)
 }
 
 //Promote promote current file as the associated topic log
 //-- WalPromotionSize promote wal file to backend storage file
-func (w *Wal) Promote(topic string) {
+func (w *Wal) Promote(topic string) error {
 	f := w.getWalFile(topic)
+	if f == nil {
+		return fmt.Errorf("WAL file does not exist for topic: %s", topic)
+	}
 	name := f.Name()
-	os.Rename(name, strings.Replace(name, "wal", "log", 1))
-	f.Close()
+	err := os.Rename(name, strings.Replace(name, "qwal", "log", 1))
+	if err != nil {
+		return err
+	}
+	w.ResetWal(topic)
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 
 }
 
 func (w *Wal) writeToWal(payload Payload) {
 	//read the payload message,
 	if payload.Promote {
-		w.Promote(payload.Topic)
+		err := w.Promote(payload.Topic)
+		if err != nil {
+			log.Error().Err(err).Msg("promote failed")
+		}
+		return
 	}
 
 	//get the wal file associated with the topic
@@ -116,6 +149,7 @@ func (w *Wal) StartWalWriter(ctx context.Context) {
 				log.Debug().Msg("stopping wal writer service")
 				return
 			case payload := <-w.walQueue:
+				log.Debug().Interface("payload", payload).Msg("write")
 				w.writeToWal(payload)
 			}
 
