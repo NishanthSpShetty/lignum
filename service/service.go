@@ -57,7 +57,7 @@ func New(config c.Config) (*Service, error) {
 		message:               message.New(config.Message, walChannel),
 		followerRegistry:      follower.New(),
 	}
-	s.wal = wal.New(config.Wal, walChannel)
+	s.wal = wal.New(config.Wal, config.Message.DataDir, walChannel)
 	s.replicator = replication.New(s.ReplicationQueue, s.followerRegistry)
 	s.apiServer = api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.followerRegistry)
 	return s, nil

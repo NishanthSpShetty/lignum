@@ -18,12 +18,12 @@ import (
 )
 
 type Server struct {
-	serviceId      string
-	walWriterQueue chan<- replication.Payload
-	config         config.Server
-	httpServer     *http.Server
-	message        *message.MessageStore
-	follower       *follower.FollowerRegistry
+	serviceId        string
+	replicationQueue chan<- replication.Payload
+	config           config.Server
+	httpServer       *http.Server
+	message          *message.MessageStore
+	follower         *follower.FollowerRegistry
 }
 
 func (s *Server) Stop(ctx context.Context) {
@@ -41,12 +41,12 @@ func NewServer(serviceId string, queue chan<- replication.Payload, config config
 		ReadHeaderTimeout: 2 * time.Second,
 	}
 	return &Server{
-		serviceId:      serviceId,
-		config:         config,
-		walWriterQueue: queue,
-		httpServer:     &httpServer,
-		message:        message,
-		follower:       follower,
+		serviceId:        serviceId,
+		config:           config,
+		replicationQueue: queue,
+		httpServer:       &httpServer,
+		message:          message,
+		follower:         follower,
 	}
 }
 

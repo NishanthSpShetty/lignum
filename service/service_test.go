@@ -22,7 +22,9 @@ func createTestConfig() config.Config {
 		Consul: config.Consul{
 			LeaderElectionIntervalInMilliSeconds: 100,
 		},
-		Message: config.Message{},
+		Message: config.Message{
+			DataDir: "",
+		},
 		Follower: config.Follower{
 			RegistrationOrLeaderCheckIntervalInSeconds: 1,
 			HealthCheckIntervalInSecond:                1,
@@ -55,7 +57,7 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 		message:               message.New(config.Message, walChannel),
 		followerRegistry:      follower.New(),
 	}
-	service.wal = wal.New(config.Wal, walChannel)
+	service.wal = wal.New(config.Wal, config.Message.DataDir, walChannel)
 	service.replicator = replication.New(service.ReplicationQueue, service.followerRegistry)
 	service.apiServer = api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server, service.message, service.followerRegistry)
 

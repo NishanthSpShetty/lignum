@@ -73,9 +73,12 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) ty
 
 	if topic.counter.value%uint64(topic.msgBufferSize) == 0 {
 		// we have filled the message store buffer, flush to file
-		//		msgBuffer := topic.messageBuffer
-		//		writeToLogFile(m.dataDir, topic.name, msgBuffer)
 		//promote current wal file and reset the buffer
+		//signal wal writer to promote current wal file
+		m.walChannel <- wal.Payload{
+			Topic:   topicName,
+			Promote: true,
+		}
 		topic.resetMessageBuffer()
 	}
 

@@ -37,56 +37,6 @@ func createPath(path string) error {
 	return err
 }
 
-func WriteToLogFile(dataDir string, topic string, messages []types.Message) (int, error) {
-
-	path := getTopicDatDir(dataDir, topic)
-	err := createPath(path)
-
-	if err != nil {
-		return 0, err
-	}
-
-	fileOffset := messages[0].Id
-	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
-
-	file, err := os.Create(path)
-	defer file.Close()
-
-	if err != nil {
-		return 0, err
-	}
-
-	//writing 1KB of data took 376microseconds
-	//writing 1GB of data took 478milliseconds
-	fw := bufio.NewWriter(file)
-
-	write_buffer := make([]byte, 0)
-	buf := bytes.NewBuffer(write_buffer)
-
-	counter := 0
-	for _, message := range messages {
-		counter += 1
-		buf.WriteString(fmt.Sprintf("%d%s%s\n", message.Id, MESSAGE_KEY_VAL_SEPERATOR, message.Data))
-	}
-	n, err := fw.Write(buf.Bytes())
-	if err != nil {
-		log.Error().Err(err).Msg("failed to write message buffer to file")
-		//todo: should have retrier, cannot afford to loose the messages.
-	}
-
-	if n != buf.Len() {
-		//FIXME: how to handle this situation
-	}
-	err = fw.Flush()
-
-	if err != nil {
-		log.Error().Err(err).Msg("failed to write message buffer to file")
-		//todo: should have retrier, cannot afford to loose the messages.
-	}
-
-	return counter, nil
-}
-
 func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.Message, error) {
 	//path should exist
 	path := getTopicDatDir(dataDir, topic)
