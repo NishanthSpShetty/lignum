@@ -15,7 +15,7 @@ consul:
 
 message:
   initial-size-per-topic: 10
-  data-dir: "data/"
+  data-dir: "topics"
 
 follower:
   healthcheck-interval-in-seconds: 1

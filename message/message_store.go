@@ -3,6 +3,9 @@ package message
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/message/types"
@@ -29,6 +32,87 @@ func New(msgConfig config.Message, walChannel chan<- wal.Payload) *MessageStore 
 		messageBufferSize: msgConfig.InitialSizePerTopic,
 		dataDir:           msgConfig.DataDir,
 		walChannel:        walChannel,
+	}
+}
+
+func getWalFile(topic, path string) (*os.File, uint64) {
+	var offset uint64 = 0
+	dir, err := os.Open(path)
+	if err != nil {
+		fmt.Println(err)
+	}
+	files, err := dir.Readdir(-1)
+	if err != nil {
+		return nil, offset
+	}
+
+	//filter file ending with qwal
+	walFilePath := ""
+	walFileName := ""
+	for _, _file := range files {
+		if strings.HasSuffix(_file.Name(), "qwal") {
+			walFileName = _file.Name()
+			walFilePath = path + "/" + walFileName
+		}
+	}
+
+	file, err := os.OpenFile(walFilePath, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		log.Error().Err(err).Str("filename", walFilePath).Msg("failed to open WAL file")
+		return nil, offset
+	}
+	//get the message offset
+	offsetStr := strings.ReplaceAll(walFileName, topic+"_", "")
+	offsetStr = strings.ReplaceAll(offsetStr, ".qwal", "")
+	offset, err = strconv.ParseUint(offsetStr, 10, 64)
+	return file, offset
+}
+
+//RestoreWAL on startup read WAL files and replay the messages
+//update WalCache accordignly
+func (m *MessageStore) RestoreWAL(walP *wal.Wal) {
+	//read topics from the data directory
+	dadaDir, err := os.Open(m.dataDir)
+	if os.IsNotExist(err) {
+		//we havent created any data directory, so all good here, return
+		return
+	}
+	dirs, err := dadaDir.Readdir(-1)
+
+	if err != nil && len(dirs) == 0 {
+		//if errored or no files returned, just return.
+		//it can return err but still return partial list
+		return
+	}
+
+	for _, topicDir := range dirs {
+		if topicDir.IsDir() {
+			topicName := topicDir.Name()
+			topic := m.createNewTopic(topicName, m.messageBufferSize)
+			fmt.Println("Loading topic ", topicName, " from WAL file")
+			file, offset := getWalFile(topicName, m.dataDir+"/"+topicDir.Name())
+
+			if file == nil {
+				//FIXME: too many wal files,
+				log.Error().Str("topic", topicName).Msg("wal file not found")
+				continue
+			}
+			//we would have at most messageBufferSize number of messages in WAL file,
+			endOffset := offset + m.messageBufferSize
+			_ = topic
+
+			msgs, err := wal.ReadFromWal(file, offset, endOffset)
+			if err != nil {
+				log.Error().Err(err).Str("file", file.Name()).Msg("error reading wal file")
+				continue
+			}
+
+			//load messages back to topic
+			topic.PushAll(msgs)
+			lastMsg := msgs[len(msgs)-1]
+			topic.counter.set(lastMsg.Id + 1)
+			//TODO: update wal writer cache
+		}
 	}
 }
 

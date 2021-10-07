@@ -112,8 +112,9 @@ func (s *Service) Start() error {
 	clientTimeout := s.Config.Replication.ClientTimeoutInMilliSeconds * time.Millisecond
 	s.followerRegistry.StartHealthCheck(ctx, healthCheckInterval, healthCheckTimeout)
 	s.replicator.StartReplicator(ctx, clientTimeout)
-
 	s.wal.StartWalWriter(ctx)
+
+	s.message.RestoreWAL(s.wal)
 	//mark service as running
 	s.SetStarted()
 	//once the cluster is setup we should be able start api service

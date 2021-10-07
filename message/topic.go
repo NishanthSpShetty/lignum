@@ -161,3 +161,13 @@ func (t *Topic) Push(message types.Message) types.Message {
 	t.lock.Unlock()
 	return message
 }
+
+func (t *Topic) PushAll(messages []*types.Message) {
+
+	t.lock.Lock()
+	for _, message := range messages {
+		t.messageBuffer[t.bufferIdx] = *message
+		t.bufferIdx++
+	}
+	t.lock.Unlock()
+}

@@ -37,6 +37,10 @@ func createPath(path string) error {
 	return err
 }
 
+func ReadFromWal(file *os.File, fileOffset, endOffset uint64) ([]*types.Message, error) {
+	return readFile(file, fileOffset, fileOffset, endOffset)
+}
+
 func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.Message, error) {
 	//path should exist
 	path := getTopicDatDir(dataDir, topic)
@@ -46,10 +50,15 @@ func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.M
 	if err != nil {
 		return nil, err
 	}
+	return readFile(file, fileOffset, from, to)
+}
+
+func readFile(file *os.File, fileOffset, from, to uint64) ([]*types.Message, error) {
 	buf := make([]byte, DEFAULT_READ_CHUNK_SIZE)
 	reader := bufio.NewReader(file)
 	var n int
 	var bufWriteError error
+	var err error
 
 	//chunk size of 8kb does provide improved result, anything less than a page size worsens below num
 	//bench: Reading 1GB file
