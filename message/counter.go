@@ -22,3 +22,14 @@ func (c *Counter) Next() uint64 {
 		}
 	}
 }
+
+//set should never be called
+func (c *Counter) set(newValue uint64) {
+	for {
+		oldValue := atomic.LoadUint64(&c.value)
+		if atomic.CompareAndSwapUint64(&c.value, oldValue, newValue) {
+			return
+		}
+	}
+
+}

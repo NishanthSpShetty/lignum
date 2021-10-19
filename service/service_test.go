@@ -11,6 +11,7 @@ import (
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/NishanthSpShetty/lignum/replication"
+	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 )
@@ -21,11 +22,14 @@ func createTestConfig() config.Config {
 		Consul: config.Consul{
 			LeaderElectionIntervalInMilliSeconds: 100,
 		},
-		Message: config.Message{},
+		Message: config.Message{
+			DataDir: "",
+		},
 		Follower: config.Follower{
 			RegistrationOrLeaderCheckIntervalInSeconds: 1,
 			HealthCheckIntervalInSecond:                1,
 		},
+		Wal: config.Wal{QueueSize: 10},
 	}
 
 }
@@ -41,6 +45,8 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 	clusterController.On("AcquireLock").Return(true)
 	clusterController.On("DestroySession").Return(mock.Anything)
 
+	walChannel := make(chan wal.Payload, config.Wal.QueueSize)
+
 	service := &Service{
 		signalChannel:         make(chan os.Signal),
 		ServiceId:             uuid.New().String(),
@@ -48,9 +54,10 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 		ClusterController:     clusterController,
 		ReplicationQueue:      make(chan replication.Payload, REPLICATION_QUEUE_SIZE),
 		SessionRenewalChannel: make(chan struct{}),
-		message:               message.New(config.Message),
+		message:               message.New(config.Message, walChannel),
 		followerRegistry:      follower.New(),
 	}
+	service.wal = wal.New(config.Wal, config.Message.DataDir, walChannel)
 	service.replicator = replication.New(service.ReplicationQueue, service.followerRegistry)
 	service.apiServer = api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server, service.message, service.followerRegistry)
 

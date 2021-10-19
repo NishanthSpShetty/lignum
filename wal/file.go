@@ -1,4 +1,4 @@
-package message
+package wal
 
 import (
 	"bufio"
@@ -37,57 +37,11 @@ func createPath(path string) error {
 	return err
 }
 
-func writeToLogFile(dataDir string, topic string, messages []types.Message) (int, error) {
-
-	path := getTopicDatDir(dataDir, topic)
-	err := createPath(path)
-
-	if err != nil {
-		return 0, err
-	}
-
-	fileOffset := messages[0].Id
-	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
-
-	file, err := os.Create(path)
-	defer file.Close()
-
-	if err != nil {
-		return 0, err
-	}
-
-	//writing 1KB of data took 376microseconds
-	//writing 1GB of data took 478milliseconds
-	fw := bufio.NewWriter(file)
-
-	write_buffer := make([]byte, 0)
-	buf := bytes.NewBuffer(write_buffer)
-
-	counter := 0
-	for _, message := range messages {
-		counter += 1
-		buf.WriteString(fmt.Sprintf("%d%s%s\n", message.Id, MESSAGE_KEY_VAL_SEPERATOR, message.Data))
-	}
-	n, err := fw.Write(buf.Bytes())
-	if err != nil {
-		log.Error().Err(err).Msg("failed to write message buffer to file")
-		//todo: should have retrier, cannot afford to loose the messages.
-	}
-
-	if n != buf.Len() {
-		//FIXME: how to handle this situation
-	}
-	err = fw.Flush()
-
-	if err != nil {
-		log.Error().Err(err).Msg("failed to write message buffer to file")
-		//todo: should have retrier, cannot afford to loose the messages.
-	}
-
-	return counter, nil
+func ReadFromWal(file *os.File, fileOffset, endOffset uint64) ([]*types.Message, error) {
+	return readFile(file, fileOffset, fileOffset, endOffset)
 }
 
-func readFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.Message, error) {
+func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.Message, error) {
 	//path should exist
 	path := getTopicDatDir(dataDir, topic)
 	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
@@ -96,10 +50,15 @@ func readFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.M
 	if err != nil {
 		return nil, err
 	}
+	return readFile(file, fileOffset, from, to)
+}
+
+func readFile(file *os.File, fileOffset, from, to uint64) ([]*types.Message, error) {
 	buf := make([]byte, DEFAULT_READ_CHUNK_SIZE)
 	reader := bufio.NewReader(file)
 	var n int
 	var bufWriteError error
+	var err error
 
 	//chunk size of 8kb does provide improved result, anything less than a page size worsens below num
 	//bench: Reading 1GB file
@@ -152,7 +111,6 @@ func decodeRawMessage(raw []byte, from, to uint64) []*types.Message {
 		message := types.Message{}
 		splits := strings.Split(line, MESSAGE_KEY_VAL_SEPERATOR)
 		if len(splits) != 2 {
-			fmt.Printf("lots of split %d, %v\n", len(splits), splits)
 			continue
 		}
 		id, err := strconv.ParseUint(splits[0], 10, 64)
