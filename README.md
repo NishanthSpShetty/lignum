@@ -76,6 +76,13 @@ Lignum will listen on the specified port for incoming traffics
 
 ---
 
+
+## Configuration
+ 
+ Refer configuration [document](./doc/config.md)
+
+---
+
 ### Usage
 
 #### Sending message
