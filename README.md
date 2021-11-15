@@ -18,6 +18,7 @@ Simple message queue inspired by Kafka, which can be used to
    * Send messages to topic.
    * Consume messages from topic.
    * Message is replicated to all nodes. meaning any node can be used to read message from the topic. compared to kafka where topic has leader and replicated to few set of nodes in a cluster.
+   * Persist messages on disk.
    
    
 ### Cluster
@@ -27,8 +28,6 @@ Simple message queue inspired by Kafka, which can be used to
 * All other node will register itself as follower to the leader.
 * Message sent to leader, will be replicated to follower node.
 * If the leader goes down, any one of the follower gets elected as a leader.
-
-
 
 
 #### Lignum message has the following characterstics
@@ -109,7 +108,7 @@ For this server will respond with the following
 }
 ```
 
-> NOTE: Lignum doesnt have API to create new topic, it will create a topic if doesnt exist.
+> NOTE: Lignum doesnt have API to create new topic as of now, it will create a topic if doesnt exist.
 
 ---
 #### Read message from lignum
@@ -166,7 +165,7 @@ the above message will return 3 messages if presents, if the message is less tha
 }
 ```
 
-> NOTE: Lignum doesnt store any data about the consumer. 
+> NOTE: Lignum doesnt store any data about the consumer, so it wont track the last message consumed as done by kafka. 
 ---
 
 *For TODO's and progress on the project refer [laundrylist](https://github.com/NishanthSpShetty/lignum/blob/master/laundrylist.md) or [lignum project](https://github.com/NishanthSpShetty/lignum/projects/1)*
