@@ -165,7 +165,17 @@ the above message will return 3 messages if presents, if the message is less tha
 }
 ```
 
-> NOTE: Lignum doesnt store any data about the consumer, so it wont track the last message consumed as done by kafka. 
+>> NOTE: Lignum doesnt store any data about the consumer, so it wont track the last message consumed as done by kafka. 
+
+## Storage
+
+Lignum stores the messages to disk as lomg files, batched with the messageBufferSize  as specified with config "initial-size-per-topic".
+
+It creates a WAL file and when the umber of message reaches set limit with buffer size, it will flused to log file and new wal file is created with the different offset for message.
+
+
+
+
 ---
 
 *For TODO's and progress on the project refer [laundrylist](https://github.com/NishanthSpShetty/lignum/blob/master/laundrylist.md) or [lignum project](https://github.com/NishanthSpShetty/lignum/projects/1)*
