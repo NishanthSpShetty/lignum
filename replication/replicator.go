@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/NishanthSpShetty/lignum/cluster"
+	"github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/rs/zerolog/log"
 )
@@ -28,7 +28,7 @@ func (p Payload) Json() []byte {
 
 //ReplicationState Contains the information on the followers replciation state
 type ReplicationState struct {
-	node cluster.Node
+	node types.Node
 	//mark that replicator can start the replication for this node
 	ready bool
 	//message offset which is already been sent to follower
@@ -77,7 +77,7 @@ func (r *Replicator) replicate(payload Payload) {
 	}
 }
 
-func (r *Replicator) send(node cluster.Node, payload Payload) {
+func (r *Replicator) send(node types.Node, payload Payload) {
 
 	url := fmt.Sprintf("http://%s:%d/internal/api/replicate", node.Host, node.Port)
 	contentType := "application/json"

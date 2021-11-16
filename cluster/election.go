@@ -9,8 +9,14 @@ import (
 	"time"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/rs/zerolog/log"
 )
+
+type MessageStat struct {
+	Topic  string
+	Offset uint
+}
 
 func sendConnectRequestLeader(client http.Client, host string, port int, requestBody []byte) error {
 	leaderEndpoint := fmt.Sprintf("http://%s:%d%s", host, port, "/api/follower/register")
@@ -24,7 +30,7 @@ func sendConnectRequestLeader(client http.Client, host string, port int, request
 	return err
 }
 
-func connectToLeader(serviceKey string, clusteController ClusterController, requestBody []byte, httpClient http.Client) {
+func connectToLeader(serviceKey string, clusteController ClusterController, requestBody []byte, httpClient http.Client, msgStore *message.MessageStore) {
 
 	if !state.isLeader() {
 
@@ -37,6 +43,14 @@ func connectToLeader(serviceKey string, clusteController ClusterController, requ
 				log.Error().Err(err).Send()
 				return
 			}
+
+			//get the replication status of this node to send it to leader
+			//How/what ?
+			// 1. need all the topics in this node
+			// 2. need current message offset per node.
+			// 3.
+			topics := msgStore.GetTopics()
+
 			err = sendConnectRequestLeader(httpClient, leaderNode.Host, leaderNode.Port, requestBody)
 
 			if err != nil {
@@ -58,7 +72,7 @@ func connectToLeader(serviceKey string, clusteController ClusterController, requ
 
 //FollowerRegistrationRoutine Connect this service as a follower to the elected leader.
 //this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
-func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, serviceId string, clusteController ClusterController) {
+func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, serviceId string, clusteController ClusterController, msgStore *message.MessageStore) {
 
 	thisNode := NewNode(serviceId, appConfig.Server.Host, appConfig.Server.Port)
 	requestBody := thisNode.Json()
@@ -80,7 +94,7 @@ func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, s
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				connectToLeader(appConfig.Server.ServiceKey, clusteController, requestBody, httpClient)
+				connectToLeader(appConfig.Server.ServiceKey, clusteController, requestBody, httpClient, msgStore)
 			}
 		}
 	}()

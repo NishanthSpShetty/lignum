@@ -8,7 +8,8 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/NishanthSpShetty/lignum/api"
-	"github.com/NishanthSpShetty/lignum/cluster"
+	cluster "github.com/NishanthSpShetty/lignum/cluster"
+	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
 	c "github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
@@ -27,7 +28,7 @@ type Service struct {
 	Config                c.Config
 	ServiceId             string
 	SessionRenewalChannel chan struct{}
-	ClusterController     cluster.ClusterController
+	ClusterController     cluster_types.ClusterController
 	ReplicationQueue      chan replication.Payload
 	Cancels               []context.CancelFunc
 	apiServer             *api.Server
@@ -74,7 +75,7 @@ func (s *Service) startClusterService(ctx context.Context) error {
 	cluster.InitiateLeaderElection(ctx, s.Config, s.ServiceId, s.ClusterController)
 
 	//connect to leader
-	cluster.FollowerRegistrationRoutine(ctx, s.Config, s.ServiceId, s.ClusterController)
+	cluster.FollowerRegistrationRoutine(ctx, s.Config, s.ServiceId, s.ClusterController, s.message)
 	return nil
 }
 

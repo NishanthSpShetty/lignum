@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/NishanthSpShetty/lignum/cluster"
+	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/rs/zerolog/log"
 )
 
 type Follower struct {
-	node    cluster.Node
+	node    cluster_types.Node
 	healthy bool
 	//ready for replication
 	ready bool
@@ -25,18 +25,18 @@ func (f *Follower) IsHealthy() bool { return f.healthy }
 
 //IsReady return true when follower is ready to recieve replicate message.
 //currently we will  use healthy flag to mark as ready
-func (f *Follower) IsReady() bool      { return f.healthy }
-func (f *Follower) Node() cluster.Node { return f.node }
+func (f *Follower) IsReady() bool            { return f.healthy }
+func (f *Follower) Node() cluster_types.Node { return f.node }
 
-func (f *FollowerRegistry) Register(n cluster.Node) {
+func (f *FollowerRegistry) Register(n cluster_types.Node) {
 	//we know that the node is healthy when registering itself
 	//for now we will mark the follower node as replication ready node
 	f.follower[n.Id] = &Follower{node: n, healthy: true, ready: true}
 	fmt.Println("registered")
 }
 
-func (f *FollowerRegistry) ListNodes() []cluster.Node {
-	l := make([]cluster.Node, 0)
+func (f *FollowerRegistry) ListNodes() []cluster_types.Node {
+	l := make([]cluster_types.Node, 0)
 	for _, follower := range f.follower {
 		l = append(l, follower.node)
 	}
@@ -53,7 +53,7 @@ func New() *FollowerRegistry {
 	}
 }
 
-func isActive(client http.Client, node *cluster.Node) bool {
+func isActive(client http.Client, node *cluster_types.Node) bool {
 	return node.Ping(client)
 }
 

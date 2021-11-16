@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/hashicorp/consul/api"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -89,14 +90,14 @@ func Test_CreateSession(t *testing.T) {
 
 func Test_AcquireLock(t *testing.T) {
 
-	node := Node{
+	node := types.Node{
 		Id:   "test-node",
 		Host: "localhost",
 		Port: 8080,
 	}
 
 	type args struct {
-		node       Node
+		node       types.Node
 		serviceKey string
 	}
 

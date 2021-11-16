@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/hashicorp/consul/api"
 	"github.com/rs/zerolog/log"
 )
@@ -63,9 +64,9 @@ func (c *ConsulClusterController) DestroySession() error {
 	return c.client.DestroySession(c.SessionId)
 }
 
-func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
+func (c ConsulClusterController) GetLeader(serviceKey string) (types.Node, error) {
 	kvPair, err := c.client.GetKVPair(serviceKey)
-	nodeConfig := Node{}
+	nodeConfig := types.Node{}
 	if err != nil {
 		return nodeConfig, err
 	}
@@ -77,7 +78,7 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
 	return nodeConfig, err
 }
 
-func (c *ConsulClusterController) AcquireLock(node Node, serviceKey string) (bool, error) {
+func (c *ConsulClusterController) AcquireLock(node types.Node, serviceKey string) (bool, error) {
 
 	lockData := node.Json()
 

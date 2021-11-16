@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/NishanthSpShetty/lignum/cluster"
+	"github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
@@ -54,7 +54,7 @@ func (s *Server) registerFollower() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		requestBody, _ := ioutil.ReadAll(req.Body)
 		log.Info().Bytes("RequestBody", requestBody).Msg("request received for follower registration")
-		node := cluster.Node{}
+		node := types.Node{}
 		json.Unmarshal(requestBody, &node)
 		s.follower.Register(node)
 		fmt.Fprintf(w, "Follower registered. Node : [ %v ]\n", node)
