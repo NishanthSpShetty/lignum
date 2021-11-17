@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/NishanthSpShetty/lignum/message/counter"
 	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/stretchr/testify/assert"
 )
 
-var counter *Counter
+var mycounter *counter.Counter
 
 func withTopic(m []types.Message, topic string) map[string][]types.Message {
 	return map[string][]types.Message{topic: m}
 }
 
 func seedMessages(count, bufferSize uint64) []types.Message {
-	counter = NewCounter()
+	mycounter = counter.NewCounter()
 	list := make([]types.Message, bufferSize)
 	for i := uint64(0); i < count; i++ {
 		list[i] = *makeMessage()
@@ -29,23 +30,17 @@ func createMsgStore(name string, count, msgBufferSize uint64) *MessageStore {
 	return &MessageStore{
 		messageBufferSize: msgBufferSize,
 		walChannel:        make(chan<- wal.Payload, 100),
-		topic: map[string]*Topic{name: {
-			counter:       NewCounterWithValue(uint64(count)),
-			messageBuffer: seedMessages(count, msgBufferSize),
-			name:          "test_new",
-			bufferIdx:     count,
-			msgBufferSize: msgBufferSize,
-		}},
+		topic:             map[string]*types.Topic{"test_new": types.NewTopic("test_new", msgBufferSize, "")},
 	}
 }
 
 func makeMessage() *types.Message {
-	id := counter.Next()
+	id := mycounter.Next()
 	return &types.Message{Id: id, Data: fmt.Sprintf("this is message %d", id)}
 }
 
 func makeMessages(count, bufferSize uint64) []*types.Message {
-	counter = NewCounter()
+	mycounter = counter.NewCounter()
 	list := make([]*types.Message, bufferSize)
 	for i := uint64(0); i < count; i++ {
 		list[i] = makeMessage()
@@ -76,7 +71,7 @@ func Test_messagePut(t *testing.T) {
 			message: &MessageStore{
 				messageBufferSize: 10,
 				walChannel:        make(chan<- wal.Payload, 10),
-				topic:             make(map[string]*Topic)},
+				topic:             make(map[string]*types.Topic)},
 			args: args{
 				topic: "test_new",
 				msg:   "this is test log 001",

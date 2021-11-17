@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 
-	"github.com/NishanthSpShetty/lignum/message/buffer"
-	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -37,11 +34,11 @@ func createPath(path string) error {
 	return err
 }
 
-func ReadFromWal(file *os.File, fileOffset, endOffset uint64) ([]*types.Message, error) {
+func ReadFromWal(file *os.File, fileOffset, endOffset uint64) ([]byte, error) {
 	return readFile(file, fileOffset, fileOffset, endOffset)
 }
 
-func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.Message, error) {
+func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]byte, error) {
 	//path should exist
 	path := getTopicDatDir(dataDir, topic)
 	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
@@ -53,7 +50,7 @@ func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]*types.M
 	return readFile(file, fileOffset, from, to)
 }
 
-func readFile(file *os.File, fileOffset, from, to uint64) ([]*types.Message, error) {
+func readFile(file *os.File, fileOffset, from, to uint64) ([]byte, error) {
 	buf := make([]byte, DEFAULT_READ_CHUNK_SIZE)
 	reader := bufio.NewReader(file)
 	var n int
@@ -99,35 +96,5 @@ func readFile(file *os.File, fileOffset, from, to uint64) ([]*types.Message, err
 		return nil, errors.Wrap(bufWriteError, "failed to write log buffer")
 	}
 
-	return decodeRawMessage(byteBuf.Bytes(), from, to), nil
-}
-
-//decodeRawMessage naively implement the decoding the message written in raw bytes
-func decodeRawMessage(raw []byte, from, to uint64) []*types.Message {
-
-	buf := buffer.NewBuffer(16)
-	i := 0
-	for _, line := range strings.Split(string(raw), "\n") {
-		message := types.Message{}
-		splits := strings.Split(line, MESSAGE_KEY_VAL_SEPERATOR)
-		if len(splits) != 2 {
-			continue
-		}
-		id, err := strconv.ParseUint(splits[0], 10, 64)
-		if err != nil {
-			log.Error().Err(err).Msg("failed to read message")
-			continue
-		}
-
-		//skip any messages which arent part of the given range.
-		if id < from || id >= to {
-			continue
-		}
-
-		message.Id = id
-		message.Data = splits[1]
-		buf.Write(&message)
-		i += 1
-	}
-	return buf.Slice()
+	return byteBuf.Bytes(), nil
 }

@@ -1,23 +1,21 @@
-package message
+package types
 
 import (
-	"sync"
-
-	"github.com/NishanthSpShetty/lignum/message/buffer"
-	"github.com/NishanthSpShetty/lignum/message/types"
+	"github.com/NishanthSpShetty/lignum/message/counter"
 	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/rs/zerolog/log"
 )
 
-type Topic struct {
-	counter       *Counter
-	name          string
-	messageBuffer []types.Message
-	//number of messages allowed to stay in memory
-	msgBufferSize uint64
-	bufferIdx     uint64
-	lock          sync.Mutex
-	dataDir       string
+func NewTopic(topicName string, msgBufferSize uint64, dataDir string) *Topic {
+
+	topic := &Topic{
+		name:          topicName,
+		counter:       counter.NewCounter(),
+		messageBuffer: make([]Message, msgBufferSize),
+		msgBufferSize: msgBufferSize,
+		dataDir:       dataDir,
+	}
+	return topic
 }
 
 func (t *Topic) GetName() string {
@@ -25,10 +23,22 @@ func (t *Topic) GetName() string {
 }
 
 func (t *Topic) GetCurrentOffset() uint64 {
-	return t.counter.value
+	return t.counter.Get()
 }
 
-func (t *Topic) getBufferedMessage() []types.Message {
+func (t *Topic) CounterNext() uint64 {
+	return t.counter.Next()
+}
+
+func (t *Topic) SetCounter(val uint64) {
+	t.counter.Set(val)
+}
+
+func (t *Topic) GetMessageBufferSize() uint64 {
+	return t.msgBufferSize
+}
+
+func (t *Topic) getBufferedMessage() []Message {
 	return t.messageBuffer[:t.bufferIdx]
 }
 
@@ -45,14 +55,14 @@ func (t *Topic) getFileOffset(id uint64) uint64 {
 	return id - mod
 }
 
-func (t *Topic) readFromBuffer(from, to uint64) []*types.Message {
+func (t *Topic) readFromBuffer(from, to uint64) []*Message {
 
 	//if both offset points to inbuffer messages, read from buffer.
 	msgLen := t.getMessageSizeInBuffer()
 	if msgLen == 0 {
 		return nil
 	}
-	msgs := make([]*types.Message, to-from)
+	msgs := make([]*Message, to-from)
 	i := 0
 	messages := t.getBufferedMessage()
 	for _, _msg := range messages {
@@ -70,23 +80,24 @@ func (t *Topic) readFromBuffer(from, to uint64) []*types.Message {
 	return msgs
 }
 
-func (t *Topic) readFromLogs(fromOffset, toOffset, from, to uint64) []*types.Message {
+func (t *Topic) readFromLogs(fromOffset, toOffset, from, to uint64) []*Message {
 
-	msgBuffer := buffer.NewBuffer(int(to - from))
+	msgBuffer := make([]*Message, 0, to-from)
 	for eachOffset := fromOffset; eachOffset <= toOffset; eachOffset += t.msgBufferSize {
-		msg, err := wal.ReadFromLog(t.dataDir, t.name, eachOffset, from, to)
+		raw, err := wal.ReadFromLog(t.dataDir, t.name, eachOffset, from, to)
+		msg := DecodeRawMessage(raw, from, to)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to read message from the log files")
 			return nil
 		}
-		msgBuffer.WriteAll(msg)
+		msgBuffer = append(msgBuffer, msg...)
 	}
-	return msgBuffer.Slice()
+	return msgBuffer
 }
 
 //GetMessages get all messages written to the topic.
 //If message ranges lie within buffered messages, return them, if not check if it already written to files.
-func (t *Topic) GetMessages(from, to uint64) []*types.Message {
+func (t *Topic) GetMessages(from, to uint64) []*Message {
 
 	latestMessageOffset := t.GetCurrentOffset()
 	if to > latestMessageOffset {
@@ -130,7 +141,7 @@ func (t *Topic) GetMessages(from, to uint64) []*types.Message {
 		toOffset = toOffset - t.msgBufferSize
 	}
 	//read range can start from the file and end at reading buffered message
-	var msgs []*types.Message
+	var msgs []*Message
 	if !fromInBuffer {
 		msgs = t.readFromLogs(fromOffset, toOffset, from, to)
 	}
@@ -146,14 +157,14 @@ func (t *Topic) getMessageSizeInBuffer() uint64 {
 	return t.bufferIdx
 }
 
-func (t *Topic) resetMessageBuffer() {
+func (t *Topic) ResetMessageBuffer() {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	t.messageBuffer = make([]types.Message, t.msgBufferSize)
+	t.messageBuffer = make([]Message, t.msgBufferSize)
 	t.bufferIdx = 0
 }
 
-func (t *Topic) Push(message types.Message) types.Message {
+func (t *Topic) Push(message Message) Message {
 
 	t.lock.Lock()
 	t.messageBuffer[t.bufferIdx] = message
@@ -162,7 +173,7 @@ func (t *Topic) Push(message types.Message) types.Message {
 	return message
 }
 
-func (t *Topic) PushAll(messages []*types.Message) {
+func (t *Topic) PushAll(messages []*Message) {
 
 	t.lock.Lock()
 	for _, message := range messages {
@@ -170,4 +181,8 @@ func (t *Topic) PushAll(messages []*types.Message) {
 		t.bufferIdx++
 	}
 	t.lock.Unlock()
+}
+
+func (t *Topic) Append(message Message) {
+	t.messageBuffer = append(t.messageBuffer, message)
 }
