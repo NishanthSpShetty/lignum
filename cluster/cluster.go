@@ -2,14 +2,13 @@ package cluster
 
 import (
 	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
-	"github.com/NishanthSpShetty/lignum/message/types"
 )
 
 //State contains the state of the cluster node
 type State struct {
 	leader            bool
 	connectedToLeader bool
-	leaderNode        cluster_types.Node
+	leaderNode        *cluster_types.Node
 }
 
 //state It is created during the app startup
@@ -39,10 +38,10 @@ func (s *State) setConnectedToLeader(yes bool) {
 	s.connectedToLeader = yes
 }
 
-func (s *State) setLeaderNode(leaderNode *types.Node) {
+func (s *State) setLeaderNode(leaderNode *cluster_types.Node) {
 	s.leaderNode = leaderNode
 }
 
-func (s *State) getLeader() *types.Node {
+func (s *State) getLeader() *cluster_types.Node {
 	return s.leaderNode
 }

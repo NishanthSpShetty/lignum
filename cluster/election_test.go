@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
+	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -17,10 +19,10 @@ func init_state() {
 	state = &State{}
 }
 
-func Test_leaerStateUpdate(t *testing.T) {
+func Test_leaderStateUpdate(t *testing.T) {
 	init_state()
 	serviceKey := "service/lignum/key/master"
-	node := Node{
+	node := cluster_types.Node{
 		Id:   "test-node",
 		Host: "localhost",
 		Port: 8080,
@@ -44,7 +46,7 @@ func Test_LeaderElection(t *testing.T) {
 	init_state()
 	clusterController := &MockclusterController{ConsulClusterController: &ConsulClusterController{}}
 	serviceKey := "service/lignum/key/master"
-	node := Node{
+	node := cluster_types.Node{
 		Id:   "test-node",
 		Host: "localhost",
 		Port: 8080,
@@ -67,7 +69,7 @@ func Test_ConnectToLeader(t *testing.T) {
 	clusterController := &MockclusterController{ConsulClusterController: &ConsulClusterController{}}
 	serviceKey := "service/lignum/key/master"
 
-	node := Node{
+	node := cluster_types.Node{
 		Id:   "test-node",
 		Host: "localhost",
 		Port: 8080,
@@ -76,13 +78,14 @@ func Test_ConnectToLeader(t *testing.T) {
 
 	mockURL, _ := url.Parse(mockServer.URL)
 	port, _ := strconv.Atoi(mockURL.Port())
-	leaderNode := Node{
+	leaderNode := cluster_types.Node{
 		Id:   "leader-node",
 		Host: mockURL.Hostname(),
 		Port: port,
 	}
 	clusterController.On("GetLeader", mock.Anything).Return(leaderNode)
-	connectToLeader(serviceKey, clusterController, thisNodeData, *http.DefaultClient)
+	var msgStore *message.MessageStore = nil
+	connectToLeader(serviceKey, clusterController, thisNodeData, *http.DefaultClient, msgStore)
 
 	assert.True(t, state.isConnectedLeader(), "should connect to leader")
 	assert.Equal(t, leaderNode, *state.getLeader(), "should set the leader in cluster state")

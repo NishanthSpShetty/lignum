@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/NishanthSpShetty/lignum/config"
-	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/hashicorp/consul/api"
 	"github.com/rs/zerolog/log"
 )
@@ -16,7 +16,7 @@ type ConsulClusterController struct {
 }
 
 //assert that ConsulClusterController implemnets ClusterController
-var _ ClusterController = &ConsulClusterController{}
+var _ cluster_types.ClusterController = &ConsulClusterController{}
 
 func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterController, error) {
 	var err error
@@ -64,9 +64,9 @@ func (c *ConsulClusterController) DestroySession() error {
 	return c.client.DestroySession(c.SessionId)
 }
 
-func (c ConsulClusterController) GetLeader(serviceKey string) (types.Node, error) {
+func (c ConsulClusterController) GetLeader(serviceKey string) (cluster_types.Node, error) {
 	kvPair, err := c.client.GetKVPair(serviceKey)
-	nodeConfig := types.Node{}
+	nodeConfig := cluster_types.Node{}
 	if err != nil {
 		return nodeConfig, err
 	}
@@ -78,7 +78,7 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (types.Node, error
 	return nodeConfig, err
 }
 
-func (c *ConsulClusterController) AcquireLock(node types.Node, serviceKey string) (bool, error) {
+func (c *ConsulClusterController) AcquireLock(node cluster_types.Node, serviceKey string) (bool, error) {
 
 	lockData := node.Json()
 

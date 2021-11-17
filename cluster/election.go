@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/rs/zerolog/log"
@@ -30,7 +31,7 @@ func sendConnectRequestLeader(client http.Client, host string, port int, request
 	return err
 }
 
-func connectToLeader(serviceKey string, clusteController ClusterController, requestBody []byte, httpClient http.Client, msgStore *message.MessageStore) {
+func connectToLeader(serviceKey string, clusteController cluster_types.ClusterController, requestBody []byte, httpClient http.Client, msgStore *message.MessageStore) {
 
 	if !state.isLeader() {
 
@@ -49,7 +50,6 @@ func connectToLeader(serviceKey string, clusteController ClusterController, requ
 			// 1. need all the topics in this node
 			// 2. need current message offset per node.
 			// 3.
-			topics := msgStore.GetTopics()
 
 			err = sendConnectRequestLeader(httpClient, leaderNode.Host, leaderNode.Port, requestBody)
 
@@ -72,9 +72,9 @@ func connectToLeader(serviceKey string, clusteController ClusterController, requ
 
 //FollowerRegistrationRoutine Connect this service as a follower to the elected leader.
 //this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
-func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, serviceId string, clusteController ClusterController, msgStore *message.MessageStore) {
+func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, serviceId string, clusteController cluster_types.ClusterController, msgStore *message.MessageStore) {
 
-	thisNode := NewNode(serviceId, appConfig.Server.Host, appConfig.Server.Port)
+	thisNode := cluster_types.NewNode(serviceId, appConfig.Server.Host, appConfig.Server.Port)
 	requestBody := thisNode.Json()
 	ticker := time.NewTicker(appConfig.Follower.RegistrationOrLeaderCheckIntervalInSeconds)
 
@@ -100,7 +100,7 @@ func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, s
 	}()
 }
 
-func tryAcquireLock(node Node, c ClusterController, serviceKey string) (bool, error) {
+func tryAcquireLock(node cluster_types.Node, c cluster_types.ClusterController, serviceKey string) (bool, error) {
 
 	acquired, err := c.AcquireLock(node, serviceKey)
 	if err != nil {
@@ -115,7 +115,7 @@ func tryAcquireLock(node Node, c ClusterController, serviceKey string) (bool, er
 	return acquired, nil
 }
 
-func leaderElection(ctx context.Context, node Node, c ClusterController, serviceKey string, electionInterval time.Duration) {
+func leaderElection(ctx context.Context, node cluster_types.Node, c cluster_types.ClusterController, serviceKey string, electionInterval time.Duration) {
 
 	loggedOnce := false
 	ticker := time.NewTicker(electionInterval)
@@ -148,8 +148,8 @@ func leaderElection(ctx context.Context, node Node, c ClusterController, service
 	}
 }
 
-func InitiateLeaderElection(ctx context.Context, appConfig config.Config, nodeId string, c ClusterController) {
-	node := Node{
+func InitiateLeaderElection(ctx context.Context, appConfig config.Config, nodeId string, c cluster_types.ClusterController) {
+	node := cluster_types.Node{
 		Id:   nodeId,
 		Host: appConfig.Server.Host,
 		Port: appConfig.Server.Port,

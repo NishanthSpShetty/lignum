@@ -11,3 +11,5 @@ type Message struct {
 func (m Message) String() string {
 	return fmt.Sprintf("{ID: %v, Msg: %s}\n", m.Id, m.Data)
 }
+
+type MessageStoreIface interface{}
