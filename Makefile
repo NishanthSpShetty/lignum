@@ -13,8 +13,8 @@ build-linux:clean
 build: clean
 	go build -o $(BIN_NAME)
 
-format:
-	gofmt -w $(ALL_GO_FILES)
+fmt:
+	goimports -w $(ALL_GO_FILES)
 
 test:
 	@echo "Running test"
@@ -26,3 +26,6 @@ setup:
 
 run:
 	@go run main.go -config $(CONFIG_FILE)
+
+lint:
+	golint ./...
