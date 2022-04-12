@@ -49,6 +49,17 @@ func NewNode(id string, host string, port int) Node {
 	}
 }
 
+type MessageStat struct {
+	Topic  string `json:"topic"`
+	Offset uint64 `json:"offset"`
+}
+
+//FollowerRegistration follower registrartion request data
+type FollowerRegistration struct {
+	Node        Node          `json:"node"`
+	MessageStat []MessageStat `json:"message-stat"`
+}
+
 func (n *Node) Ping(client http.Client) bool {
 
 	pingUrl := fmt.Sprintf("http://%s:%d/ping", n.Host, n.Port)

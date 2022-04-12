@@ -14,7 +14,8 @@ type Follower struct {
 	node    cluster_types.Node
 	healthy bool
 	//ready for replication
-	ready bool
+	ready       bool
+	messageStat []cluster_types.MessageStat
 }
 
 type FollowerRegistry struct {
@@ -28,10 +29,15 @@ func (f *Follower) IsHealthy() bool { return f.healthy }
 func (f *Follower) IsReady() bool            { return f.healthy }
 func (f *Follower) Node() cluster_types.Node { return f.node }
 
-func (f *FollowerRegistry) Register(n cluster_types.Node) {
+func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
 	//we know that the node is healthy when registering itself
 	//for now we will mark the follower node as replication ready node
-	f.follower[n.Id] = &Follower{node: n, healthy: true, ready: true}
+	f.follower[fr.Node.Id] = &Follower{
+		node:        fr.Node,
+		healthy:     true,
+		ready:       false,
+		messageStat: fr.MessageStat,
+	}
 	fmt.Println("registered")
 }
 

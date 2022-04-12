@@ -54,10 +54,10 @@ func (s *Server) registerFollower() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		requestBody, _ := ioutil.ReadAll(req.Body)
 		log.Info().Bytes("RequestBody", requestBody).Msg("request received for follower registration")
-		node := types.Node{}
-		json.Unmarshal(requestBody, &node)
-		s.follower.Register(node)
-		fmt.Fprintf(w, "Follower registered. Node : [ %v ]\n", node)
+		fr := types.FollowerRegistration{}
+		json.Unmarshal(requestBody, &fr)
+		s.follower.Register(fr)
+		fmt.Fprintf(w, "Follower registered. Node : [ %v ]\n", fr)
 	}
 }
 

@@ -3,21 +3,18 @@ package cluster
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
 
+	"github.com/NishanthSpShetty/lignum/cluster/types"
 	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/rs/zerolog/log"
 )
-
-type MessageStat struct {
-	Topic  string
-	Offset uint
-}
 
 func sendConnectRequestLeader(client http.Client, host string, port int, requestBody []byte) error {
 	leaderEndpoint := fmt.Sprintf("http://%s:%d%s", host, port, "/api/follower/register")
@@ -31,7 +28,7 @@ func sendConnectRequestLeader(client http.Client, host string, port int, request
 	return err
 }
 
-func connectToLeader(serviceKey string, clusteController cluster_types.ClusterController, requestBody []byte, httpClient http.Client, msgStore *message.MessageStore) {
+func connectToLeader(serviceKey string, clusteController cluster_types.ClusterController, node types.Node, httpClient http.Client, msgStore *message.MessageStore) {
 
 	if !state.isLeader() {
 
@@ -46,10 +43,30 @@ func connectToLeader(serviceKey string, clusteController cluster_types.ClusterCo
 			}
 
 			//get the replication status of this node to send it to leader
-			//How/what ?
 			// 1. need all the topics in this node
 			// 2. need current message offset per node.
-			// 3.
+
+			topics := msgStore.GetTopics()
+			stat := make([]types.MessageStat, 0, len(topics))
+
+			for _, t := range topics {
+				stat = append(stat, types.MessageStat{
+					Topic:  t.GetName(),
+					Offset: t.GetCurrentOffset(),
+				})
+
+			}
+
+			request := types.FollowerRegistration{
+				Node:        node,
+				MessageStat: stat,
+			}
+
+			requestBody, err := json.Marshal(request)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to marshal request")
+				return
+			}
 
 			err = sendConnectRequestLeader(httpClient, leaderNode.Host, leaderNode.Port, requestBody)
 
@@ -75,7 +92,6 @@ func connectToLeader(serviceKey string, clusteController cluster_types.ClusterCo
 func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, serviceId string, clusteController cluster_types.ClusterController, msgStore *message.MessageStore) {
 
 	thisNode := cluster_types.NewNode(serviceId, appConfig.Server.Host, appConfig.Server.Port)
-	requestBody := thisNode.Json()
 	ticker := time.NewTicker(appConfig.Follower.RegistrationOrLeaderCheckIntervalInSeconds)
 
 	httpClient := http.Client{
@@ -94,7 +110,7 @@ func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, s
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				connectToLeader(appConfig.Server.ServiceKey, clusteController, requestBody, httpClient, msgStore)
+				connectToLeader(appConfig.Server.ServiceKey, clusteController, thisNode, httpClient, msgStore)
 			}
 		}
 	}()
