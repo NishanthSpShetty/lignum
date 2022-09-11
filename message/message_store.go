@@ -148,9 +148,10 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) ty
 		topic = m.createNewTopic(topicName, m.messageBufferSize)
 	}
 
+	fmt.Println("topic  ", topicName)
 	metrics.IncrementMessageCount(topic.GetName())
-
-	if topic.GetCurrentOffset()%uint64(topic.GetMessageBufferSize()) == 0 {
+	currentOffset := topic.GetCurrentOffset()
+	if currentOffset != 0 && currentOffset%uint64(topic.GetMessageBufferSize()) == 0 {
 		// we have filled the message store buffer, flush to file
 		//promote current wal file and reset the buffer
 		//signal wal writer to promote current wal file

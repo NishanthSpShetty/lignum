@@ -130,7 +130,7 @@ func (t *Topic) GetMessages(from, to uint64) []*Message {
 		Bool("toInBuffer", toInBuffer).
 		Uint64("currentInbufferOffset", currentInbufferOffset).
 		Uint64("latestMessageOffset", latestMessageOffset).
-		Msg("get stat")
+		Msg("GetMessages stats")
 
 	//if fromInBuffer is true, then all messages can only be read from the buffer.
 	if fromInBuffer {

@@ -28,7 +28,7 @@ func sendConnectRequestLeader(client http.Client, host string, port int, request
 	return err
 }
 
-func connectToLeader(serviceKey string, clusteController cluster_types.ClusterController, node types.Node, httpClient http.Client, msgStore *message.MessageStore) {
+func connectToLeader(ctx context.Context, serviceKey string, clusteController cluster_types.ClusterController, node types.Node, httpClient http.Client, msgStore *message.MessageStore) {
 
 	if !state.isLeader() {
 
@@ -110,7 +110,7 @@ func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, s
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				connectToLeader(appConfig.Server.ServiceKey, clusteController, thisNode, httpClient, msgStore)
+				connectToLeader(ctx, appConfig.Server.ServiceKey, clusteController, thisNode, httpClient, msgStore)
 			}
 		}
 	}()

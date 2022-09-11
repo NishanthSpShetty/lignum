@@ -27,10 +27,13 @@ func seedMessages(count, bufferSize uint64) []types.Message {
 }
 
 func createMsgStore(name string, count, msgBufferSize uint64) *MessageStore {
+	topic := types.NewTopic(name, msgBufferSize, "")
+	topic.SetCounter(count)
+	topic.PushAll(makeMessages(count, count))
 	return &MessageStore{
 		messageBufferSize: msgBufferSize,
 		walChannel:        make(chan<- wal.Payload, 100),
-		topic:             map[string]*types.Topic{"test_new": types.NewTopic("test_new", msgBufferSize, "")},
+		topic:             map[string]*types.Topic{name: topic},
 	}
 }
 
@@ -67,7 +70,8 @@ func Test_messagePut(t *testing.T) {
 		getargs  getargs
 		expected []*types.Message
 	}{
-		{name: "Topic gets created for the new topic and message",
+		{
+			name: "Topic gets created for the new topic and message",
 			message: &MessageStore{
 				messageBufferSize: 10,
 				walChannel:        make(chan<- wal.Payload, 10),
@@ -79,7 +83,8 @@ func Test_messagePut(t *testing.T) {
 			getargs:  getargs{from: 0, to: 1},
 			expected: []*types.Message{{Id: 0, Data: "this is test log 001"}},
 		},
-		{name: "Messages will be appended to existing topic",
+		{
+			name:    "Messages will be appended to existing topic",
 			message: createMsgStore("test_new", 1, 10),
 			args: args{
 				topic: "test_new",
@@ -88,9 +93,9 @@ func Test_messagePut(t *testing.T) {
 			getargs:  getargs{from: 0, to: 2},
 			expected: append(makeMessages(1, 10)[:1], &types.Message{Id: 1, Data: "this is test log 002"}),
 		},
-		{name: "new topic will be created along with existing topics",
-
-			message: createMsgStore("test-old", 1, 10),
+		{
+			name:    "new topic will be created along with existing topics",
+			message: createMsgStore("test_old", 1, 10),
 			args: args{
 				topic: "test_new",
 				msg:   "this is test log 001",
@@ -101,6 +106,7 @@ func Test_messagePut(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
+		fmt.Println(tt.message.topic)
 		tt.message.Put(context.Background(), tt.args.topic, tt.args.msg)
 		assert.Equal(t, tt.expected, tt.message.Get(tt.args.topic, tt.getargs.from, tt.getargs.to), "testPut: %s ", tt.name)
 	}

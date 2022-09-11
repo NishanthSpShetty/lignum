@@ -60,7 +60,11 @@ func New(config c.Config) (*Service, error) {
 	}
 	s.wal = wal.New(config.Wal, config.Message.DataDir, walChannel)
 	s.replicator = replication.New(s.ReplicationQueue, s.followerRegistry)
-	s.apiServer = api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.followerRegistry)
+	server, err := api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.followerRegistry)
+	if err != nil {
+		return nil, errors.Wrap(err, "Service.New")
+	}
+	s.apiServer = server
 	return s, nil
 }
 
