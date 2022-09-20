@@ -31,14 +31,15 @@ func (f *Follower) Node() cluster_types.Node { return f.node }
 
 func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
 	//we know that the node is healthy when registering itself
-	//for now we will mark the follower node as replication ready node
-	f.follower[fr.Node.Id] = &Follower{
+	follower := &Follower{
 		node:        fr.Node,
 		healthy:     true,
 		ready:       false,
 		messageStat: fr.MessageStat,
 	}
-	fmt.Println("registered")
+
+	f.follower[fr.Node.Id] = follower
+	fmt.Printf("registered follower %v", follower)
 }
 
 func (f *FollowerRegistry) ListNodes() []cluster_types.Node {
@@ -106,7 +107,7 @@ func (f *FollowerRegistry) StartHealthCheck(ctx context.Context, healthCheckInte
 		for {
 			select {
 			case <-ctx.Done():
-				log.Debug().Msg("stopping follwer health check service")
+				log.Debug().Msg("stopping follower health check service")
 				ticker.Stop()
 				return
 			case <-ticker.C:

@@ -34,7 +34,8 @@ type Service struct {
 	apiServer             *api.Server
 	message               *message.MessageStore
 	followerRegistry      *follower.FollowerRegistry
-	replicator            *replication.Replicator
+	liveReplicator        *replication.LiveReplicator
+	walReplicator         *replication.WALReplicator
 	wal                   *wal.Wal
 	running               bool
 }
@@ -59,7 +60,9 @@ func New(config c.Config) (*Service, error) {
 		followerRegistry:      follower.New(),
 	}
 	s.wal = wal.New(config.Wal, config.Message.DataDir, walChannel)
-	s.replicator = replication.New(s.ReplicationQueue, s.followerRegistry)
+	s.liveReplicator = replication.NewLiveReplicator(s.ReplicationQueue, s.followerRegistry)
+	s.walReplicator = replication.NewWALReplication(nil)
+
 	server, err := api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.followerRegistry)
 	if err != nil {
 		return nil, errors.Wrap(err, "Service.New")
@@ -116,7 +119,8 @@ func (s *Service) Start() error {
 	healthCheckTimeout := s.Config.Follower.HealthCheckTimeoutInMilliSeconds * time.Millisecond
 	clientTimeout := s.Config.Replication.ClientTimeoutInMilliSeconds * time.Millisecond
 	s.followerRegistry.StartHealthCheck(ctx, healthCheckInterval, healthCheckTimeout)
-	s.replicator.StartReplicator(ctx, clientTimeout)
+	s.liveReplicator.Start(ctx, clientTimeout)
+	s.walReplicator.Start(ctx, clientTimeout)
 	s.wal.StartWalWriter(ctx)
 
 	s.message.RestoreWAL(s.wal)
