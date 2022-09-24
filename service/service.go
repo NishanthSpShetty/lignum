@@ -22,6 +22,7 @@ import (
 
 //QUEUE_SIZE replication message queue size
 const REPLICATION_QUEUE_SIZE = 1024
+const FOLLOWER_QUEUE_SIZE = 12
 
 type Service struct {
 	signalChannel         chan os.Signal
@@ -48,6 +49,7 @@ func New(config c.Config) (*Service, error) {
 		return nil, errors.Wrap(err, "Service.New")
 	}
 	walChannel := make(chan wal.Payload, config.Wal.QueueSize)
+	followerQueue := make(chan *follower.Follower, FOLLOWER_QUEUE_SIZE)
 
 	s := &Service{
 		signalChannel:         make(chan os.Signal),
@@ -57,11 +59,11 @@ func New(config c.Config) (*Service, error) {
 		ReplicationQueue:      make(chan replication.Payload, config.Replication.InternalQueueSize),
 		SessionRenewalChannel: make(chan struct{}),
 		message:               message.New(config.Message, walChannel),
-		followerRegistry:      follower.New(),
+		followerRegistry:      follower.New(followerQueue),
 	}
 	s.wal = wal.New(config.Wal, config.Message.DataDir, walChannel)
 	s.liveReplicator = replication.NewLiveReplicator(s.ReplicationQueue, s.followerRegistry)
-	s.walReplicator = replication.NewWALReplication(nil)
+	s.walReplicator = replication.NewWALReplication(followerQueue)
 
 	server, err := api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.followerRegistry)
 	if err != nil {

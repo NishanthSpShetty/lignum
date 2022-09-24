@@ -25,3 +25,4 @@ follower:
 replication:
   internal-queue-size: 1024
   client-timeout-in-ms: 25
+  wal-replication-port: 8123

@@ -186,3 +186,13 @@ func (t *Topic) PushAll(messages []*Message) {
 func (t *Topic) Append(message Message) {
 	t.messageBuffer = append(t.messageBuffer, message)
 }
+
+func (t *Topic) GetWalFile(currentOffset uint64) []string {
+	files := []string{}
+	//get all the wal files from currentOffset to recent wal file promoted, which will be less or equal to topic.currentOffset
+	for offset := currentOffset; offset < t.GetCurrentOffset(); offset += t.msgBufferSize {
+		file := wal.GetWalFile(t.dataDir, t.GetName(), offset)
+		files = append(files, file)
+	}
+	return files
+}

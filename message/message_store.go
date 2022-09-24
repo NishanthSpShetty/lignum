@@ -10,7 +10,6 @@ import (
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/metrics"
-	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/rs/zerolog/log"
 )
@@ -22,6 +21,15 @@ type MessageStore struct {
 	messageBufferSize uint64
 	dataDir           string
 	walChannel        chan<- wal.Payload
+}
+
+//TODO: refactor this
+//Payload duplicate payload definition to avoid cyclic import
+type Payload struct {
+	Topic string
+	//should this be in payload
+	Id   uint64
+	Data string
 }
 
 func New(msgConfig config.Message, walChannel chan<- wal.Payload) *MessageStore {
@@ -186,7 +194,7 @@ func (m *MessageStore) Get(topicName string, from, to uint64) []*types.Message {
 	return topic.GetMessages(from, to)
 }
 
-func (m *MessageStore) Replicate(payload replication.Payload) error {
+func (m *MessageStore) Replicate(payload Payload) error {
 	topic, ok := m.topic[payload.Topic]
 
 	if !ok {

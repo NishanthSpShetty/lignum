@@ -38,10 +38,16 @@ func ReadFromWal(file *os.File, fileOffset, endOffset uint64) ([]byte, error) {
 	return readFile(file, fileOffset, fileOffset, endOffset)
 }
 
-func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]byte, error) {
+func GetWalFile(dataDir, topic string, fileOffset uint64) string {
 	//path should exist
 	path := getTopicDatDir(dataDir, topic)
 	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
+	return path
+}
+
+func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]byte, error) {
+	//path should exist
+	path := GetWalFile(dataDir, topic, fileOffset)
 	log.Debug().Str("path", path).Str("topic", topic).Msg("reading log file")
 	file, err := os.Open(path)
 	if err != nil {

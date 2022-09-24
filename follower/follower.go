@@ -20,6 +20,7 @@ type Follower struct {
 
 type FollowerRegistry struct {
 	follower map[string]*Follower
+	queue    chan *Follower
 }
 
 func (f *Follower) IsHealthy() bool { return f.healthy }
@@ -28,6 +29,22 @@ func (f *Follower) IsHealthy() bool { return f.healthy }
 //currently we will  use healthy flag to mark as ready
 func (f *Follower) IsReady() bool            { return f.healthy }
 func (f *Follower) Node() cluster_types.Node { return f.node }
+
+//mark ready and healthy
+func (f *Follower) MarkReady()   { f.ready = true }
+func (f *Follower) MarkHealthy() { f.healthy = true }
+
+//TopicOffset returns the latest offset, replicated message offset in
+//follower node
+func (f *Follower) TopicOffset(topic string) uint64 {
+	for _, s := range f.messageStat {
+		if s.Topic == topic {
+			return s.Offset
+		}
+	}
+
+	return 0
+}
 
 func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
 	//we know that the node is healthy when registering itself
@@ -40,6 +57,8 @@ func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
 
 	f.follower[fr.Node.Id] = follower
 	fmt.Printf("registered follower %v", follower)
+	//add the follower data to queue too
+	f.queue <- follower
 }
 
 func (f *FollowerRegistry) ListNodes() []cluster_types.Node {
@@ -54,9 +73,10 @@ func (f *FollowerRegistry) List() map[string]*Follower {
 	return f.follower
 }
 
-func New() *FollowerRegistry {
+func New(followerQueue chan *Follower) *FollowerRegistry {
 	return &FollowerRegistry{
 		follower: make(map[string]*Follower),
+		queue:    followerQueue,
 	}
 }
 
