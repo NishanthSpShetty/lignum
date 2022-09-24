@@ -122,7 +122,7 @@ func (s *Service) Start() error {
 	clientTimeout := s.Config.Replication.ClientTimeoutInMilliSeconds * time.Millisecond
 	s.followerRegistry.StartHealthCheck(ctx, healthCheckInterval, healthCheckTimeout)
 	s.liveReplicator.Start(ctx, clientTimeout)
-	s.walReplicator.Start(ctx, clientTimeout)
+	s.walReplicator.Start(ctx, clientTimeout, s.message)
 	s.wal.StartWalWriter(ctx)
 
 	s.message.RestoreWAL(s.wal)
