@@ -11,6 +11,7 @@ import (
 
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -91,6 +92,18 @@ func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
 				if err != nil {
 					return
 				}
+				meta := wal.Metadata{
+					Topic:   topic.GetName(),
+					WalFile: file,
+				}
+
+				metad, err := meta.Bytes()
+				if err != nil {
+					log.Error().Err(err).Msg("failed to encode metdata into bytes")
+				}
+				conn.Write(metad)
+				conn.Write(wal.Marker())
+
 				fi, err := f.Stat()
 				err = sendFile(conn.(*net.TCPConn), f, fi)
 				if err != nil {
@@ -100,6 +113,9 @@ func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
 						Str("file", file).
 						Msg("failed to send wal file ")
 				}
+				//write end of file marker
+
+				conn.Write(wal.Marker())
 
 			}
 			log.Info().
