@@ -1,6 +1,7 @@
 BIN_NAME=./bin/lignum
 ALL_GO_FILES=$(shell find . -type f  -name '*.go')
 CONFIG_FILE="config.yml"
+LCONFIG_FILE="configleader.yml"
 export ENV=development
 
 .PHONY: test
@@ -24,8 +25,10 @@ setup:
 	@echo "Starting lignum in docker"
 	docker-compose up -d
 
+runl:
+	@go run main.go -config $(LCONFIG_FILE)
+
 run:
 	@go run main.go -config $(CONFIG_FILE)
-
 lint:
 	golint ./...

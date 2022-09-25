@@ -18,7 +18,11 @@ const MARKER2 = 0xE
 const MARKER_FILE_END = 0xF
 const MARKER_META_END = 0xD
 
-func Marker() []byte {
+func MetaMarker() []byte {
+	return []byte{MARKER1, MARKER2, MARKER_META_END}
+}
+
+func FileMarker() []byte {
 	return []byte{MARKER1, MARKER2, MARKER_FILE_END}
 }
 
@@ -47,14 +51,9 @@ func ToMeta(b []byte) (Metadata, error) {
 
 func isMarker(b byte) bool {
 	switch b {
-	case MARKER1:
-	case MARKER2:
-	case MARKER_FILE_END:
-	case MARKER_META_END:
+	case MARKER1, MARKER2, MARKER_FILE_END, MARKER_META_END:
 		return true
 	default:
 		return false
 	}
-
-	return false
 }

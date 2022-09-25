@@ -23,10 +23,11 @@ type ClusterController interface {
 
 //NodeNodeConfig contains the node information
 type Node struct {
-	Id    string `json:"id"`
-	Host  string `json:"host"`
-	Port  int    `json:"port"`
-	_json []byte
+	Id              string `json:"id"`
+	Host            string `json:"host"`
+	Port            int    `json:"port"`
+	ReplicationPort int    `json:"replication_port"`
+	_json           []byte
 }
 
 func (n Node) getJson() ([]byte, error) {
@@ -41,11 +42,12 @@ func (n Node) Json() []byte {
 	return n._json
 }
 
-func NewNode(id string, host string, port int) Node {
+func NewNode(id string, host string, port, rp int) Node {
 	return Node{
-		Id:   id,
-		Host: host,
-		Port: port,
+		Id:              id,
+		Host:            host,
+		Port:            port,
+		ReplicationPort: rp,
 	}
 }
 

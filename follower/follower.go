@@ -27,7 +27,7 @@ func (f *Follower) IsHealthy() bool { return f.healthy }
 
 //IsReady return true when follower is ready to recieve replicate message.
 //currently we will  use healthy flag to mark as ready
-func (f *Follower) IsReady() bool            { return f.healthy }
+func (f *Follower) IsReady() bool            { return f.ready }
 func (f *Follower) Node() cluster_types.Node { return f.node }
 
 //mark ready and healthy
@@ -56,7 +56,7 @@ func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
 	}
 
 	f.follower[fr.Node.Id] = follower
-	fmt.Printf("registered follower %v", follower)
+	fmt.Printf("registered follower %v\n", follower)
 	//add the follower data to queue too
 	f.queue <- follower
 }
@@ -107,7 +107,7 @@ func (f *FollowerRegistry) healthCheck(client http.Client) {
 	}
 
 	if healthy|dead != 0 {
-		log.Debug().Int("healthy", healthy).Int("dead", dead).Msg("HealthStat")
+		//log.Debug().Int("healthy", healthy).Int("dead", dead).Msg("HealthStat")
 	}
 }
 

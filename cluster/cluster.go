@@ -11,7 +11,7 @@ type State struct {
 	leaderNode        *cluster_types.Node
 }
 
-//state It is created during the app startup
+//state created at app startup
 var state *State = &State{}
 
 func (s *State) isLeader() bool {

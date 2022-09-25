@@ -38,7 +38,9 @@ type Service struct {
 	liveReplicator        *replication.LiveReplicator
 	walReplicator         *replication.WALReplicator
 	wal                   *wal.Wal
+	walService            *wal.WalService
 	running               bool
+	leaderSignal          chan bool
 }
 
 func New(config c.Config) (*Service, error) {
@@ -49,6 +51,7 @@ func New(config c.Config) (*Service, error) {
 		return nil, errors.Wrap(err, "Service.New")
 	}
 	walChannel := make(chan wal.Payload, config.Wal.QueueSize)
+	leaderSignal := make(chan bool, 2)
 	followerQueue := make(chan *follower.Follower, FOLLOWER_QUEUE_SIZE)
 
 	s := &Service{
@@ -60,10 +63,13 @@ func New(config c.Config) (*Service, error) {
 		SessionRenewalChannel: make(chan struct{}),
 		message:               message.New(config.Message, walChannel),
 		followerRegistry:      follower.New(followerQueue),
+		leaderSignal:          leaderSignal,
 	}
 	s.wal = wal.New(config.Wal, config.Message.DataDir, walChannel)
+	s.walService = wal.NewReplicaionService(config)
 	s.liveReplicator = replication.NewLiveReplicator(s.ReplicationQueue, s.followerRegistry)
-	s.walReplicator = replication.NewWALReplication(followerQueue)
+
+	s.walReplicator = replication.NewWALReplication(followerQueue, leaderSignal)
 
 	server, err := api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.followerRegistry)
 	if err != nil {
@@ -81,7 +87,7 @@ func (s *Service) startClusterService(ctx context.Context) error {
 		return errors.Wrap(err, "Service.startClusterService")
 	}
 	//Start leader election routine
-	cluster.InitiateLeaderElection(ctx, s.Config, s.ServiceId, s.ClusterController)
+	cluster.InitiateLeaderElection(ctx, s.Config, s.ServiceId, s.ClusterController, s.leaderSignal)
 
 	//connect to leader
 	cluster.FollowerRegistrationRoutine(ctx, s.Config, s.ServiceId, s.ClusterController, s.message)
@@ -106,10 +112,15 @@ func (s *Service) addCancel(fn context.CancelFunc) {
 
 func (s *Service) Start() error {
 
+	healthCheckInterval := s.Config.Follower.HealthCheckIntervalInSecond * time.Second
+	healthCheckTimeout := s.Config.Follower.HealthCheckTimeoutInMilliSeconds * time.Millisecond
+	clientTimeout := s.Config.Replication.ClientTimeoutInMilliSeconds * time.Millisecond
+
 	log.Info().Str("ServiceID", s.ServiceId).Msg("starting lignum - distributed messaging service")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.addCancel(cancel)
+	s.walReplicator.Start(ctx, clientTimeout, s.message)
 	err := s.startClusterService(ctx)
 	if err != nil {
 		return err
@@ -117,13 +128,10 @@ func (s *Service) Start() error {
 	s.signalHandler()
 
 	//start service routines
-	healthCheckInterval := s.Config.Follower.HealthCheckIntervalInSecond * time.Second
-	healthCheckTimeout := s.Config.Follower.HealthCheckTimeoutInMilliSeconds * time.Millisecond
-	clientTimeout := s.Config.Replication.ClientTimeoutInMilliSeconds * time.Millisecond
 	s.followerRegistry.StartHealthCheck(ctx, healthCheckInterval, healthCheckTimeout)
 	s.liveReplicator.Start(ctx, clientTimeout)
-	s.walReplicator.Start(ctx, clientTimeout, s.message)
 	s.wal.StartWalWriter(ctx)
+	s.walService.Start(ctx)
 
 	s.message.RestoreWAL(s.wal)
 	//mark service as running
