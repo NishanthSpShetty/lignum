@@ -6,37 +6,63 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/NishanthSpShetty/lignum/cluster"
+	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/rs/zerolog/log"
 )
 
 type Follower struct {
-	node    cluster.Node
+	node    cluster_types.Node
 	healthy bool
 	//ready for replication
-	ready bool
+	ready       bool
+	messageStat []cluster_types.MessageStat
 }
 
 type FollowerRegistry struct {
 	follower map[string]*Follower
+	queue    chan *Follower
 }
 
 func (f *Follower) IsHealthy() bool { return f.healthy }
 
 //IsReady return true when follower is ready to recieve replicate message.
 //currently we will  use healthy flag to mark as ready
-func (f *Follower) IsReady() bool      { return f.healthy }
-func (f *Follower) Node() cluster.Node { return f.node }
+func (f *Follower) IsReady() bool            { return f.ready }
+func (f *Follower) Node() cluster_types.Node { return f.node }
 
-func (f *FollowerRegistry) Register(n cluster.Node) {
-	//we know that the node is healthy when registering itself
-	//for now we will mark the follower node as replication ready node
-	f.follower[n.Id] = &Follower{node: n, healthy: true, ready: true}
-	fmt.Println("registered")
+//mark ready and healthy
+func (f *Follower) MarkReady()   { f.ready = true }
+func (f *Follower) MarkHealthy() { f.healthy = true }
+
+//TopicOffset returns the latest offset, replicated message offset in
+//follower node
+func (f *Follower) TopicOffset(topic string) uint64 {
+	for _, s := range f.messageStat {
+		if s.Topic == topic {
+			return s.Offset
+		}
+	}
+
+	return 0
 }
 
-func (f *FollowerRegistry) ListNodes() []cluster.Node {
-	l := make([]cluster.Node, 0)
+func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
+	//we know that the node is healthy when registering itself
+	follower := &Follower{
+		node:        fr.Node,
+		healthy:     true,
+		ready:       false,
+		messageStat: fr.MessageStat,
+	}
+
+	f.follower[fr.Node.Id] = follower
+	fmt.Printf("registered follower %v\n", follower)
+	//add the follower data to queue too
+	f.queue <- follower
+}
+
+func (f *FollowerRegistry) ListNodes() []cluster_types.Node {
+	l := make([]cluster_types.Node, 0)
 	for _, follower := range f.follower {
 		l = append(l, follower.node)
 	}
@@ -47,13 +73,14 @@ func (f *FollowerRegistry) List() map[string]*Follower {
 	return f.follower
 }
 
-func New() *FollowerRegistry {
+func New(followerQueue chan *Follower) *FollowerRegistry {
 	return &FollowerRegistry{
 		follower: make(map[string]*Follower),
+		queue:    followerQueue,
 	}
 }
 
-func isActive(client http.Client, node *cluster.Node) bool {
+func isActive(client http.Client, node *cluster_types.Node) bool {
 	return node.Ping(client)
 }
 
@@ -80,7 +107,7 @@ func (f *FollowerRegistry) healthCheck(client http.Client) {
 	}
 
 	if healthy|dead != 0 {
-		log.Debug().Int("healthy", healthy).Int("dead", dead).Msg("HealthStat")
+		//log.Debug().Int("healthy", healthy).Int("dead", dead).Msg("HealthStat")
 	}
 }
 
@@ -100,7 +127,7 @@ func (f *FollowerRegistry) StartHealthCheck(ctx context.Context, healthCheckInte
 		for {
 			select {
 			case <-ctx.Done():
-				log.Debug().Msg("stopping follwer health check service")
+				log.Debug().Msg("stopping follower health check service")
 				ticker.Stop()
 				return
 			case <-ticker.C:

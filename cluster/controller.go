@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/hashicorp/consul/api"
 	"github.com/rs/zerolog/log"
@@ -15,7 +16,7 @@ type ConsulClusterController struct {
 }
 
 //assert that ConsulClusterController implemnets ClusterController
-var _ ClusterController = &ConsulClusterController{}
+var _ cluster_types.ClusterController = &ConsulClusterController{}
 
 func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterController, error) {
 	var err error
@@ -63,9 +64,9 @@ func (c *ConsulClusterController) DestroySession() error {
 	return c.client.DestroySession(c.SessionId)
 }
 
-func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
+func (c ConsulClusterController) GetLeader(serviceKey string) (cluster_types.Node, error) {
 	kvPair, err := c.client.GetKVPair(serviceKey)
-	nodeConfig := Node{}
+	nodeConfig := cluster_types.Node{}
 	if err != nil {
 		return nodeConfig, err
 	}
@@ -77,7 +78,7 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (Node, error) {
 	return nodeConfig, err
 }
 
-func (c *ConsulClusterController) AcquireLock(node Node, serviceKey string) (bool, error) {
+func (c *ConsulClusterController) AcquireLock(node cluster_types.Node, serviceKey string) (bool, error) {
 
 	lockData := node.Json()
 

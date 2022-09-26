@@ -10,7 +10,6 @@ import (
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/metrics"
-	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/rs/zerolog/log"
 )
@@ -18,17 +17,26 @@ import (
 const errBadReplicationStateFmtStr = "bad replication state, expected sequence: %d, got sequence %d"
 
 type MessageStore struct {
-	topic             map[string]*Topic
+	topic             map[string]*types.Topic
 	messageBufferSize uint64
 	dataDir           string
 	walChannel        chan<- wal.Payload
+}
+
+//TODO: refactor this
+//Payload duplicate payload definition to avoid cyclic import
+type Payload struct {
+	Topic string
+	//should this be in payload
+	Id   uint64
+	Data string
 }
 
 func New(msgConfig config.Message, walChannel chan<- wal.Payload) *MessageStore {
 	//TODO: restore from the file when we add persistence
 	//	messages := ReadFromLogFile(messageConfig.MessageDir)
 	return &MessageStore{
-		topic:             make(map[string]*Topic),
+		topic:             make(map[string]*types.Topic),
 		messageBufferSize: msgConfig.InitialSizePerTopic,
 		dataDir:           msgConfig.DataDir,
 		walChannel:        walChannel,
@@ -101,7 +109,8 @@ func (m *MessageStore) RestoreWAL(walP *wal.Wal) {
 			endOffset := offset + m.messageBufferSize
 			_ = topic
 
-			msgs, err := wal.ReadFromWal(file, offset, endOffset)
+			raw, err := wal.ReadFromWal(file, offset, endOffset)
+			msgs := types.DecodeRawMessage(raw, offset, endOffset)
 			if err != nil {
 				log.Error().Err(err).Str("file", file.Name()).Msg("error reading wal file")
 				continue
@@ -110,14 +119,14 @@ func (m *MessageStore) RestoreWAL(walP *wal.Wal) {
 			//load messages back to topic
 			topic.PushAll(msgs)
 			lastMsg := msgs[len(msgs)-1]
-			topic.counter.set(lastMsg.Id + 1)
+			topic.SetCounter(lastMsg.Id + 1)
 			//TODO: update wal writer cache
 		}
 	}
 }
 
-func (m *MessageStore) GetTopics() []*Topic {
-	topics := make([]*Topic, 0)
+func (m *MessageStore) GetTopics() []*types.Topic {
+	topics := make([]*types.Topic, 0)
 	for _, v := range m.topic {
 		topics = append(topics, v)
 	}
@@ -129,15 +138,9 @@ func (m *MessageStore) TopicExist(topic string) bool {
 	return ok
 }
 
-func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *Topic {
+func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *types.Topic {
 
-	topic := &Topic{
-		name:          topicName,
-		counter:       NewCounter(),
-		messageBuffer: make([]types.Message, msgBufferSize),
-		msgBufferSize: msgBufferSize,
-		dataDir:       m.dataDir,
-	}
+	topic := types.NewTopic(topicName, msgBufferSize, m.dataDir)
 	metrics.IncrementTopic()
 	m.topic[topicName] = topic
 	return topic
@@ -153,9 +156,10 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) ty
 		topic = m.createNewTopic(topicName, m.messageBufferSize)
 	}
 
-	metrics.IncrementMessageCount(topic.name)
-
-	if topic.counter.value%uint64(topic.msgBufferSize) == 0 {
+	fmt.Println("topic  ", topicName)
+	metrics.IncrementMessageCount(topic.GetName())
+	currentOffset := topic.GetCurrentOffset()
+	if currentOffset != 0 && currentOffset%uint64(topic.GetMessageBufferSize()) == 0 {
 		// we have filled the message store buffer, flush to file
 		//promote current wal file and reset the buffer
 		//signal wal writer to promote current wal file
@@ -163,10 +167,10 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) ty
 			Topic:   topicName,
 			Promote: true,
 		}
-		topic.resetMessageBuffer()
+		topic.ResetMessageBuffer()
 	}
 
-	_msg := types.Message{Id: topic.counter.Next(), Data: msg}
+	_msg := types.Message{Id: topic.CounterNext(), Data: msg}
 	//push the message onto wal writer queue
 	m.walChannel <- wal.Payload{
 		Topic: topicName,
@@ -190,7 +194,7 @@ func (m *MessageStore) Get(topicName string, from, to uint64) []*types.Message {
 	return topic.GetMessages(from, to)
 }
 
-func (m *MessageStore) Replicate(payload replication.Payload) error {
+func (m *MessageStore) Replicate(payload Payload) error {
 	topic, ok := m.topic[payload.Topic]
 
 	if !ok {
@@ -198,12 +202,12 @@ func (m *MessageStore) Replicate(payload replication.Payload) error {
 	}
 
 	//assert that we got expected message sequence.
-	if topic.counter.value != payload.Id {
-		return fmt.Errorf(errBadReplicationStateFmtStr, topic.counter.value, payload.Id)
+	if topic.GetCurrentOffset() != payload.Id {
+		return fmt.Errorf(errBadReplicationStateFmtStr, topic.GetCurrentOffset(), payload.Id)
 	}
 
 	//metrics.IncrementMessageCount(t.name)
-	message := types.Message{Id: topic.counter.Next(), Data: payload.Data}
-	topic.messageBuffer = append(topic.messageBuffer, message)
+	message := types.Message{Id: topic.CounterNext(), Data: payload.Data}
+	topic.Append(message)
 	return nil
 }

@@ -1,13 +1,17 @@
 package cluster
 
+import (
+	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
+)
+
 //State contains the state of the cluster node
 type State struct {
 	leader            bool
 	connectedToLeader bool
-	leaderNode        *Node
+	leaderNode        *cluster_types.Node
 }
 
-//state It is created during the app startup
+//state created at app startup
 var state *State = &State{}
 
 func (s *State) isLeader() bool {
@@ -34,10 +38,10 @@ func (s *State) setConnectedToLeader(yes bool) {
 	s.connectedToLeader = yes
 }
 
-func (s *State) setLeaderNode(leaderNode *Node) {
+func (s *State) setLeaderNode(leaderNode *cluster_types.Node) {
 	s.leaderNode = leaderNode
 }
 
-func (s *State) getLeader() *Node {
+func (s *State) getLeader() *cluster_types.Node {
 	return s.leaderNode
 }

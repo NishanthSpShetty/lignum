@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/NishanthSpShetty/lignum/cluster"
+	"github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/rs/zerolog/log"
 )
@@ -28,26 +28,27 @@ func (p Payload) Json() []byte {
 
 //ReplicationState Contains the information on the followers replciation state
 type ReplicationState struct {
-	node cluster.Node
+	node types.Node
 	//mark that replicator can start the replication for this node
 	ready bool
 	//message offset which is already been sent to follower
 	offset int64
 }
 
-type Replicator struct {
+type LiveReplicator struct {
 	replicationQueue <-chan Payload
 	//	replicationState map[string]ReplicationState
 	followerRegistry *follower.FollowerRegistry
 	client           http.Client
 }
 
-func New(queue <-chan Payload, followerRegistry *follower.FollowerRegistry) *Replicator {
-	return &Replicator{replicationQueue: queue, followerRegistry: followerRegistry}
+//Create a new live replication which implements active replication of a topic queue
+func NewLiveReplicator(queue <-chan Payload, followerRegistry *follower.FollowerRegistry) *LiveReplicator {
+	return &LiveReplicator{replicationQueue: queue, followerRegistry: followerRegistry}
 }
 
-//StartReplicator start replication routine to replicate the messages to all nodes
-func (r *Replicator) StartReplicator(ctx context.Context, replicationTimeoutInMs time.Duration) {
+//Start start replication routine to replicate the messages to all nodes
+func (r *LiveReplicator) Start(ctx context.Context, replicationTimeoutInMs time.Duration) {
 	r.client = http.Client{
 		Transport: &http.Transport{
 			DisableCompression: true,
@@ -68,7 +69,7 @@ func (r *Replicator) StartReplicator(ctx context.Context, replicationTimeoutInMs
 	}()
 }
 
-func (r *Replicator) replicate(payload Payload) {
+func (r *LiveReplicator) replicate(payload Payload) {
 	for id, follower := range r.followerRegistry.List() {
 		log.Debug().Str("FollowerServiceID", id).Msg("sending message to follower")
 		if follower.IsReady() {
@@ -77,7 +78,7 @@ func (r *Replicator) replicate(payload Payload) {
 	}
 }
 
-func (r *Replicator) send(node cluster.Node, payload Payload) {
+func (r *LiveReplicator) send(node types.Node, payload Payload) {
 
 	url := fmt.Sprintf("http://%s:%d/internal/api/replicate", node.Host, node.Port)
 	contentType := "application/json"

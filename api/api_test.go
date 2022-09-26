@@ -30,7 +30,8 @@ func TestGetMessage(t *testing.T) {
 	walChannel := make(chan wal.Payload, 10)
 	msg := message.New(config.Message{InitialSizePerTopic: 10}, walChannel)
 
-	server := NewServer(dummyServiceId, messageChannel, config.Server{}, msg, follower.New())
+	server, err := NewServer(dummyServiceId, messageChannel, config.Server{}, msg, follower.New())
+	assert.Nil(t, err)
 
 	requestHandler := server.handleMessage()
 	responseData := GetMessageResponse{}

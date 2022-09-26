@@ -13,6 +13,7 @@ import (
 	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -58,8 +59,10 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 		followerRegistry:      follower.New(),
 	}
 	service.wal = wal.New(config.Wal, config.Message.DataDir, walChannel)
-	service.replicator = replication.New(service.ReplicationQueue, service.followerRegistry)
-	service.apiServer = api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server, service.message, service.followerRegistry)
+	service.liveReplicator = replication.NewLiveReplicator(service.ReplicationQueue, service.followerRegistry)
+	server, err := api.NewServer(service.ServiceId, service.ReplicationQueue, service.Config.Server, service.message, service.followerRegistry)
+	assert.Nil(t, err)
+	service.apiServer = server
 
 	go service.Start()
 	close(service.signalChannel)

@@ -5,14 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
 
-	"github.com/NishanthSpShetty/lignum/cluster"
+	"github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/NishanthSpShetty/lignum/replication"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
@@ -24,13 +26,14 @@ type Server struct {
 	httpServer       *http.Server
 	message          *message.MessageStore
 	follower         *follower.FollowerRegistry
+	listener         net.Listener
 }
 
 func (s *Server) Stop(ctx context.Context) {
 	s.httpServer.Shutdown(ctx)
 }
 
-func NewServer(serviceId string, queue chan<- replication.Payload, config config.Server, message *message.MessageStore, follower *follower.FollowerRegistry) *Server {
+func NewServer(serviceId string, queue chan<- replication.Payload, config config.Server, message *message.MessageStore, follower *follower.FollowerRegistry) (*Server, error) {
 
 	address := fmt.Sprintf("%s:%d", config.Host, config.Port)
 	httpServer := http.Server{Addr: address,
@@ -40,6 +43,12 @@ func NewServer(serviceId string, queue chan<- replication.Payload, config config
 		IdleTimeout:       30 * time.Second,
 		ReadHeaderTimeout: 2 * time.Second,
 	}
+
+	ln, err := net.Listen("tcp", address)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewServer failed to listen on given address ")
+	}
+
 	return &Server{
 		serviceId:        serviceId,
 		config:           config,
@@ -47,17 +56,18 @@ func NewServer(serviceId string, queue chan<- replication.Payload, config config
 		httpServer:       &httpServer,
 		message:          message,
 		follower:         follower,
-	}
+		listener:         ln,
+	}, nil
 }
 
 func (s *Server) registerFollower() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		requestBody, _ := ioutil.ReadAll(req.Body)
 		log.Info().Bytes("RequestBody", requestBody).Msg("request received for follower registration")
-		node := cluster.Node{}
-		json.Unmarshal(requestBody, &node)
-		s.follower.Register(node)
-		fmt.Fprintf(w, "Follower registered. Node : [ %v ]\n", node)
+		fr := types.FollowerRegistration{}
+		json.Unmarshal(requestBody, &fr)
+		s.follower.Register(fr)
+		fmt.Fprintf(w, "Follower registered. Node : [ %v ]\n", fr)
 	}
 }
 
@@ -95,5 +105,5 @@ func (s *Server) Serve() error {
 	http.HandleFunc("/api/message", s.handleMessage())
 	http.HandleFunc("/api/topic", s.TopicHandler())
 	http.Handle("/metrics", promhttp.Handler())
-	return s.httpServer.ListenAndServe()
+	return s.httpServer.Serve(s.listener)
 }

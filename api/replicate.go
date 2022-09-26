@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/NishanthSpShetty/lignum/message"
 	"github.com/NishanthSpShetty/lignum/metrics"
 	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/rs/zerolog/log"
@@ -24,7 +25,11 @@ func (s *Server) handleReplicate(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = s.message.Replicate(payload)
+	err = s.message.Replicate(message.Payload{
+		Topic: payload.Topic,
+		Id:    payload.Id,
+		Data:  payload.Data,
+	})
 	if err != nil {
 		log.Debug().Err(err).Send()
 		w.WriteHeader(http.StatusBadRequest)

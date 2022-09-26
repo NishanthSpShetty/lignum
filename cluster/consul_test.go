@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/NishanthSpShetty/lignum/cluster/types"
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/hashicorp/consul/api"
 	"github.com/rs/zerolog"
@@ -89,14 +90,14 @@ func Test_CreateSession(t *testing.T) {
 
 func Test_AcquireLock(t *testing.T) {
 
-	node := Node{
+	node := types.Node{
 		Id:   "test-node",
 		Host: "localhost",
 		Port: 8080,
 	}
 
 	type args struct {
-		node       Node
+		node       types.Node
 		serviceKey string
 	}
 
@@ -105,7 +106,7 @@ func Test_AcquireLock(t *testing.T) {
 		args       args
 		acquired   bool
 		err        error
-		controller ClusterController
+		controller types.ClusterController
 	}{
 		{
 			name: "lock acquired successfully",
@@ -151,7 +152,7 @@ func Test_AcquireLock(t *testing.T) {
 }
 
 func Test_GetLeader(t *testing.T) {
-	node := Node{
+	node := types.Node{
 		Id:   "test-node",
 		Host: "localhost",
 		Port: 8080,
@@ -168,9 +169,9 @@ func Test_GetLeader(t *testing.T) {
 	testCases := []struct {
 		name       string
 		args       args
-		want       Node
+		want       types.Node
 		err        error
-		controller ClusterController
+		controller types.ClusterController
 	}{
 
 		{
@@ -178,7 +179,7 @@ func Test_GetLeader(t *testing.T) {
 			args: args{
 				serviceKey: testservicekey,
 			},
-			want: Node{},
+			want: types.Node{},
 			err:  errUnexpectedResponse,
 			controller: func() *ConsulClusterController {
 				mclient := &mockConsulClient{}
@@ -193,7 +194,7 @@ func Test_GetLeader(t *testing.T) {
 			args: args{
 				serviceKey: testservicekey,
 			},
-			want: Node{},
+			want: types.Node{},
 			err:  ErrLeaderNotFound,
 			controller: func() *ConsulClusterController {
 				mclient := &mockConsulClient{}
@@ -206,7 +207,7 @@ func Test_GetLeader(t *testing.T) {
 		{
 			name: "kvPair returned from consul is empty",
 			args: args{},
-			want: Node{},
+			want: types.Node{},
 			err:  ErrLeaderNotFound,
 			controller: func() *ConsulClusterController {
 				mclient := &mockConsulClient{}
