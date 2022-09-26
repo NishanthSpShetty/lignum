@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/pkg/errors"
@@ -21,8 +22,25 @@ func NewReplicaionService(c config.Config) *WalService {
 	return &WalService{conf: c}
 }
 
+func (w *WalService) writeWal(m Metadata, data []byte) error {
+
+	td := getTopicDatDir(w.conf.Message.DataDir, m.Topic)
+	fmt.Println("created topic directory ", td)
+	//possible that path does not exist, so call creator
+	err := createPath(td)
+	if err != nil {
+		return err
+	}
+
+	path := walPath(td, m.WalFile)
+	err = os.WriteFile(path, data, 0666)
+
+	return err
+
+}
+
 //handleClient for the connected client read all incoming wal request
-func handleClient(c net.Conn) {
+func (w *WalService) handleClient(c net.Conn) {
 
 	//read the meta data
 	//read the file associated with it,
@@ -32,6 +50,8 @@ func handleClient(c net.Conn) {
 	buf := make([]byte, 0)
 	//indicate when to clean storage buf
 	clean := false
+	var data []byte
+	var md Metadata
 	for {
 		meta := make([]byte, 1024)
 		_, err := c.Read(meta)
@@ -57,7 +77,7 @@ func handleClient(c net.Conn) {
 						//delimiter found, grab a chunk and process it
 						m := make([]byte, l-2)
 						copy(m, buf[0:l-2])
-						md, err := ToMeta(m)
+						md, err = ToMeta(m)
 						if err != nil {
 							log.Error().Err(err).Msg("failed to parse meta")
 							continue
@@ -69,14 +89,20 @@ func handleClient(c net.Conn) {
 				if b == MARKER_FILE_END {
 					if buf[l-1] == MARKER2 && buf[l-2] == MARKER1 {
 						//delimiter found, grab a chunk and process it
-						fileData := buf[0 : l-2]
-						fmt.Println("Content of wal\n", string(fileData))
+						data := buf[0 : l-2]
+						fmt.Println("Content of wal\n", string(data))
 						clean = true
 					}
 				}
 
 			}
 			if clean {
+				err = w.writeWal(md, data)
+				if err != nil {
+					//FIXME :we need to do something when this happens ?
+					log.Error().Err(err).Msg("failed to write wal to disk")
+				}
+
 				buf = make([]byte, 0)
 				clean = false
 			} else {
@@ -91,7 +117,7 @@ func handleClient(c net.Conn) {
 	}
 }
 
-func start(ctx context.Context, listener net.Listener) {
+func (w *WalService) start(ctx context.Context, listener net.Listener) {
 
 	for {
 		client, err := listener.Accept()
@@ -104,7 +130,7 @@ func start(ctx context.Context, listener net.Listener) {
 			continue
 		}
 
-		handleClient(client)
+		w.handleClient(client)
 
 	}
 
@@ -124,6 +150,6 @@ func (w *WalService) Start(ctx context.Context) error {
 	}
 	//FIXME: this must be killed as soon as the node is promoted to leader
 	log.Info().Msg("starting WalService")
-	go start(ctx, listener)
+	go w.start(ctx, listener)
 	return nil
 }

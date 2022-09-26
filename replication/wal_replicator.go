@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -95,7 +96,10 @@ func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
 				files := topic.GetWalFile(currentOffset)
 
 				for _, file := range files {
-					fmt.Println("sending file ", file)
+					fileName := filepath.Base(file)
+					fmt.Println("sending file ", fileName)
+					log.Debug().Str("filename", fileName).Str("path", file).Msg("sending wal file")
+
 					//get the topic wal files.
 					f, err := os.Open(file)
 					if err != nil {
@@ -104,7 +108,7 @@ func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
 					}
 					meta := wal.Metadata{
 						Topic:   topic.GetName(),
-						WalFile: file,
+						WalFile: fileName,
 					}
 
 					metad, err := meta.Bytes()

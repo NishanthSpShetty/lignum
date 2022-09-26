@@ -17,6 +17,10 @@ import (
 const DEFAULT_READ_CHUNK_SIZE = 1024 * 4
 const MESSAGE_KEY_VAL_SEPERATOR = "|#|"
 
+func walPath(topicPath, walFile string) string {
+	return fmt.Sprintf("%s/%s", topicPath, walFile)
+}
+
 func getTopicDatDir(dataDir string, topic string) string {
 	if !strings.HasSuffix(dataDir, "/") {
 		dataDir += "/"
