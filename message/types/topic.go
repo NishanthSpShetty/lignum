@@ -111,14 +111,16 @@ func (t *Topic) GetMessages(from, to uint64) []*Message {
 	fromInBuffer := false
 	toInBuffer := false
 
-	if fromOffset == currentInbufferOffset {
-		//start range is in buffer
-		fromInBuffer = true
-
-	}
 	if toOffset == currentInbufferOffset {
 		//buffer end offset is in buffer,
 		toInBuffer = true
+	}
+
+	//if toInBuffer is false, from cannot be in buffer
+	if toInBuffer && fromOffset == currentInbufferOffset {
+		//start range is in buffer
+		fromInBuffer = true
+
 	}
 
 	log.Debug().

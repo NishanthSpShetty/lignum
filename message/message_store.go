@@ -211,3 +211,12 @@ func (m *MessageStore) Replicate(payload Payload) error {
 	topic.Append(message)
 	return nil
 }
+
+func (m *MessageStore) WalMetaUpdate(topicName string, offset uint64) {
+	topic, ok := m.topic[topicName]
+
+	if !ok {
+		topic = m.createNewTopic(topicName, m.messageBufferSize)
+	}
+	topic.SetCounter(offset)
+}

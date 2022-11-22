@@ -103,7 +103,7 @@ func (s *Server) Serve() error {
 	http.HandleFunc("/api/follower/register", s.registerFollower())
 	http.HandleFunc("/internal/api/replicate", s.replicate())
 	http.HandleFunc("/api/message", s.handleMessage())
-	http.HandleFunc("/api/topic", s.TopicHandler())
+	http.HandleFunc("/api/topics", s.TopicHandler())
 	http.Handle("/metrics", promhttp.Handler())
 	return s.httpServer.Serve(s.listener)
 }

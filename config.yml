@@ -2,7 +2,7 @@
 
 server:
   host: "0.0.0.0"
-  port: 8081
+  port: 8080
   service-key: "service/lignum/key/master"
 
 consul:
@@ -15,7 +15,7 @@ consul:
 
 message:
   initial-size-per-topic: 10
-  data-dir: "topicsff"
+  data-dir: "topics"
 
 follower:
   healthcheck-interval-in-seconds: 1

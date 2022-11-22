@@ -6,8 +6,9 @@ import (
 )
 
 type Metadata struct {
-	Topic   string `json:"topic"`
-	WalFile string `json:"wal_file"`
+	Topic      string `json:"topic"`
+	WalFile    string `json:"wal_file"`
+	NextOffSet uint64 `json:"next_offset"`
 }
 
 // MARKER unique bytes for delimiter data over network
@@ -49,7 +50,7 @@ func ToMeta(b []byte) (Metadata, error) {
 	return *m, nil
 }
 
-func isMarker(b byte) bool {
+func IsMarker(b byte) bool {
 	switch b {
 	case MARKER1, MARKER2, MARKER_FILE_END, MARKER_META_END:
 		return true

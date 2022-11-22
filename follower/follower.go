@@ -46,6 +46,14 @@ func (f *Follower) TopicOffset(topic string) uint64 {
 	return 0
 }
 
+func (f *Follower) UpdateStat(topic string, offset uint64) {
+	for _, s := range f.messageStat {
+		if s.Topic == topic {
+			s.Offset = offset
+		}
+	}
+}
+
 func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
 	//we know that the node is healthy when registering itself
 	follower := &Follower{

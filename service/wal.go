@@ -1,13 +1,14 @@
-package wal
+package service
 
 import (
 	"context"
 	"fmt"
 	"io"
 	"net"
-	"os"
 
 	"github.com/NishanthSpShetty/lignum/config"
+	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -15,31 +16,24 @@ import (
 // all follower must start service to accept wal files from the leader
 
 type WalService struct {
-	conf config.Config
+	conf   config.Config
+	mstore *message.MessageStore
 }
 
-func NewReplicaionService(c config.Config) *WalService {
-	return &WalService{conf: c}
-}
-
-func (w *WalService) writeWal(m Metadata, data []byte) error {
-
-	td := getTopicDatDir(w.conf.Message.DataDir, m.Topic)
-	fmt.Println("created topic directory ", td)
-	//possible that path does not exist, so call creator
-	err := createPath(td)
-	if err != nil {
-		return err
+func NewReplicaionService(c config.Config, mstore *message.MessageStore) *WalService {
+	return &WalService{conf: c,
+		mstore: mstore,
 	}
+}
 
-	path := walPath(td, m.WalFile)
-	err = os.WriteFile(path, data, 0666)
-
-	return err
-
+func (w *WalService) updateMessageStore(md wal.Metadata) {
+	w.mstore.WalMetaUpdate(md.Topic, md.NextOffSet)
 }
 
 //handleClient for the connected client read all incoming wal request
+// We will recieve multiple wal files of different topics, need to proces everything here
+// tried to move the task to wal package however dealing with messageStore will become painful due to the cyclic deps.
+
 func (w *WalService) handleClient(c net.Conn) {
 
 	//read the meta data
@@ -51,7 +45,7 @@ func (w *WalService) handleClient(c net.Conn) {
 	//indicate when to clean storage buf
 	clean := false
 	var data []byte
-	var md Metadata
+	var md wal.Metadata
 	for {
 		meta := make([]byte, 1024)
 		_, err := c.Read(meta)
@@ -67,17 +61,17 @@ func (w *WalService) handleClient(c net.Conn) {
 		marker := false
 		for _, b := range meta {
 
-			marker = isMarker(b)
+			marker = wal.IsMarker(b)
 
 			//if the current one is end marker, check prev bytes
 			if marker {
 				l := len(buf)
-				if b == MARKER_META_END {
-					if buf[l-1] == MARKER2 && buf[l-2] == MARKER1 {
+				if b == wal.MARKER_META_END {
+					if buf[l-1] == wal.MARKER2 && buf[l-2] == wal.MARKER1 {
 						//delimiter found, grab a chunk and process it
 						m := make([]byte, l-2)
 						copy(m, buf[0:l-2])
-						md, err = ToMeta(m)
+						md, err = wal.ToMeta(m)
 						if err != nil {
 							log.Error().Err(err).Msg("failed to parse meta")
 							continue
@@ -86,22 +80,25 @@ func (w *WalService) handleClient(c net.Conn) {
 						clean = true
 					}
 				}
-				if b == MARKER_FILE_END {
-					if buf[l-1] == MARKER2 && buf[l-2] == MARKER1 {
+				if b == wal.MARKER_FILE_END {
+					if buf[l-1] == wal.MARKER2 && buf[l-2] == wal.MARKER1 {
 						//delimiter found, grab a chunk and process it
-						data := buf[0 : l-2]
-						fmt.Println("Content of wal\n", string(data))
+						data = buf[0 : l-2]
+						//fmt.Println("Content of wal\n", string(data))
 						clean = true
 					}
 				}
 
 			}
 			if clean {
-				err = w.writeWal(md, data)
+				w.updateMessageStore(md)
+				err = wal.WriteWal(w.conf.Message.DataDir, md, data)
 				if err != nil {
 					//FIXME :we need to do something when this happens ?
 					log.Error().Err(err).Msg("failed to write wal to disk")
 				}
+
+				//update message store with the updated info
 
 				buf = make([]byte, 0)
 				clean = false
