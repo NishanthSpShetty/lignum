@@ -47,6 +47,7 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 	clusterController.On("DestroySession").Return(mock.Anything)
 
 	walChannel := make(chan wal.Payload, config.Wal.QueueSize)
+	fq := make(chan *follower.Follower)
 
 	service := &Service{
 		signalChannel:         make(chan os.Signal),
@@ -56,7 +57,8 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 		ReplicationQueue:      make(chan replication.Payload, REPLICATION_QUEUE_SIZE),
 		SessionRenewalChannel: make(chan struct{}),
 		message:               message.New(config.Message, walChannel),
-		followerRegistry:      follower.New(),
+		followerRegistry:      follower.New(fq),
+		walReplicator:         replication.NewWALReplication(fq, make(chan bool), time.Second),
 	}
 	service.wal = wal.New(config.Wal, config.Message.DataDir, walChannel)
 	service.liveReplicator = replication.NewLiveReplicator(service.ReplicationQueue, service.followerRegistry)

@@ -109,10 +109,12 @@ func (t *Topic) readFromLogs(fromOffset, toOffset, from, to uint64) []*Message {
 func (t *Topic) GetMessages(from, to uint64) []*Message {
 
 	latestMessageOffset := t.GetCurrentOffset()
+	// if to is greater than latest message offset in the system adjust it.
 	if to > latestMessageOffset {
 		to = latestMessageOffset
 	}
 
+	// get the  offset value from the wal file
 	fromOffset := t.getFileOffset(from)
 	toOffset := t.getFileOffset(to)
 
@@ -120,7 +122,7 @@ func (t *Topic) GetMessages(from, to uint64) []*Message {
 	fromInBuffer := false
 	toInBuffer := false
 
-	if toOffset == currentInbufferOffset {
+	if toOffset >= currentInbufferOffset {
 		//buffer end offset is in buffer,
 		toInBuffer = true
 	}
@@ -178,20 +180,20 @@ func (t *Topic) ResetMessageBuffer() {
 func (t *Topic) Push(message Message) Message {
 
 	t.lock.Lock()
+	defer t.lock.Unlock()
 	t.messageBuffer[t.bufferIdx] = message
 	t.bufferIdx++
-	t.lock.Unlock()
 	return message
 }
 
 func (t *Topic) PushAll(messages []*Message) {
 
 	t.lock.Lock()
+	defer t.lock.Unlock()
 	for _, message := range messages {
 		t.messageBuffer[t.bufferIdx] = *message
 		t.bufferIdx++
 	}
-	t.lock.Unlock()
 }
 
 func (t *Topic) Append(message Message) {
