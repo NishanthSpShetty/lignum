@@ -20,10 +20,11 @@ type Topic struct {
 	name          string
 	messageBuffer []Message
 	//number of messages allowed to stay in memory
-	msgBufferSize uint64
-	bufferIdx     uint64
-	lock          sync.Mutex
-	dataDir       string
+	msgBufferSize   uint64
+	bufferIdx       uint64
+	lock            sync.Mutex
+	dataDir         string
+	liveReplication bool
 }
 
 func (m Message) String() string {

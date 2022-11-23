@@ -9,13 +9,22 @@ import (
 func NewTopic(topicName string, msgBufferSize uint64, dataDir string) *Topic {
 
 	topic := &Topic{
-		name:          topicName,
-		counter:       counter.NewCounter(),
-		messageBuffer: make([]Message, msgBufferSize),
-		msgBufferSize: msgBufferSize,
-		dataDir:       dataDir,
+		name:            topicName,
+		counter:         counter.NewCounter(),
+		messageBuffer:   make([]Message, msgBufferSize),
+		msgBufferSize:   msgBufferSize,
+		dataDir:         dataDir,
+		liveReplication: false,
 	}
 	return topic
+}
+
+func (t *Topic) LiveReplication() bool {
+	return t.liveReplication
+}
+
+func (t *Topic) EnableLiveReplication() {
+	t.liveReplication = true
 }
 
 func (t *Topic) GetName() string {
@@ -100,10 +109,12 @@ func (t *Topic) readFromLogs(fromOffset, toOffset, from, to uint64) []*Message {
 func (t *Topic) GetMessages(from, to uint64) []*Message {
 
 	latestMessageOffset := t.GetCurrentOffset()
+	// if to is greater than latest message offset in the system adjust it.
 	if to > latestMessageOffset {
 		to = latestMessageOffset
 	}
 
+	// get the  offset value from the wal file
 	fromOffset := t.getFileOffset(from)
 	toOffset := t.getFileOffset(to)
 
@@ -111,14 +122,16 @@ func (t *Topic) GetMessages(from, to uint64) []*Message {
 	fromInBuffer := false
 	toInBuffer := false
 
-	if fromOffset == currentInbufferOffset {
+	if toOffset >= currentInbufferOffset {
+		//buffer end offset is in buffer,
+		toInBuffer = true
+	}
+
+	//if toInBuffer is false, from cannot be in buffer
+	if toInBuffer && fromOffset == currentInbufferOffset {
 		//start range is in buffer
 		fromInBuffer = true
 
-	}
-	if toOffset == currentInbufferOffset {
-		//buffer end offset is in buffer,
-		toInBuffer = true
 	}
 
 	log.Debug().
@@ -167,20 +180,20 @@ func (t *Topic) ResetMessageBuffer() {
 func (t *Topic) Push(message Message) Message {
 
 	t.lock.Lock()
+	defer t.lock.Unlock()
 	t.messageBuffer[t.bufferIdx] = message
 	t.bufferIdx++
-	t.lock.Unlock()
 	return message
 }
 
 func (t *Topic) PushAll(messages []*Message) {
 
 	t.lock.Lock()
+	defer t.lock.Unlock()
 	for _, message := range messages {
 		t.messageBuffer[t.bufferIdx] = *message
 		t.bufferIdx++
 	}
-	t.lock.Unlock()
 }
 
 func (t *Topic) Append(message Message) {

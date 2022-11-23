@@ -17,6 +17,9 @@ import (
 const DEFAULT_READ_CHUNK_SIZE = 1024 * 4
 const MESSAGE_KEY_VAL_SEPERATOR = "|#|"
 
+func init() {
+}
+
 func walPath(topicPath, walFile string) string {
 	return fmt.Sprintf("%s/%s", topicPath, walFile)
 }
@@ -36,6 +39,24 @@ func createPath(path string) error {
 		err = os.MkdirAll(path, 0770)
 	}
 	return err
+}
+
+func WriteWal(dataDir string, m Metadata, data []byte) error {
+
+	td := getTopicDatDir(dataDir, m.Topic)
+	fmt.Println("creating topic directory ", td)
+	//possible that path does not exist, so call creator
+	err := createPath(td)
+	if err != nil {
+		fmt.Printf("failed to create path %s %s\n", td, err.Error())
+		return err
+	}
+
+	path := walPath(td, m.WalFile)
+	err = os.WriteFile(path, data, 0666)
+
+	return err
+
 }
 
 func ReadFromWal(file *os.File, fileOffset, endOffset uint64) ([]byte, error) {

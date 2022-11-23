@@ -38,7 +38,7 @@ type Service struct {
 	liveReplicator        *replication.LiveReplicator
 	walReplicator         *replication.WALReplicator
 	wal                   *wal.Wal
-	walService            *wal.WalService
+	walService            *WalService
 	running               bool
 	leaderSignal          chan bool
 }
@@ -66,10 +66,10 @@ func New(config c.Config) (*Service, error) {
 		leaderSignal:          leaderSignal,
 	}
 	s.wal = wal.New(config.Wal, config.Message.DataDir, walChannel)
-	s.walService = wal.NewReplicaionService(config)
+	s.walService = NewReplicaionService(config, s.message)
 	s.liveReplicator = replication.NewLiveReplicator(s.ReplicationQueue, s.followerRegistry)
 
-	s.walReplicator = replication.NewWALReplication(followerQueue, leaderSignal)
+	s.walReplicator = replication.NewWALReplication(followerQueue, leaderSignal, config.Replication.WalSyncIntervalInSec)
 
 	server, err := api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.followerRegistry)
 	if err != nil {

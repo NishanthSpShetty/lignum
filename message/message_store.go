@@ -146,7 +146,8 @@ func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *t
 	return topic
 }
 
-func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) types.Message {
+// Put write message to store and return the new Message and bool value indicating live replication
+func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) (types.Message, bool) {
 	//check if the topic exist
 	topic, ok := m.topic[topicName]
 
@@ -177,7 +178,7 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) ty
 		Id:    _msg.Id,
 		Data:  _msg.Data,
 	}
-	return topic.Push(_msg)
+	return topic.Push(_msg), topic.LiveReplication()
 }
 
 //Get return the value for given range (from, to)
@@ -210,4 +211,13 @@ func (m *MessageStore) Replicate(payload Payload) error {
 	message := types.Message{Id: topic.CounterNext(), Data: payload.Data}
 	topic.Append(message)
 	return nil
+}
+
+func (m *MessageStore) WalMetaUpdate(topicName string, offset uint64) {
+	topic, ok := m.topic[topicName]
+
+	if !ok {
+		topic = m.createNewTopic(topicName, m.messageBufferSize)
+	}
+	topic.SetCounter(offset)
 }

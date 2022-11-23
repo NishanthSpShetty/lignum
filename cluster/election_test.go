@@ -36,14 +36,19 @@ func Test_leaderStateUpdate(t *testing.T) {
 	//unable to acquire lock
 	clusterController := &MockclusterController{ConsulClusterController: &ConsulClusterController{}}
 	clusterController.On("AcquireLock", mock.Anything).Return(false)
-	tryAcquireLock(node, clusterController, serviceKey)
+	leaderSignal := make(chan bool, 1)
+	tryAcquireLock(node, clusterController, serviceKey, leaderSignal)
 	assert.True(t, !state.isLeader(), "This node should is not the leader")
 
-	//when lock acquired
+	//when lock acquired, we need to capture leader signal channel value, so spawn new routine.
 	clusterController = &MockclusterController{ConsulClusterController: &ConsulClusterController{}}
 	clusterController.On("AcquireLock", mock.Anything).Return(true)
-	tryAcquireLock(node, clusterController, serviceKey)
+	tryAcquireLock(node, clusterController, serviceKey, leaderSignal)
 	assert.True(t, state.isLeader(), "This node should be the leader")
+	//NOTE: we are not handling when channel write is not happening, as it would block indefinitely, on straight out read without any timeout on read implemented.
+	assert.True(t, <-leaderSignal, "leader should send signal on the channel")
+
+	close(leaderSignal)
 }
 
 func Test_LeaderElection(t *testing.T) {
@@ -57,7 +62,10 @@ func Test_LeaderElection(t *testing.T) {
 		Port: 8080,
 	}
 	clusterController.On("AcquireLock", mock.Anything).Return(true)
-	leaderElection(context.Background(), node, clusterController, serviceKey, 1*time.Second)
+	leaderSignal := make(chan bool, 2)
+	go leaderElection(context.Background(), node, clusterController, serviceKey, 1*time.Second, leaderSignal)
+	<-leaderSignal
+	close(leaderSignal)
 	assert.True(t, state.isLeader(), "This node should be the leader")
 }
 
