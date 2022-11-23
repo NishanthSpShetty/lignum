@@ -49,6 +49,10 @@ func isFileExist(file string) bool {
 }
 
 func Test_walWrite(t *testing.T) {
+
+	if os.Getenv("CI") != "" {
+		t.Skip("Skipping testing in CI environment")
+	}
 	q := make(chan Payload, 1)
 	//file format
 	logFileStr := "tmp/%s/%s_%d.%s"
