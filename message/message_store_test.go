@@ -144,31 +144,31 @@ func Test_messageGet(t *testing.T) {
 			expected: makeMessages(10, 10),
 		},
 
-		//	{
-		//		name:     "returns list of messages for a given positive range when there are messages",
-		//		args:     args{from: 1, to: 10},
-		//		message:  createMsgStore("test", 10, 10),
-		//		expected: makeMessages(10, 10)[1:10],
-		//	},
+		{
+			name:     "returns list of messages for a given positive range when there are messages",
+			args:     args{from: 1, to: 10},
+			message:  createMsgStore("test", 10, 10),
+			expected: makeMessages(10, 10)[1:10],
+		},
 
-		//	{
-		//		name:     "returns list of messages for a given positive range when there are messages and `to` is less than available messages",
-		//		args:     args{from: 1, to: 8},
-		//		message:  createMsgStore("test", 10, 10),
-		//		expected: makeMessages(10, 10)[1:8],
-		//	},
-		//	{
-		//		name:     "returns list of all messages when range provided is more than available message",
-		//		args:     args{from: 0, to: 100},
-		//		message:  createMsgStore("test", 50, 50),
-		//		expected: makeMessages(50, 50),
-		//	},
-		//	{
-		//		name:     "returns list of messages `from` till end of the message when `to` in range provided is more than available message and from is positive",
-		//		args:     args{from: 8, to: 100},
-		//		message:  createMsgStore("test", 20, 20),
-		//		expected: makeMessages(20, 20)[8:20],
-		//	},
+		{
+			name:     "returns list of messages for a given positive range when there are messages and `to` is less than available messages",
+			args:     args{from: 1, to: 8},
+			message:  createMsgStore("test", 10, 10),
+			expected: makeMessages(10, 10)[1:8],
+		},
+		{
+			name:     "returns list of all messages when range provided is more than available message",
+			args:     args{from: 0, to: 100},
+			message:  createMsgStore("test", 50, 50),
+			expected: makeMessages(50, 50),
+		},
+		{
+			name:     "returns list of messages `from` till end of the message when `to` in range provided is more than available message and from is positive",
+			args:     args{from: 8, to: 100},
+			message:  createMsgStore("test", 20, 20),
+			expected: makeMessages(20, 20)[8:20],
+		},
 	}
 
 	for _, tt := range testCases {
