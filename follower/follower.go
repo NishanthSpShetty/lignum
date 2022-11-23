@@ -127,9 +127,9 @@ func (f *FollowerRegistry) healthCheck(client http.Client) {
 		healthy += 1
 	}
 
-	if healthy|dead != 0 {
-		//log.Debug().Int("healthy", healthy).Int("dead", dead).Msg("HealthStat")
-	}
+	//if healthy|dead != 0 {
+	//log.Debug().Int("healthy", healthy).Int("dead", dead).Msg("HealthStat")
+	//}
 }
 
 func (f *FollowerRegistry) StartHealthCheck(ctx context.Context, healthCheckInterval time.Duration, healthCheckTimeout time.Duration) {

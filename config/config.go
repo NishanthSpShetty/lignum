@@ -40,6 +40,7 @@ type Replication struct {
 	InternalQueueSize           int           `yaml:"internal-queue-size"`
 	ClientTimeoutInMilliSeconds time.Duration `yaml:"client-timeout-in-ms"`
 	WALReplicationPort          int           `yaml:"wal-replication-port"`
+	WalSyncIntervalInSec        time.Duration `yaml:"wal-sync-interval-in-sec"`
 }
 
 type Wal struct {

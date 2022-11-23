@@ -29,21 +29,23 @@ var OffsetExtractPattern *regexp.Regexp
 // 2. Send the newly created wal file on wal file creation on new.
 
 type WALReplicator struct {
-	fq             chan *follower.Follower
-	client         http.Client
-	syncFollwers   []*follower.Follower
-	failedFollwers []*follower.Follower
-	signalLeader   chan bool
-	lock           sync.RWMutex
+	fq                    chan *follower.Follower
+	client                http.Client
+	syncFollwers          []*follower.Follower
+	failedFollwers        []*follower.Follower
+	signalLeader          chan bool
+	lock                  sync.RWMutex
+	syncIntervalInSeconds time.Duration
 }
 
-func NewWALReplication(fq chan *follower.Follower, leaderSignal chan bool) *WALReplicator {
+func NewWALReplication(fq chan *follower.Follower, leaderSignal chan bool, syncIntervalInSeconds time.Duration) *WALReplicator {
 	// need a queue on which we get newly registered follower
 	OffsetExtractPattern = regexp.MustCompile(`(\d+)`)
 	return &WALReplicator{
-		fq:           fq,
-		signalLeader: leaderSignal,
-		lock:         sync.RWMutex{},
+		fq:                    fq,
+		signalLeader:          leaderSignal,
+		lock:                  sync.RWMutex{},
+		syncIntervalInSeconds: syncIntervalInSeconds,
 	}
 }
 
@@ -208,8 +210,12 @@ func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
 		followers := make([]*follower.Follower, len(w.syncFollwers))
 		copy(followers, w.syncFollwers)
 		for _, f := range followers {
-			if f.IsReady() {
+			if f.IsReady() && f.IsHealthy() {
 				w.syncFollwer(msgStore, f, true)
+			}
+			if !f.IsHealthy() {
+				log.Debug().Str("node", f.Node().Id).
+					Msg("unhealthy node in follower list, skipped")
 			}
 		}
 		log.Debug().
@@ -217,7 +223,7 @@ func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
 			Int("followers", len(followers)).
 			Msg("iteration sync complete")
 		iteration++
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * w.syncIntervalInSeconds)
 	}
 }
 
