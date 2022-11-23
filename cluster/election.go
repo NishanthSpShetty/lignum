@@ -31,9 +31,9 @@ func sendConnectRequestLeader(client http.Client, host string, port int, request
 func connectToLeader(ctx context.Context, serviceKey string, clusteController cluster_types.ClusterController, node types.Node, httpClient http.Client, msgStore *message.MessageStore) {
 
 	if !state.isLeader() {
+		//stop loop if the current node becomes the leader
 
 		if !state.isConnectedLeader() {
-			//loop if the current node becomes the leader
 			log.Info().Msg("registering this service as a follower to the cluster leader.")
 			//get the leader information and send a follow request.
 			leaderNode, err := clusteController.GetLeader(serviceKey)
@@ -92,7 +92,7 @@ func connectToLeader(ctx context.Context, serviceKey string, clusteController cl
 func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, serviceId string, clusteController cluster_types.ClusterController, msgStore *message.MessageStore) {
 
 	thisNode := cluster_types.NewNode(serviceId, appConfig.Server.Host, appConfig.Server.Port, appConfig.Replication.WALReplicationPort)
-	ticker := time.NewTicker(appConfig.Follower.RegistrationOrLeaderCheckIntervalInSeconds)
+	ticker := time.NewTicker(appConfig.Follower.RegistrationOrLeaderCheckIntervalInSeconds * time.Second)
 
 	httpClient := http.Client{
 		Transport: &http.Transport{

@@ -15,7 +15,7 @@ type Follower struct {
 	healthy bool
 	//ready for replication
 	ready       bool
-	messageStat []cluster_types.MessageStat
+	messageStat []*cluster_types.MessageStat
 }
 
 type FollowerRegistry struct {
@@ -50,17 +50,30 @@ func (f *Follower) UpdateStat(topic string, offset uint64) {
 	for _, s := range f.messageStat {
 		if s.Topic == topic {
 			s.Offset = offset
+			return
 		}
 	}
+
+	//means we are missing the topics
+	//add to to stat
+	stat := &cluster_types.MessageStat{
+		Topic:  topic,
+		Offset: offset,
+	}
+	f.messageStat = append(f.messageStat, stat)
 }
 
 func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
 	//we know that the node is healthy when registering itself
+	stats := make([]*cluster_types.MessageStat, 0, len(fr.MessageStat))
+	for _, stat := range fr.MessageStat {
+		stats = append(stats, &stat)
+	}
 	follower := &Follower{
 		node:        fr.Node,
 		healthy:     true,
 		ready:       false,
-		messageStat: fr.MessageStat,
+		messageStat: stats,
 	}
 
 	f.follower[fr.Node.Id] = follower

@@ -77,7 +77,7 @@ func sendFile(c *net.TCPConn, f *os.File, fi os.FileInfo) error {
 	return errors.Wrap(err, "sendFile")
 }
 
-func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.Follower) {
+func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.Follower, synced bool) {
 	// get the current topic in system
 	//possible that the topics have updated after last follower registred, so we need to query the new state of the system as soon as new follower registers
 	currentTopics := msgStore.GetTopics()
@@ -89,6 +89,7 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 
 	//get the tcp connection
 	addr := fmt.Sprintf("%s:%d", f.Node().Host, f.Node().ReplicationPort)
+	//TODO: we can have a iteration where no topic data is there to replicate in such case obtaining connection and doing other work is waste, optimise it.
 	conn, err := net.Dial("tcp", addr)
 
 	if err != nil {
@@ -121,9 +122,10 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 			if err != nil {
 				log.Error().Err(err).Msg("failed to open file")
 				break
+
 			}
 
-			lastWalOffset := getOffsetFromFile(fileName) + topic.GetMessageBufferSize()
+			lastWalOffset = getOffsetFromFile(fileName) + topic.GetMessageBufferSize()
 
 			meta := wal.Metadata{
 				Topic:      topic.GetName(),
@@ -162,45 +164,60 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 			Msg("synced topic")
 
 		if lastWalOffset != 0 {
+			log.Debug().
+				Int("offset", int(lastWalOffset)).
+				Str("topic", topic.GetName()).
+				Str("node", f.Node().Id).
+				Msg("updating message stat for node")
 			f.UpdateStat(topic.GetName(), lastWalOffset)
 		}
 	}
 
-	//add the updated follower to synced followers list
-	w.syncedFollwer(f)
-	//mark the node as ready
+	if !synced {
+		//add the updated follower to synced followers list
+		w.syncedFollwer(f)
+		//mark the node as ready
+		f.MarkReady()
+	}
 
-	f.MarkReady()
 	conn.Close()
 }
 
 func (w *WALReplicator) topicSyncerForNewFollower(msgStore *message.MessageStore) {
 	//sync new follower when registers
-	for {
-		for f := range w.fq {
-			w.syncFollwer(msgStore, f)
-		}
+	j := 0
+	for f := range w.fq {
+		fmt.Println("Syncing new follower in iteration ", "count ", j)
+		w.syncFollwer(msgStore, f, false)
+		j++
 	}
 }
 
 func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
+	iteration := 0
 	for {
 		//loop over synced topic and replicate any new wal file present
 		// FIX: potential race, writes happening in other thread
 		if len(w.syncFollwers) == 0 {
 			log.Debug().Msg("there are no follower to sync, going to sleep")
-			time.Sleep(time.Minute * 3)
+			time.Sleep(time.Second * 3)
 			continue
 		}
 
-		w.lock.RLock()
 		// as the below operation takes time, we can let the writer update the slice by copying and using the copy
 		followers := make([]*follower.Follower, len(w.syncFollwers))
 		copy(followers, w.syncFollwers)
-		defer w.lock.Unlock()
 		for _, f := range followers {
-			w.syncFollwer(msgStore, f)
+			if f.IsReady() {
+				w.syncFollwer(msgStore, f, true)
+			}
 		}
+		log.Debug().
+			Int("iteration", iteration).
+			Int("followers", len(followers)).
+			Msg("iteration sync complete")
+		iteration++
+		time.Sleep(time.Second)
 	}
 }
 

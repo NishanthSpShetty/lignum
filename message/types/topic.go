@@ -9,13 +9,22 @@ import (
 func NewTopic(topicName string, msgBufferSize uint64, dataDir string) *Topic {
 
 	topic := &Topic{
-		name:          topicName,
-		counter:       counter.NewCounter(),
-		messageBuffer: make([]Message, msgBufferSize),
-		msgBufferSize: msgBufferSize,
-		dataDir:       dataDir,
+		name:            topicName,
+		counter:         counter.NewCounter(),
+		messageBuffer:   make([]Message, msgBufferSize),
+		msgBufferSize:   msgBufferSize,
+		dataDir:         dataDir,
+		liveReplication: false,
 	}
 	return topic
+}
+
+func (t *Topic) LiveReplication() bool {
+	return t.liveReplication
+}
+
+func (t *Topic) EnableLiveReplication() {
+	t.liveReplication = true
 }
 
 func (t *Topic) GetName() string {
