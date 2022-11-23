@@ -69,7 +69,7 @@ func New(config c.Config) (*Service, error) {
 	s.walService = NewReplicaionService(config, s.message)
 	s.liveReplicator = replication.NewLiveReplicator(s.ReplicationQueue, s.followerRegistry)
 
-	s.walReplicator = replication.NewWALReplication(followerQueue, leaderSignal)
+	s.walReplicator = replication.NewWALReplication(followerQueue, leaderSignal, config.Replication.WalSyncIntervalInSec)
 
 	server, err := api.NewServer(s.ServiceId, s.ReplicationQueue, s.Config.Server, s.message, s.followerRegistry)
 	if err != nil {
