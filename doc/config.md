@@ -126,4 +126,16 @@
     Value       : 25
 
 
+* replication.wal-replication-port
+>
+    Type        : Number 
+    Description : WAL service port on which it recieves replication messages from the leader
+    Value       : 8124
+
+* replication.wal-sync-interval-in-sec
+>
+    Type        : Number (Duration)
+    Description : Interval between the wal replication routine run checks on wal files and replicate to follower
+    Value       : 5
+
 Refer the default config [here](../config.yml)
