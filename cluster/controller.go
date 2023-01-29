@@ -15,7 +15,7 @@ type ConsulClusterController struct {
 	SessionId string
 }
 
-//assert that ConsulClusterController implemnets ClusterController
+// assert that ConsulClusterController implemnets ClusterController
 var _ cluster_types.ClusterController = &ConsulClusterController{}
 
 func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterController, error) {
@@ -24,7 +24,6 @@ func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterCont
 	config.Address = fmt.Sprintf("%s:%d", consulConfig.Host, consulConfig.Port)
 
 	client, err := api.NewClient(config)
-
 	if err != nil {
 		return &ConsulClusterController{}, err
 	}
@@ -32,13 +31,12 @@ func InitialiseClusterController(consulConfig config.Consul) (*ConsulClusterCont
 }
 
 func (c *ConsulClusterController) renewSessionPeriodically(sessionId string, ttl int, sessionRenewalChannel chan struct{}) {
-	//spawn go routine for renewal and return
+	// spawn go routine for renewal and return
 	ttlS := fmt.Sprintf("%ds", ttl)
 	go c.client.RenewPeriodic(ttlS, sessionId, nil, sessionRenewalChannel)
 }
 
 func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sessionRenewalChannel chan struct{}) error {
-
 	sessionEntry := &api.SessionEntry{
 		Name:      consulConfig.ServiceName,
 		TTL:       fmt.Sprintf("%ds", consulConfig.SessionTTLInSeconds),
@@ -46,7 +44,6 @@ func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sess
 	}
 
 	sessionId, writeMeta, err := c.client.CreateSession(sessionEntry, nil)
-
 	if err != nil {
 		return err
 	}
@@ -79,7 +76,6 @@ func (c ConsulClusterController) GetLeader(serviceKey string) (cluster_types.Nod
 }
 
 func (c *ConsulClusterController) AcquireLock(node cluster_types.Node, serviceKey string) (bool, error) {
-
 	lockData := node.Json()
 
 	kvPair := &api.KVPair{
@@ -101,5 +97,4 @@ func (c *ConsulClusterController) AcquireLock(node cluster_types.Node, serviceKe
 			Msg("consul lock aquired on the session")
 	}
 	return acquired, err
-
 }

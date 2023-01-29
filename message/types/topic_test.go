@@ -16,7 +16,8 @@ func Test_getFileOffset(t *testing.T) {
 		want  uint64
 		topic *Topic
 	}{
-		{name: "0 return 0",
+		{
+			name: "0 return 0",
 			args: args{0},
 			want: 0,
 			topic: &Topic{
@@ -24,7 +25,8 @@ func Test_getFileOffset(t *testing.T) {
 			},
 		},
 
-		{name: "non buffer size value return the closest file offset",
+		{
+			name: "non buffer size value return the closest file offset",
 			args: args{1},
 			want: 0,
 			topic: &Topic{
@@ -32,7 +34,8 @@ func Test_getFileOffset(t *testing.T) {
 			},
 		},
 
-		{name: "id bigger than buffer size",
+		{
+			name: "id bigger than buffer size",
 			args: args{11},
 			want: 10,
 			topic: &Topic{
@@ -40,7 +43,8 @@ func Test_getFileOffset(t *testing.T) {
 			},
 		},
 
-		{name: "id bigger than buffer size",
+		{
+			name: "id bigger than buffer size",
 			args: args{28},
 			want: 20,
 			topic: &Topic{
@@ -48,7 +52,8 @@ func Test_getFileOffset(t *testing.T) {
 			},
 		},
 
-		{name: "id equal to buffer size",
+		{
+			name: "id equal to buffer size",
 			args: args{10},
 			want: 10,
 			topic: &Topic{
@@ -56,7 +61,8 @@ func Test_getFileOffset(t *testing.T) {
 			},
 		},
 
-		{name: "id completely divisible by buffer size",
+		{
+			name: "id completely divisible by buffer size",
 			args: args{20},
 			want: 20,
 			topic: &Topic{
@@ -64,7 +70,8 @@ func Test_getFileOffset(t *testing.T) {
 			},
 		},
 
-		{name: "handle error when msgBufferSize is 0",
+		{
+			name: "handle error when msgBufferSize is 0",
 			args: args{20},
 			want: 0,
 			topic: &Topic{

@@ -22,7 +22,7 @@ func Test_CreateSession(t *testing.T) {
 		Port: 8500,
 	}
 
-	//test create session
+	// test create session
 	type args struct {
 		config                    config.Consul
 		sessionRenewalChannelChan chan struct{}
@@ -58,7 +58,6 @@ func Test_CreateSession(t *testing.T) {
 			err:       errUnexpectedResponse,
 			sessionId: "",
 			controller: func() *ConsulClusterController {
-
 				mclient := &mockConsulClient{}
 				mclient.On("CreateSession").Return("", errUnexpectedResponse)
 				return newMockClient(mclient)
@@ -79,7 +78,7 @@ func Test_CreateSession(t *testing.T) {
 			t.Fatalf("CreateSession: %s, Expected :%s, Got :%s", tt.name, tt.sessionId, tt.controller.SessionId)
 		}
 		close(renewalChannel)
-		//give it a second to send signal to the routines
+		// give it a second to send signal to the routines
 		time.Sleep(time.Millisecond)
 
 		activeGoRoutineAfter := runtime.NumGoroutine()
@@ -89,7 +88,6 @@ func Test_CreateSession(t *testing.T) {
 }
 
 func Test_AcquireLock(t *testing.T) {
-
 	node := types.Node{
 		Id:   "test-node",
 		Host: "localhost",
@@ -173,7 +171,6 @@ func Test_GetLeader(t *testing.T) {
 		err        error
 		controller types.ClusterController
 	}{
-
 		{
 			name: "consul api returns error",
 			args: args{

@@ -11,13 +11,12 @@ import (
 )
 
 func (s *Server) handleReplicate(w http.ResponseWriter, req *http.Request) {
-
 	metrics.IncrementReplicationRequest()
 
 	payload := replication.Payload{}
 	decoder := json.NewDecoder(req.Body)
 	decoder.DisallowUnknownFields()
-	//ctx := req.Context()
+	// ctx := req.Context()
 
 	err := decoder.Decode(&payload)
 	if err != nil {
@@ -38,12 +37,10 @@ func (s *Server) handleReplicate(w http.ResponseWriter, req *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	log.Debug().Msg("replication message processed")
-
 }
 
 func (s *Server) replicate() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-
 		switch req.Method {
 		case "POST":
 			s.handleReplicate(w, req)

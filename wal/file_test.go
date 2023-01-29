@@ -8,7 +8,6 @@ import (
 const TempDirectory = "temp"
 
 func createTestDir(dir string) error {
-
 	err := os.Mkdir(dir, os.ModePerm)
 	if err != nil && !os.IsExist(err) {
 		return err

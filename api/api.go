@@ -34,10 +34,10 @@ func (s *Server) Stop(ctx context.Context) {
 }
 
 func NewServer(serviceId string, queue chan<- replication.Payload, config config.Server, message *message.MessageStore, follower *follower.FollowerRegistry) (*Server, error) {
-
 	address := fmt.Sprintf("%s:%d", config.Host, config.Port)
-	httpServer := http.Server{Addr: address,
-		//shamelessly copied following config from internet, will revisit this later
+	httpServer := http.Server{
+		Addr: address,
+		// shamelessly copied following config from internet, will revisit this later
 		ReadTimeout:       1 * time.Second,
 		WriteTimeout:      1 * time.Second,
 		IdleTimeout:       30 * time.Second,
@@ -77,7 +77,7 @@ func (a *Server) ping() http.HandlerFunc {
 	}
 }
 
-//handleMessage dispatch to particular handlers based on request method
+// handleMessage dispatch to particular handlers based on request method
 func (s *Server) handleMessage() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -93,7 +93,6 @@ func (s *Server) handleMessage() http.HandlerFunc {
 }
 
 func (s *Server) Serve() error {
-
 	log.Info().
 		Str("Host", s.config.Host).
 		Int("Port", s.config.Port).

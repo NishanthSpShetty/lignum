@@ -12,10 +12,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//Number is picked from the rust program for copying large files, 8kb seems to perform well.
-//Should be benchmarked and updated accordignly if needed.
-const DEFAULT_READ_CHUNK_SIZE = 1024 * 4
-const MESSAGE_KEY_VAL_SEPERATOR = "|#|"
+// Number is picked from the rust program for copying large files, 8kb seems to perform well.
+// Should be benchmarked and updated accordignly if needed.
+const (
+	DEFAULT_READ_CHUNK_SIZE   = 1024 * 4
+	MESSAGE_KEY_VAL_SEPERATOR = "|#|"
+)
 
 func init() {
 }
@@ -31,21 +33,20 @@ func getTopicDatDir(dataDir string, topic string) string {
 	return dataDir + topic
 }
 
-//check if the directory exist create otherwise
+// check if the directory exist create otherwise
 func createPath(path string) error {
 	_, err := os.Stat(path)
 
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(path, 0770)
+		err = os.MkdirAll(path, 0o770)
 	}
 	return err
 }
 
 func WriteWal(dataDir string, m Metadata, data []byte) error {
-
 	td := getTopicDatDir(dataDir, m.Topic)
 	fmt.Println("creating topic directory ", td)
-	//possible that path does not exist, so call creator
+	// possible that path does not exist, so call creator
 	err := createPath(td)
 	if err != nil {
 		fmt.Printf("failed to create path %s %s\n", td, err.Error())
@@ -53,10 +54,9 @@ func WriteWal(dataDir string, m Metadata, data []byte) error {
 	}
 
 	path := walPath(td, m.WalFile)
-	err = os.WriteFile(path, data, 0666)
+	err = os.WriteFile(path, data, 0o666)
 
 	return err
-
 }
 
 func ReadFromWal(file *os.File, fileOffset, endOffset uint64) ([]byte, error) {
@@ -64,14 +64,14 @@ func ReadFromWal(file *os.File, fileOffset, endOffset uint64) ([]byte, error) {
 }
 
 func GetWalFile(dataDir, topic string, fileOffset uint64) string {
-	//path should exist
+	// path should exist
 	path := getTopicDatDir(dataDir, topic)
 	path = fmt.Sprintf("%s/%s_%d.log", path, topic, fileOffset)
 	return path
 }
 
 func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]byte, error) {
-	//path should exist
+	// path should exist
 	path := GetWalFile(dataDir, topic, fileOffset)
 	log.Debug().Str("path", path).Str("topic", topic).Msg("reading log file")
 	file, err := os.Open(path)
@@ -88,25 +88,25 @@ func readFile(file *os.File, fileOffset, from, to uint64) ([]byte, error) {
 	var bufWriteError error
 	var err error
 
-	//chunk size of 8kb does provide improved result, anything less than a page size worsens below num
-	//bench: Reading 1GB file
-	//using 1GB buffer size
-	//took ~255ms to 295ms
-	//using 1Mb buffer
-	//took 370ms to 690ms
+	// chunk size of 8kb does provide improved result, anything less than a page size worsens below num
+	// bench: Reading 1GB file
+	// using 1GB buffer size
+	// took ~255ms to 295ms
+	// using 1Mb buffer
+	// took 370ms to 690ms
 
-	//bench: Reading 100MB file
-	//using 1MB buffer size
-	//took ~50ms to ~70ms
-	//using 1Kb buffer
-	//took ~50ms to ~80ms
+	// bench: Reading 100MB file
+	// using 1MB buffer size
+	// took ~50ms to ~70ms
+	// using 1Kb buffer
+	// took ~50ms to ~80ms
 
-	//Refer : https://github.com/NishanthSpShetty/bench_disk_io.go
+	// Refer : https://github.com/NishanthSpShetty/bench_disk_io.go
 
-	//TODO: look into reuse of this buffer
+	// TODO: look into reuse of this buffer
 	byteBuf := bytes.NewBuffer(make([]byte, 1024*1024))
-	//calling reset will make buffer.Write reuse the underlying buffer.
-	//if not called, on write it will grow the underlying buffer causing allocation
+	// calling reset will make buffer.Write reuse the underlying buffer.
+	// if not called, on write it will grow the underlying buffer causing allocation
 	byteBuf.Reset()
 	for {
 		n, err = reader.Read(buf)

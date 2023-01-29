@@ -7,19 +7,19 @@ import (
 	"github.com/NishanthSpShetty/lignum/message/counter"
 )
 
-//Message
+// Message
 type Message struct {
 	Id uint64
-	//TODO: consider []byte here
+	// TODO: consider []byte here
 	Data string
 }
 
-//Topic
+// Topic
 type Topic struct {
 	counter       *counter.Counter
 	name          string
 	messageBuffer []Message
-	//number of messages allowed to stay in memory
+	// number of messages allowed to stay in memory
 	msgBufferSize   uint64
 	bufferIdx       uint64
 	lock            sync.Mutex

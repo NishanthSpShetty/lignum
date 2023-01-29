@@ -23,26 +23,25 @@ func sendConnectRequestLeader(client http.Client, host string, port int, request
 		return err
 	}
 	response, err := ioutil.ReadAll(resp.Body)
-	//TODO: We will just log whatever we receive from the leader for now
+	// TODO: We will just log whatever we receive from the leader for now
 	log.Debug().Bytes("ConnectLeaderResponse", response).Send()
 	return err
 }
 
 func connectToLeader(ctx context.Context, serviceKey string, clusteController cluster_types.ClusterController, node types.Node, httpClient http.Client, msgStore *message.MessageStore) {
-
 	if !state.isLeader() {
-		//stop loop if the current node becomes the leader
+		// stop loop if the current node becomes the leader
 
 		if !state.isConnectedLeader() {
 			log.Info().Msg("registering this service as a follower to the cluster leader.")
-			//get the leader information and send a follow request.
+			// get the leader information and send a follow request.
 			leaderNode, err := clusteController.GetLeader(serviceKey)
 			if err != nil {
 				log.Error().Err(err).Send()
 				return
 			}
 
-			//get the replication status of this node to send it to leader
+			// get the replication status of this node to send it to leader
 			// 1. need all the topics in this node
 			// 2. need current message offset per node.
 
@@ -54,7 +53,6 @@ func connectToLeader(ctx context.Context, serviceKey string, clusteController cl
 					Topic:  t.GetName(),
 					Offset: t.GetCurrentOffset(),
 				})
-
 			}
 
 			request := types.FollowerRegistration{
@@ -73,12 +71,12 @@ func connectToLeader(ctx context.Context, serviceKey string, clusteController cl
 			if err != nil {
 				log.Error().Err(err).Msg("failed to register with the leader ")
 			} else {
-				//we are connected to leader,
+				// we are connected to leader,
 				state.setConnectedToLeader(true)
 				state.setLeaderNode(&leaderNode)
 			}
 		} else {
-			//check if we can ping connected leader
+			// check if we can ping connected leader
 			if !state.getLeader().Ping(httpClient) {
 				log.Error().Msg("unable to ping the leader, will query leader status again and register the follower")
 				state.setConnectedToLeader(false)
@@ -87,10 +85,9 @@ func connectToLeader(ctx context.Context, serviceKey string, clusteController cl
 	}
 }
 
-//FollowerRegistrationRoutine Connect this service as a follower to the elected leader.
-//this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
+// FollowerRegistrationRoutine Connect this service as a follower to the elected leader.
+// this will be running forever whenever there is a change in leader this routine will make sure to connect the follower to reelected service
 func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, serviceId string, clusteController cluster_types.ClusterController, msgStore *message.MessageStore) {
-
 	thisNode := cluster_types.NewNode(serviceId, appConfig.Server.Host, appConfig.Server.Port, appConfig.Replication.WALReplicationPort)
 	ticker := time.NewTicker(appConfig.Follower.RegistrationOrLeaderCheckIntervalInSeconds * time.Second)
 
@@ -117,7 +114,6 @@ func FollowerRegistrationRoutine(ctx context.Context, appConfig config.Config, s
 }
 
 func tryAcquireLock(node cluster_types.Node, c cluster_types.ClusterController, serviceKey string, leaderSignal chan bool) (bool, error) {
-
 	acquired, err := c.AcquireLock(node, serviceKey)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to acquire lock")
@@ -134,10 +130,9 @@ func tryAcquireLock(node cluster_types.Node, c cluster_types.ClusterController, 
 }
 
 func leaderElection(ctx context.Context, node cluster_types.Node, c cluster_types.ClusterController, serviceKey string, electionInterval time.Duration, leaderSignal chan bool) {
-
 	loggedOnce := false
 	ticker := time.NewTicker(electionInterval)
-	//start polling to acquire the lock indefinitely
+	// start polling to acquire the lock indefinitely
 	acquired := state.isLeader()
 	var err error
 	for {

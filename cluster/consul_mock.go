@@ -14,7 +14,6 @@ func (m *mockConsulClient) GetKVPair(serviceKey string) (*api.KVPair, error) {
 	obj := args.Get(0)
 	if obj == nil {
 		return nil, args.Error(1)
-
 	}
 	return obj.(*api.KVPair), args.Error(1)
 }

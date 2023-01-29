@@ -21,7 +21,6 @@ func (s *Server) handleTopicGet(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) TopicHandler() http.HandlerFunc {
-
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch req.Method {

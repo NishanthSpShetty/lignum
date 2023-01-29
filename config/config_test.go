@@ -5,8 +5,7 @@ import (
 )
 
 func Test_ReadConfig(t *testing.T) {
-
-	//working directory would be same as this package directory while running the test
+	// working directory would be same as this package directory while running the test
 	configFile := "../test_data/config_test.yml"
 	config, err := GetConfig(configFile)
 	if err != nil {

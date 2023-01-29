@@ -12,12 +12,14 @@ type Metadata struct {
 }
 
 // MARKER unique bytes for delimiter data over network
-const MARKER_META = 0xAED
-const MARKER_FILE = 0xAEF
-const MARKER1 = 0xA
-const MARKER2 = 0xE
-const MARKER_FILE_END = 0xF
-const MARKER_META_END = 0xD
+const (
+	MARKER_META     = 0xAED
+	MARKER_FILE     = 0xAEF
+	MARKER1         = 0xA
+	MARKER2         = 0xE
+	MARKER_FILE_END = 0xF
+	MARKER_META_END = 0xD
+)
 
 func MetaMarker() []byte {
 	return []byte{MARKER1, MARKER2, MARKER_META_END}

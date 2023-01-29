@@ -6,9 +6,7 @@ import (
 	"github.com/hashicorp/consul/api"
 )
 
-var (
-	ErrLeaderNotFound = errors.New("failed to get leader from the cluster controller")
-)
+var ErrLeaderNotFound = errors.New("failed to get leader from the cluster controller")
 
 type IClient interface {
 	GetKVPair(serviceKey string) (*api.KVPair, error)

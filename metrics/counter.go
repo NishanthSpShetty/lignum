@@ -40,7 +40,7 @@ func IncrementMessageCount(topic string) {
 	counter, ok := TopicMessageCounter[topic]
 
 	if !ok {
-		//create new counter
+		// create new counter
 		counter = promauto.NewCounter(prometheus.CounterOpts{
 			Name: fmt.Sprintf("lignum_%s_message_count", topic),
 			Help: "Total number of messages in topic",

@@ -18,13 +18,13 @@ type PutMessageRequest struct {
 }
 
 type GetMessageRequest struct {
-	//will need range to pick the messages from
+	// will need range to pick the messages from
 	Topic string `json:"topic"`
 	From  uint64 `json:"from"`
 	To    uint64 `json:"to"`
 }
 
-//respons message struct
+// respons message struct
 type GetMessageResponse struct {
 	Messages []*types.Message `json:"messages"`
 	Count    int              `json:"count"`
@@ -54,7 +54,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 	log.Debug().Str("Data", msg.Message).Str("Topic", msg.Topic).Msg("message received")
 	mesg, liveReplication := s.message.Put(ctx, msg.Topic, msg.Message)
 	if liveReplication {
-		//write messages to replication queue
+		// write messages to replication queue
 		payload := replication.Payload{
 			Topic: msg.Topic,
 			Id:    mesg.Id,
@@ -67,13 +67,11 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
-
 	decoder := json.NewDecoder(req.Body)
 	decoder.DisallowUnknownFields()
 
 	var messageRequest GetMessageRequest = GetMessageRequest{}
 	err := decoder.Decode(&messageRequest)
-
 	if err != nil {
 		log.Error().Err(err).Msg("failed to read request body")
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -102,7 +100,7 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	}
 
 	messages := s.message.Get(messageRequest.Topic, from, to)
-	//TODO: handle nil return values
+	// TODO: handle nil return values
 	messag := GetMessageResponse{Messages: messages, Count: len(messages)}
 
 	log.Debug().Interface("ReceivedMessage", messageRequest).Send()

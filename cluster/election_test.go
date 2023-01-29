@@ -33,26 +33,25 @@ func Test_leaderStateUpdate(t *testing.T) {
 		Port: 8080,
 	}
 
-	//unable to acquire lock
+	// unable to acquire lock
 	clusterController := &MockclusterController{ConsulClusterController: &ConsulClusterController{}}
 	clusterController.On("AcquireLock", mock.Anything).Return(false)
 	leaderSignal := make(chan bool, 1)
 	tryAcquireLock(node, clusterController, serviceKey, leaderSignal)
 	assert.True(t, !state.isLeader(), "This node should is not the leader")
 
-	//when lock acquired, we need to capture leader signal channel value, so spawn new routine.
+	// when lock acquired, we need to capture leader signal channel value, so spawn new routine.
 	clusterController = &MockclusterController{ConsulClusterController: &ConsulClusterController{}}
 	clusterController.On("AcquireLock", mock.Anything).Return(true)
 	tryAcquireLock(node, clusterController, serviceKey, leaderSignal)
 	assert.True(t, state.isLeader(), "This node should be the leader")
-	//NOTE: we are not handling when channel write is not happening, as it would block indefinitely, on straight out read without any timeout on read implemented.
+	// NOTE: we are not handling when channel write is not happening, as it would block indefinitely, on straight out read without any timeout on read implemented.
 	assert.True(t, <-leaderSignal, "leader should send signal on the channel")
 
 	close(leaderSignal)
 }
 
 func Test_LeaderElection(t *testing.T) {
-
 	init_state()
 	clusterController := &MockclusterController{ConsulClusterController: &ConsulClusterController{}}
 	serviceKey := "service/lignum/key/master"
@@ -70,7 +69,6 @@ func Test_LeaderElection(t *testing.T) {
 }
 
 func Test_ConnectToLeader(t *testing.T) {
-
 	init_state()
 	fr := &types.FollowerRegistration{}
 	mockServer := httptest.NewServer( /* handle: "api/follower/register" */
@@ -114,5 +112,4 @@ func Test_ConnectToLeader(t *testing.T) {
 		Topic:  "leader_connect",
 		Offset: 1,
 	}, fr.MessageStat[0], "should recieve message stat topic")
-
 }

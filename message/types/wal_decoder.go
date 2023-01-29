@@ -8,9 +8,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//DecodeRawMessage naively implement the decoding the message written in raw bytes
+// DecodeRawMessage naively implement the decoding the message written in raw bytes
 func DecodeRawMessage(raw []byte, from, to uint64) []*Message {
-
 	buf := make([]*Message, 0, 16)
 	i := 0
 	for _, line := range strings.Split(string(raw), "\n") {
@@ -25,7 +24,7 @@ func DecodeRawMessage(raw []byte, from, to uint64) []*Message {
 			continue
 		}
 
-		//skip any messages which arent part of the given range.
+		// skip any messages which arent part of the given range.
 		if id < from || id >= to {
 			continue
 		}

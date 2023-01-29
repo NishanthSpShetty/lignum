@@ -21,7 +21,8 @@ type WalService struct {
 }
 
 func NewReplicaionService(c config.Config, mstore *message.MessageStore) *WalService {
-	return &WalService{conf: c,
+	return &WalService{
+		conf:   c,
 		mstore: mstore,
 	}
 }
@@ -30,19 +31,18 @@ func (w *WalService) updateMessageStore(md wal.Metadata) {
 	w.mstore.WalMetaUpdate(md.Topic, md.NextOffSet)
 }
 
-//handleClient for the connected client read all incoming wal request
+// handleClient for the connected client read all incoming wal request
 // We will recieve multiple wal files of different topics, need to proces everything here
 // tried to move the task to wal package however dealing with messageStore will become painful due to the cyclic deps.
 
 func (w *WalService) handleClient(c net.Conn) {
-
-	//read the meta data
-	//read the file associated with it,
+	// read the meta data
+	// read the file associated with it,
 	// format
 	// metadata + file content
 
 	buf := make([]byte, 0)
-	//indicate when to clean storage buf
+	// indicate when to clean storage buf
 	clean := false
 	var data []byte
 	var md wal.Metadata
@@ -63,12 +63,12 @@ func (w *WalService) handleClient(c net.Conn) {
 
 			marker = wal.IsMarker(b)
 
-			//if the current one is end marker, check prev bytes
+			// if the current one is end marker, check prev bytes
 			if marker {
 				l := len(buf)
 				if b == wal.MARKER_META_END {
 					if buf[l-1] == wal.MARKER2 && buf[l-2] == wal.MARKER1 {
-						//delimiter found, grab a chunk and process it
+						// delimiter found, grab a chunk and process it
 						m := make([]byte, l-2)
 						copy(m, buf[0:l-2])
 						md, err = wal.ToMeta(m)
@@ -82,9 +82,9 @@ func (w *WalService) handleClient(c net.Conn) {
 				}
 				if b == wal.MARKER_FILE_END {
 					if buf[l-1] == wal.MARKER2 && buf[l-2] == wal.MARKER1 {
-						//delimiter found, grab a chunk and process it
+						// delimiter found, grab a chunk and process it
 						data = buf[0 : l-2]
-						//fmt.Println("Content of wal\n", string(data))
+						// fmt.Println("Content of wal\n", string(data))
 						clean = true
 					}
 				}
@@ -94,11 +94,11 @@ func (w *WalService) handleClient(c net.Conn) {
 				w.updateMessageStore(md)
 				err = wal.WriteWal(w.conf.Message.DataDir, md, data)
 				if err != nil {
-					//FIXME :we need to do something when this happens ?
+					// FIXME :we need to do something when this happens ?
 					log.Error().Err(err).Msg("failed to write wal to disk")
 				}
 
-				//update message store with the updated info
+				// update message store with the updated info
 
 				buf = make([]byte, 0)
 				clean = false
@@ -115,7 +115,6 @@ func (w *WalService) handleClient(c net.Conn) {
 }
 
 func (w *WalService) start(ctx context.Context, listener net.Listener) {
-
 	for {
 		client, err := listener.Accept()
 		log.Info().
@@ -130,22 +129,19 @@ func (w *WalService) start(ctx context.Context, listener net.Listener) {
 		w.handleClient(client)
 
 	}
-
 }
 
-//wal replication service
+// wal replication service
 // Start follower must start this routine to setup wal replication from the leader
 func (w *WalService) Start(ctx context.Context) error {
-
 	addr := fmt.Sprintf("%s:%d", w.conf.Server.Host, w.conf.Replication.WALReplicationPort)
 
 	listener, err := net.Listen("tcp", addr)
-
 	if err != nil {
 		log.Error().Err(err).Send()
 		return errors.Wrap(err, "Start")
 	}
-	//FIXME: this must be killed as soon as the node is promoted to leader
+	// FIXME: this must be killed as soon as the node is promoted to leader
 	log.Info().Msg("starting WalService")
 	go w.start(ctx, listener)
 	return nil

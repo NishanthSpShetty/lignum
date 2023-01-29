@@ -32,7 +32,6 @@ func createTestConfig() config.Config {
 		},
 		Wal: config.Wal{QueueSize: 10},
 	}
-
 }
 
 func Test_serviceStopAllGoroutine(t *testing.T) {
@@ -40,7 +39,8 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 	config := createTestConfig()
 
 	clusterController := &cluster.MockclusterController{
-		ConsulClusterController: &cluster.ConsulClusterController{}}
+		ConsulClusterController: &cluster.ConsulClusterController{},
+	}
 	clusterController.On("CreateSession").Return(mock.Anything)
 	clusterController.On("CreateSession").Return(mock.Anything)
 	clusterController.On("AcquireLock").Return(true)
@@ -68,7 +68,7 @@ func Test_serviceStopAllGoroutine(t *testing.T) {
 
 	go service.Start()
 	close(service.signalChannel)
-	//give it a second to kill all
+	// give it a second to kill all
 	time.Sleep(time.Second)
 	//(t, preRoutine, runtime.NumGoroutine(), "Number of go routine when service stopped will remain same beore startup")
 }

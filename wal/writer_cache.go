@@ -50,7 +50,6 @@ func (w *walWriterCache) getWriter(topic string) *bufio.Writer {
 }
 
 func (w *walWriterCache) getFile(topic string) *os.File {
-
 	wf, ok := w.get(topic)
 	if ok {
 		return wf.file

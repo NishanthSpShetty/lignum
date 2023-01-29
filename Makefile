@@ -15,7 +15,7 @@ build: clean
 	go build -o $(BIN_NAME)
 
 fmt:
-	goimports -w $(ALL_GO_FILES)
+	gofumpt -w $(ALL_GO_FILES)
 
 test:
 	@echo "Running test"

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v2"
-	//Suggestion : sf13/viper Config solution
+	// Suggestion : sf13/viper Config solution
 )
 
 type Server struct {
@@ -31,7 +31,7 @@ type Message struct {
 
 type Follower struct {
 	HealthCheckIntervalInSecond time.Duration `yaml:"healthcheck-interval-in-seconds"`
-	//per follower ping timeout
+	// per follower ping timeout
 	HealthCheckTimeoutInMilliSeconds           time.Duration `yaml:"healthcheck-ping-timeout-in-ms"`
 	RegistrationOrLeaderCheckIntervalInSeconds time.Duration `yaml:"registration-leader-check-interval-in-seconds"`
 }
@@ -65,5 +65,4 @@ func GetConfig(fileName string) (Config, error) {
 	decoder := yaml.NewDecoder(file)
 	err = decoder.Decode(&config)
 	return config, err
-
 }

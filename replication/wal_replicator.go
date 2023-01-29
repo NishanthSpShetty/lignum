@@ -81,7 +81,7 @@ func sendFile(c *net.TCPConn, f *os.File, fi os.FileInfo) error {
 
 func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.Follower, synced bool) {
 	// get the current topic in system
-	//possible that the topics have updated after last follower registred, so we need to query the new state of the system as soon as new follower registers
+	// possible that the topics have updated after last follower registred, so we need to query the new state of the system as soon as new follower registers
 	currentTopics := msgStore.GetTopics()
 	log.Info().
 		Int("topics", len(currentTopics)).
@@ -89,11 +89,10 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 		Str("id", f.Node().Id).
 		Msg("syncing the follower")
 
-	//get the tcp connection
+	// get the tcp connection
 	addr := fmt.Sprintf("%s:%d", f.Node().Host, f.Node().ReplicationPort)
-	//TODO: we can have a iteration where no topic data is there to replicate in such case obtaining connection and doing other work is waste, optimise it.
+	// TODO: we can have a iteration where no topic data is there to replicate in such case obtaining connection and doing other work is waste, optimise it.
 	conn, err := net.Dial("tcp", addr)
-
 	if err != nil {
 		log.Error().Err(err).
 			Str("id", f.Node().Id).
@@ -102,15 +101,15 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 	}
 	log.Info().Msg("connection established with follower")
 
-	//reconcile the topics
+	// reconcile the topics
 	for _, topic := range currentTopics {
 		log.Debug().Str("topic", topic.GetName()).Msg("syncing topic to follower")
 
-		//should be the last message offset in the latest wal file
+		// should be the last message offset in the latest wal file
 		currentOffset := f.TopicOffset(topic.GetName())
 
 		files := topic.GetWalFile(currentOffset)
-		//check if files returned is empty, if the stat is upto date with the system we wont get any wal files
+		// check if files returned is empty, if the stat is upto date with the system we wont get any wal files
 
 		lastWalOffset := uint64(0)
 
@@ -119,7 +118,7 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 			fmt.Println("sending file ", fileName)
 			log.Debug().Str("filename", fileName).Str("path", file).Msg("sending wal file")
 
-			//get the topic wal files.
+			// get the topic wal files.
 			fil, err := os.Open(file)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to open file")
@@ -159,7 +158,7 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 			fil.Close()
 		}
 
-		//get the topic last message offset of synced wal
+		// get the topic last message offset of synced wal
 		log.Info().
 			Str("topic", topic.GetName()).
 			Str("id", f.Node().Id).
@@ -176,9 +175,9 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 	}
 
 	if !synced {
-		//add the updated follower to synced followers list
+		// add the updated follower to synced followers list
 		w.syncedFollwer(f)
-		//mark the node as ready
+		// mark the node as ready
 		f.MarkReady()
 	}
 
@@ -186,7 +185,7 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 }
 
 func (w *WALReplicator) topicSyncerForNewFollower(msgStore *message.MessageStore) {
-	//sync new follower when registers
+	// sync new follower when registers
 	j := 0
 	for f := range w.fq {
 		fmt.Println("Syncing new follower in iteration ", "count ", j)
@@ -198,7 +197,7 @@ func (w *WALReplicator) topicSyncerForNewFollower(msgStore *message.MessageStore
 func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
 	iteration := 0
 	for {
-		//loop over synced topic and replicate any new wal file present
+		// loop over synced topic and replicate any new wal file present
 		// FIX: potential race, writes happening in other thread
 		if len(w.syncFollwers) == 0 {
 			log.Debug().Msg("there are no follower to sync, going to sleep")
@@ -227,7 +226,7 @@ func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
 	}
 }
 
-//Start starting the wal replicator service in leader only
+// Start starting the wal replicator service in leader only
 func (w *WALReplicator) Start(ctx context.Context, replicationTimeoutInMs time.Duration, msgStore *message.MessageStore) error {
 	w.client = http.Client{
 		Transport: &http.Transport{
@@ -236,7 +235,7 @@ func (w *WALReplicator) Start(ctx context.Context, replicationTimeoutInMs time.D
 		Timeout: replicationTimeoutInMs,
 	}
 
-	//wait till this node becomes a leader
+	// wait till this node becomes a leader
 	go func() {
 		<-w.signalLeader
 		log.Info().Msg("starting wal replicator routine in leader")

@@ -30,7 +30,6 @@ func (c *Counter) Set(newValue uint64) {
 			return
 		}
 	}
-
 }
 
 func (c *Counter) Get() uint64 {

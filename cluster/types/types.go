@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//Leader has port information of the leader
+// Leader has port information of the leader
 type Leader struct {
 	Port int
 }
@@ -21,7 +21,7 @@ type ClusterController interface {
 	DestroySession() error
 }
 
-//NodeNodeConfig contains the node information
+// NodeNodeConfig contains the node information
 type Node struct {
 	Id              string `json:"id"`
 	Host            string `json:"host"`
@@ -32,7 +32,6 @@ type Node struct {
 
 func (n Node) getJson() ([]byte, error) {
 	return json.Marshal(n)
-
 }
 
 func (n Node) Json() []byte {
@@ -56,14 +55,13 @@ type MessageStat struct {
 	Offset uint64 `json:"offset"`
 }
 
-//FollowerRegistration follower registrartion request data
+// FollowerRegistration follower registrartion request data
 type FollowerRegistration struct {
 	Node        Node          `json:"node"`
 	MessageStat []MessageStat `json:"message-stat"`
 }
 
 func (n *Node) Ping(client http.Client) bool {
-
 	pingUrl := fmt.Sprintf("http://%s:%d/ping", n.Host, n.Port)
 	response, err := client.Get(pingUrl)
 	if err != nil {
@@ -75,6 +73,6 @@ func (n *Node) Ping(client http.Client) bool {
 	if response.StatusCode == http.StatusOK {
 		return true
 	}
-	//anything else return false, not expecting any other value apart from status OK(200)
+	// anything else return false, not expecting any other value apart from status OK(200)
 	return false
 }

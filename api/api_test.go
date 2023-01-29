@@ -42,7 +42,6 @@ func TestGetMessage(t *testing.T) {
 		requestHandler(response, request)
 
 		assert.Equal(t, http.StatusBadRequest, response.Code, "invalid request returns error")
-
 	})
 
 	t.Run("returns expected message when messages are written", func(t *testing.T) {

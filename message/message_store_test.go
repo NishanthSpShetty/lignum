@@ -52,7 +52,6 @@ func makeMessages(count, bufferSize uint64) []*types.Message {
 }
 
 func Test_messagePut(t *testing.T) {
-
 	type args struct {
 		topic string
 		msg   string
@@ -75,7 +74,8 @@ func Test_messagePut(t *testing.T) {
 			message: &MessageStore{
 				messageBufferSize: 10,
 				walChannel:        make(chan<- wal.Payload, 10),
-				topic:             make(map[string]*types.Topic)},
+				topic:             make(map[string]*types.Topic),
+			},
 			args: args{
 				topic: "test_new",
 				msg:   "this is test log 001",

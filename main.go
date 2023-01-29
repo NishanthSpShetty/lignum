@@ -17,7 +17,7 @@ const (
 )
 
 func initialiseLogger(development bool, level zerolog.Level) {
-	//zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	// zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log.Logger = log.With().Caller().Logger()
 	if development {
 		log.Logger = log.Logger.Output(zerolog.ConsoleWriter{Out: os.Stderr})
@@ -31,10 +31,9 @@ func isDevelopment(dev_mode string) bool {
 }
 
 func main() {
-
 	development := false
-	//TODO: i don't feel good about the variable name, but i dont know what to name either
-	//also should this be in config or args??
+	// TODO: i don't feel good about the variable name, but i dont know what to name either
+	// also should this be in config or args??
 	devMode, present := os.LookupEnv("ENV")
 	if present && isDevelopment(devMode) {
 		development = true
@@ -77,5 +76,4 @@ func main() {
 		}
 		return
 	}
-
 }

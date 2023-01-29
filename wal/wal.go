@@ -12,11 +12,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//contains functions to manage wal logs and storage backend
+// contains functions to manage wal logs and storage backend
 
 type Payload struct {
 	Topic string
-	//should this be in payload
+	// should this be in payload
 	Id      uint64
 	Data    string
 	Promote bool
@@ -44,7 +44,6 @@ func New(conf config.Wal, logDir string, queue <-chan Payload) *Wal {
 func (w *Wal) createFile(dataDir string, topic string, id uint64) (*os.File, error) {
 	path := getTopicDatDir(dataDir, topic)
 	err := createPath(path)
-
 	if err != nil {
 		return nil, err
 	}
@@ -60,13 +59,13 @@ func (w *Wal) ResetWal(topic string) {
 	w.walCache.delete(topic)
 }
 
-//getWalWriter return the WAL writer if present.
+// getWalWriter return the WAL writer if present.
 // create new file and WAL writer for the given topic
 func (w *Wal) getWalWriter(payload Payload) *bufio.Writer {
 	if wf, ok := w.walCache.get(payload.Topic); ok {
 		return wf.writer
 	}
-	//cache miss, create new WalFile
+	// cache miss, create new WalFile
 	f, err := w.createFile(w.dataDir, payload.Topic, payload.Id)
 	if err != nil {
 		log.Error().Err(err).Str("topic", payload.Topic).Uint64("offset", payload.Id).Msg("failed to create new wal file")
@@ -85,7 +84,7 @@ func (w *Wal) Promote(topic string) error {
 
 	if wf, ok := w.walCache.get(topic); ok {
 		f = wf.file
-		//cleanup immediately as new file would be created by another message if delayed.
+		// cleanup immediately as new file would be created by another message if delayed.
 		w.ResetWal(topic)
 	} else {
 		return fmt.Errorf("WAL file does not exist for topic: %s", topic)
@@ -104,7 +103,7 @@ func (w *Wal) Promote(topic string) error {
 }
 
 func (w *Wal) writeToWal(payload Payload) {
-	//read the payload message,
+	// read the payload message,
 	if payload.Promote {
 		err := w.Promote(payload.Topic)
 		if err != nil {
@@ -113,16 +112,15 @@ func (w *Wal) writeToWal(payload Payload) {
 		return
 	}
 
-	//get the wal file associated with the topic
+	// get the wal file associated with the topic
 	file := w.getWalWriter(payload)
-	//create if file does not exist.
+	// create if file does not exist.
 	file.WriteString(fmt.Sprintf("%d%s%s\n", payload.Id, MESSAGE_KEY_VAL_SEPERATOR, payload.Data))
-	//append the message to file
+	// append the message to file
 	file.Flush()
 }
 
 func (w *Wal) StartWalWriter(ctx context.Context) {
-
 	log.Debug().Msg("Started WAL writer service")
 	go func() {
 		for {
@@ -134,7 +132,6 @@ func (w *Wal) StartWalWriter(ctx context.Context) {
 				log.Debug().Interface("payload", payload).Msg("write")
 				w.writeToWal(payload)
 			}
-
 		}
 	}()
 }
