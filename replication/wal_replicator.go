@@ -201,7 +201,7 @@ func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
 		// FIX: potential race, writes happening in other thread
 		if len(w.syncFollwers) == 0 {
 			log.Debug().Msg("there are no follower to sync, going to sleep")
-			time.Sleep(time.Second * 3)
+			time.Sleep(w.syncIntervalInSeconds)
 			continue
 		}
 
