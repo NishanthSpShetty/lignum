@@ -12,82 +12,82 @@ services:
     networks:
       - lignum-net
 
-  lignum:
-    hostname: lignum
-    build: .
-    ports:
-      - "8080:8080"
-    volumes:
-      - .:/code
-      - logvolume01:/var/log
-    depends_on:
-      consul:
-        condition: service_started
-    networks:
-      - lignum-net
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: monitoring_prometheus
-    restart: unless-stopped
-    volumes:
-      - ./data/prometheus/config:/etc/prometheus/
-      - ./data/prometheus/data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-    expose:
-      - 9090
-    ports:
-      - 9090:9090
-    links:
-      - cadvisor:cadvisor
-      - node-exporter:node-exporter
-    networks:
-      - lignum-net
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: monitoring_node_exporter
-    restart: unless-stopped
-    expose:
-      - 9100
-    networks:
-      - lignum-net
-
-  cadvisor:
-    image: google/cadvisor:latest
-    container_name: monitoring_cadvisor
-    restart: unless-stopped
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    expose:
-      - 9080
-    networks:
-      - lignum-net
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: monitoring_grafana
-    restart: unless-stopped
-    links:
-      - prometheus:prometheus
-    volumes:
-      - ./data/grafana:/var/lib/grafana
-    ports:
-      - 3000:3000
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_SECURITY_ADMIN_USER=admin
-    networks:
-      - lignum-net
-
-
-volumes:
-  logvolume01: {}
+        #  lignum:
+        #    hostname: lignum
+        #    build: .
+        #    ports:
+        #      - "8080:8080"
+        #    volumes:
+        #      - .:/code
+        #      - logvolume01:/var/log
+        #    depends_on:
+        #      consul:
+        #        condition: service_started
+        #    networks:
+        #      - lignum-net
+        #
+        #  prometheus:
+        #    image: prom/prometheus:latest
+        #    container_name: monitoring_prometheus
+        #    restart: unless-stopped
+        #    volumes:
+        #      - ./data/prometheus/config:/etc/prometheus/
+        #      - ./data/prometheus/data:/prometheus
+        #    command:
+        #      - '--config.file=/etc/prometheus/prometheus.yml'
+        #      - '--storage.tsdb.path=/prometheus'
+        #    expose:
+        #      - 9090
+        #    ports:
+        #      - 9090:9090
+        #    links:
+        #      - cadvisor:cadvisor
+        #      - node-exporter:node-exporter
+        #    networks:
+        #      - lignum-net
+        #
+        #  node-exporter:
+        #    image: prom/node-exporter:latest
+        #    container_name: monitoring_node_exporter
+        #    restart: unless-stopped
+        #    expose:
+        #      - 9100
+        #    networks:
+        #      - lignum-net
+        #
+        #  cadvisor:
+        #    image: google/cadvisor:latest
+        #    container_name: monitoring_cadvisor
+        #    restart: unless-stopped
+        #    volumes:
+        #      - /:/rootfs:ro
+        #      - /var/run:/var/run:rw
+        #      - /sys:/sys:ro
+        #      - /var/lib/docker/:/var/lib/docker:ro
+        #    expose:
+        #      - 9080
+        #    networks:
+        #      - lignum-net
+        #
+        #  grafana:
+        #    image: grafana/grafana:latest
+        #    container_name: monitoring_grafana
+        #    restart: unless-stopped
+        #    links:
+        #      - prometheus:prometheus
+        #    volumes:
+        #      - ./data/grafana:/var/lib/grafana
+        #    ports:
+        #      - 3000:3000
+        #    environment:
+        #      - GF_SECURITY_ADMIN_PASSWORD=admin
+        #      - GF_SECURITY_ADMIN_USER=admin
+        #    networks:
+        #      - lignum-net
+        #
+        #
+        #volumes:
+        #  logvolume01: {}
 
 networks:
   lignum-net:
