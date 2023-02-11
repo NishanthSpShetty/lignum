@@ -63,6 +63,14 @@ func (t *Topic) getFileOffset(id uint64) uint64 {
 	return id - mod
 }
 
+func (t *Topic) Lock() {
+	t.lock.Lock()
+}
+
+func (t *Topic) Unlock() {
+	t.lock.Unlock()
+}
+
 func (t *Topic) readFromBuffer(from, to uint64) []*Message {
 	// if both offset points to inbuffer messages, read from buffer.
 	msgLen := t.getMessageSizeInBuffer()
@@ -166,15 +174,11 @@ func (t *Topic) getMessageSizeInBuffer() uint64 {
 }
 
 func (t *Topic) ResetMessageBuffer() {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	t.messageBuffer = make([]Message, t.msgBufferSize)
+	//	t.messageBuffer = make([]Message, t.msgBufferSize)
 	t.bufferIdx = 0
 }
 
 func (t *Topic) Push(message Message) Message {
-	t.lock.Lock()
-	defer t.lock.Unlock()
 	t.messageBuffer[t.bufferIdx] = message
 	t.bufferIdx++
 	return message
