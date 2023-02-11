@@ -113,6 +113,10 @@ func (t *Topic) readFromLogs(fromOffset, toOffset, from, to uint64) []*Message {
 // If message ranges lie within buffered messages, return them, if not check if it already written to files.
 func (t *Topic) GetMessages(from, to uint64) []*Message {
 	latestMessageOffset := t.GetCurrentOffset()
+
+	if from > latestMessageOffset {
+		return []*Message{}
+	}
 	// if to is greater than latest message offset in the system adjust it.
 	if to > latestMessageOffset {
 		to = latestMessageOffset
