@@ -4,7 +4,7 @@ CONFIG_FILE="config.yml"
 LCONFIG_FILE="configleader.yml"
 export ENV=development
 
-.PHONY: test
+.PHONY: test proto
 
 clean:
 	@test ! -e bin || rm -r bin
@@ -32,3 +32,9 @@ run:
 	@go run main.go -config $(CONFIG_FILE)
 lint:
 	golint ./...
+
+proto:
+	@echo "generating grpc code"
+	@protoc --go_out=. --go_opt=paths=source_relative \
+    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+	proto/lignum.proto
