@@ -156,8 +156,10 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) (t
 		topic = m.createNewTopic(topicName, m.messageBufferSize)
 	}
 
-	fmt.Println("topic  ", topicName)
 	metrics.IncrementMessageCount(topic.GetName())
+
+	topic.Lock()
+	defer topic.Unlock()
 	currentOffset := topic.GetCurrentOffset()
 	if currentOffset != 0 && currentOffset%uint64(topic.GetMessageBufferSize()) == 0 {
 		// we have filled the message store buffer, flush to file

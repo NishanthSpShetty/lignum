@@ -1,4 +1,4 @@
-if [[ $# -ne 2 ]]; then
+if [ $# -ne 2 ]; then
     echo "specify from and to in arguments"
     exit 
 fi
@@ -9,4 +9,4 @@ to=$2
  curl --request GET \
   --url http://localhost:8080/api/message \
   --header 'Content-Type: application/json' \
-  --data "{ \"topic\":\"test\", \"from\":$1, \"to\": $2 }" | jq
+  --data "{ \"topic\":\"dmesg_log\", \"from\":$1, \"to\": $2 }" | jq

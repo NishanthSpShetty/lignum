@@ -2,7 +2,7 @@
 
 server:
   host: "0.0.0.0"
-  port: 8081
+  port: 8080
   service-key: "service/lignum/key/master"
 
 consul:
@@ -15,12 +15,12 @@ consul:
 
 message:
   initial-size-per-topic: 10
-  data-dir: "topics2"
+  data-dir: "topics"
 
 follower:
   healthcheck-interval-in-seconds: 1
   healthcheck-ping-timeout-in-ms: 100
-  registration-leader-check-interval-in-seconds: 1
+  registration-leader-check-interval-in-seconds: 5
 
 replication:
   internal-queue-size: 1024

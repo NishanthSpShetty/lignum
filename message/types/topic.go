@@ -63,6 +63,14 @@ func (t *Topic) getFileOffset(id uint64) uint64 {
 	return id - mod
 }
 
+func (t *Topic) Lock() {
+	t.lock.Lock()
+}
+
+func (t *Topic) Unlock() {
+	t.lock.Unlock()
+}
+
 func (t *Topic) readFromBuffer(from, to uint64) []*Message {
 	// if both offset points to inbuffer messages, read from buffer.
 	msgLen := t.getMessageSizeInBuffer()
@@ -105,6 +113,10 @@ func (t *Topic) readFromLogs(fromOffset, toOffset, from, to uint64) []*Message {
 // If message ranges lie within buffered messages, return them, if not check if it already written to files.
 func (t *Topic) GetMessages(from, to uint64) []*Message {
 	latestMessageOffset := t.GetCurrentOffset()
+
+	if from > latestMessageOffset {
+		return []*Message{}
+	}
 	// if to is greater than latest message offset in the system adjust it.
 	if to > latestMessageOffset {
 		to = latestMessageOffset
@@ -166,15 +178,11 @@ func (t *Topic) getMessageSizeInBuffer() uint64 {
 }
 
 func (t *Topic) ResetMessageBuffer() {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	t.messageBuffer = make([]Message, t.msgBufferSize)
+	//	t.messageBuffer = make([]Message, t.msgBufferSize)
 	t.bufferIdx = 0
 }
 
 func (t *Topic) Push(message Message) Message {
-	t.lock.Lock()
-	defer t.lock.Unlock()
 	t.messageBuffer[t.bufferIdx] = message
 	t.bufferIdx++
 	return message
