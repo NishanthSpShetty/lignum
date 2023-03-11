@@ -11,6 +11,7 @@ import (
 type Server struct {
 	Host       string `yaml:"host"`
 	Port       int    `yaml:"port"`
+	GrpcPort   int    `yaml:"grpc-port"`
 	ServiceKey string `yaml:"service-key"`
 }
 

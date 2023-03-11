@@ -7,10 +7,11 @@
 package proto
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -467,17 +468,20 @@ func file_proto_lignum_proto_rawDescGZIP() []byte {
 	return file_proto_lignum_proto_rawDescData
 }
 
-var file_proto_lignum_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
-var file_proto_lignum_proto_goTypes = []interface{}{
-	(*EchoMessage)(nil),  // 0: proto.EchoMessage
-	(*PingResponse)(nil), // 1: proto.PingResponse
-	(*PingRequest)(nil),  // 2: proto.PingRequest
-	(*Message)(nil),      // 3: proto.Message
-	(*Messages)(nil),     // 4: proto.Messages
-	(*Query)(nil),        // 5: proto.Query
-	(*Topic)(nil),        // 6: proto.Topic
-	(*Ok)(nil),           // 7: proto.Ok
-}
+var (
+	file_proto_lignum_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+	file_proto_lignum_proto_goTypes  = []interface{}{
+		(*EchoMessage)(nil),  // 0: proto.EchoMessage
+		(*PingResponse)(nil), // 1: proto.PingResponse
+		(*PingRequest)(nil),  // 2: proto.PingRequest
+		(*Message)(nil),      // 3: proto.Message
+		(*Messages)(nil),     // 4: proto.Messages
+		(*Query)(nil),        // 5: proto.Query
+		(*Topic)(nil),        // 6: proto.Topic
+		(*Ok)(nil),           // 7: proto.Ok
+	}
+)
+
 var file_proto_lignum_proto_depIdxs = []int32{
 	3, // 0: proto.Messages.message:type_name -> proto.Message
 	0, // 1: proto.Lignum.Echo:input_type -> proto.EchoMessage

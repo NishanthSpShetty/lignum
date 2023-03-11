@@ -8,6 +8,7 @@ package proto
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -95,21 +96,24 @@ type LignumServer interface {
 }
 
 // UnimplementedLignumServer must be embedded to have forward compatible implementations.
-type UnimplementedLignumServer struct {
-}
+type UnimplementedLignumServer struct{}
 
 func (UnimplementedLignumServer) Echo(context.Context, *EchoMessage) (*EchoMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Echo not implemented")
 }
+
 func (UnimplementedLignumServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
+
 func (UnimplementedLignumServer) Send(context.Context, *Message) (*Ok, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
+
 func (UnimplementedLignumServer) Read(context.Context, *Query) (*Messages, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Read not implemented")
 }
+
 func (UnimplementedLignumServer) CreateTopic(context.Context, *Topic) (*Ok, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTopic not implemented")
 }

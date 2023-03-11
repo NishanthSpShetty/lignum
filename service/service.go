@@ -135,5 +135,5 @@ func (s *Service) Start() error {
 	// mark service as running
 	s.SetStarted()
 	// once the cluster is setup we should be able start api service
-	return s.apiServer.Serve()
+	return s.apiServer.Start()
 }

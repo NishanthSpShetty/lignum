@@ -3,6 +3,7 @@
 server:
   host: "0.0.0.0"
   port: 8080
+  grpc-port: 9080
   service-key: "service/lignum/key/master"
 
 consul:
