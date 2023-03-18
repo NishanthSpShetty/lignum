@@ -1,6 +1,6 @@
 module github.com/NishanthSpShetty/lignum
 
-go 1.18
+go 1.20
 
 require (
 	github.com/NishanthSpShetty/grpc-interceptors v0.2.0
