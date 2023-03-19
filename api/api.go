@@ -34,6 +34,7 @@ type Server struct {
 }
 
 func (s *Server) Stop(ctx context.Context) {
+	s.grpcServer.GracefulStop()
 	s.httpServer.Shutdown(ctx)
 }
 
