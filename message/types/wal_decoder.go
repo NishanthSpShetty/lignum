@@ -30,7 +30,7 @@ func DecodeRawMessage(raw []byte, from, to uint64) []*Message {
 		}
 
 		message.Id = id
-		message.Data = splits[1]
+		message.Data = []byte(splits[1])
 		buf = append(buf, &message)
 		i += 1
 	}

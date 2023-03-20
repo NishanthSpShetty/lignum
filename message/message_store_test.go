@@ -39,7 +39,7 @@ func createMsgStore(name string, count, msgBufferSize uint64) *MessageStore {
 
 func makeMessage() *types.Message {
 	id := mycounter.Next()
-	return &types.Message{Id: id, Data: fmt.Sprintf("this is message %d", id)}
+	return &types.Message{Id: id, Data: []byte(fmt.Sprintf("this is message %d", id))}
 }
 
 func makeMessages(count, bufferSize uint64) []*types.Message {
@@ -81,7 +81,7 @@ func Test_messagePut(t *testing.T) {
 				msg:   "this is test log 001",
 			},
 			getargs:  getargs{from: 0, to: 1},
-			expected: []*types.Message{{Id: 0, Data: "this is test log 001"}},
+			expected: []*types.Message{{Id: 0, Data: []byte("this is test log 001")}},
 		},
 		{
 			name:    "Messages will be appended to existing topic",
@@ -91,7 +91,7 @@ func Test_messagePut(t *testing.T) {
 				msg:   "this is test log 002",
 			},
 			getargs:  getargs{from: 0, to: 2},
-			expected: append(makeMessages(1, 10)[:1], &types.Message{Id: 1, Data: "this is test log 002"}),
+			expected: append(makeMessages(1, 10)[:1], &types.Message{Id: 1, Data: []byte("this is test log 002")}),
 		},
 		{
 			name:    "new topic will be created along with existing topics",
@@ -101,13 +101,13 @@ func Test_messagePut(t *testing.T) {
 				msg:   "this is test log 001",
 			},
 			getargs:  getargs{from: 0, to: 1},
-			expected: []*types.Message{{Id: 0, Data: "this is test log 001"}},
+			expected: []*types.Message{{Id: 0, Data: []byte("this is test log 001")}},
 		},
 	}
 
 	for _, tt := range testCases {
 		fmt.Println(tt.message.topic)
-		tt.message.Put(context.Background(), tt.args.topic, tt.args.msg)
+		tt.message.Put(context.Background(), tt.args.topic, []byte(tt.args.msg))
 		assert.Equal(t, tt.expected, tt.message.Get(tt.args.topic, tt.getargs.from, tt.getargs.to), "testPut: %s ", tt.name)
 	}
 }

@@ -101,7 +101,7 @@ func Test_ConnectToLeader(t *testing.T) {
 	walChannel := make(chan wal.Payload, 10)
 	msg := message.New(config.Message{InitialSizePerTopic: 10}, walChannel)
 
-	msg.Put(context.Background(), "leader_connect", " this is a leader connect message")
+	msg.Put(context.Background(), "leader_connect", []byte(" this is a leader connect message"))
 	connectToLeader(context.Background(), serviceKey, clusterController, node, *http.DefaultClient, msg)
 
 	assert.True(t, state.isConnectedLeader(), "should connect to leader")
