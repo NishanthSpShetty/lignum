@@ -45,7 +45,7 @@ func TestGetMessage(t *testing.T) {
 	})
 
 	t.Run("returns expected message when messages are written", func(t *testing.T) {
-		dummyMsg := "this is dummy message"
+		dummyMsg := []byte("this is dummy message")
 
 		msg.Put(context.Background(), DummyTopic, dummyMsg)
 		request, _ := http.NewRequest(http.MethodGet, "/api/message", bytes.NewReader(req))

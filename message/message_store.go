@@ -29,7 +29,7 @@ type Payload struct {
 	Topic string
 	// should this be in payload
 	Id   uint64
-	Data string
+	Data []byte
 }
 
 func New(msgConfig config.Message, walChannel chan<- wal.Payload) *MessageStore {
@@ -146,7 +146,7 @@ func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *t
 }
 
 // Put write message to store and return the new Message and bool value indicating live replication
-func (m *MessageStore) Put(ctx context.Context, topicName string, msg string) (types.Message, bool) {
+func (m *MessageStore) Put(ctx context.Context, topicName string, msg []byte) (types.Message, bool) {
 	// check if the topic exist
 	topic, ok := m.topic[topicName]
 

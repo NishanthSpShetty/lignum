@@ -16,7 +16,7 @@ func Test_getWalOperation(t *testing.T) {
 	payload := Payload{
 		Topic: "test_wal",
 		Id:    101,
-		Data:  "test wal writer",
+		Data:  []byte("test wal writer"),
 	}
 	writer := wal.getWalWriter(payload)
 
@@ -60,7 +60,7 @@ func Test_walWrite(t *testing.T) {
 	payload := Payload{
 		Topic: "test_topic",
 		Id:    10,
-		Data:  "test wal writer",
+		Data:  []byte("test wal writer"),
 	}
 
 	ctx := context.Background()
@@ -69,7 +69,7 @@ func Test_walWrite(t *testing.T) {
 	// write payload to queue
 	q <- payload
 	q <- payload
-	payload2 := Payload{Topic: "another_topic", Id: 20, Data: " uneventful event "}
+	payload2 := Payload{Topic: "another_topic", Id: 20, Data: []byte(" uneventful event ")}
 	q <- payload2
 
 	walName := fmt.Sprintf(logFileStr, payload.Topic, payload.Topic, payload.Id, "qwal")
@@ -90,7 +90,7 @@ func Test_walWrite(t *testing.T) {
 	payload = Payload{
 		Topic: "test_topic",
 		Id:    200,
-		Data:  "test wal writer after promoting prev file",
+		Data:  []byte("test wal writer after promoting prev file"),
 	}
 	q <- payload
 	q <- payload

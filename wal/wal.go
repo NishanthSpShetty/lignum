@@ -18,7 +18,7 @@ type Payload struct {
 	Topic string
 	// should this be in payload
 	Id      uint64
-	Data    string
+	Data    []byte
 	Promote bool
 }
 
