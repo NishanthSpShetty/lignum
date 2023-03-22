@@ -107,7 +107,6 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	ms := make([]Message, 0, len(messages))
 	// TODO: handle nil return values
 	for _, m := range messages {
-		fmt.Printf("%+v\n", m.Data)
 		ms = append(ms, Message{
 			Id:   m.Id,
 			Data: string(m.Data),
@@ -115,6 +114,5 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	}
 	messag := GetMessageResponse{Messages: ms, Count: len(messages)}
 
-	log.Debug().Interface("ReceivedMessage", messageRequest).Send()
 	json.NewEncoder(w).Encode(messag)
 }
