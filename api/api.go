@@ -13,10 +13,12 @@ import (
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
+	"github.com/NishanthSpShetty/lignum/proto"
 	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 )
 
 type Server struct {
@@ -24,12 +26,15 @@ type Server struct {
 	replicationQueue chan<- replication.Payload
 	config           config.Server
 	httpServer       *http.Server
+	grpcServer       *grpc.Server
 	message          *message.MessageStore
 	follower         *follower.FollowerRegistry
-	listener         net.Listener
+	httpListener     net.Listener
+	proto.UnimplementedLignumServer
 }
 
 func (s *Server) Stop(ctx context.Context) {
+	s.grpcServer.GracefulStop()
 	s.httpServer.Shutdown(ctx)
 }
 
@@ -49,15 +54,25 @@ func NewServer(serviceId string, queue chan<- replication.Payload, config config
 		return nil, errors.Wrap(err, "NewServer failed to listen on given address ")
 	}
 
-	return &Server{
+	s := &Server{
 		serviceId:        serviceId,
 		config:           config,
 		replicationQueue: queue,
 		httpServer:       &httpServer,
 		message:          message,
 		follower:         follower,
-		listener:         ln,
-	}, nil
+		httpListener:     ln,
+	}
+	s.setupGrpc()
+
+	http.HandleFunc("/ping", s.ping())
+	http.HandleFunc("/api/follower/register", s.registerFollower())
+	http.HandleFunc("/internal/api/replicate", s.replicate())
+	http.HandleFunc("/api/message", s.handleMessage())
+	http.HandleFunc("/api/topics", s.TopicHandler())
+	http.Handle("/metrics", promhttp.Handler())
+
+	return s, nil
 }
 
 func (s *Server) registerFollower() http.HandlerFunc {
@@ -92,17 +107,12 @@ func (s *Server) handleMessage() http.HandlerFunc {
 	}
 }
 
-func (s *Server) Serve() error {
+func (s *Server) Start() error {
 	log.Info().
 		Str("Host", s.config.Host).
 		Int("Port", s.config.Port).
 		Msg("Starting HTTP service")
 
-	http.HandleFunc("/ping", s.ping())
-	http.HandleFunc("/api/follower/register", s.registerFollower())
-	http.HandleFunc("/internal/api/replicate", s.replicate())
-	http.HandleFunc("/api/message", s.handleMessage())
-	http.HandleFunc("/api/topics", s.TopicHandler())
-	http.Handle("/metrics", promhttp.Handler())
-	return s.httpServer.Serve(s.listener)
+	go s.startGrpc()
+	return s.httpServer.Serve(s.httpListener)
 }

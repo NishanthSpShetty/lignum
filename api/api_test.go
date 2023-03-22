@@ -11,7 +11,6 @@ import (
 	"github.com/NishanthSpShetty/lignum/config"
 	"github.com/NishanthSpShetty/lignum/follower"
 	"github.com/NishanthSpShetty/lignum/message"
-	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/NishanthSpShetty/lignum/wal"
 	"github.com/stretchr/testify/assert"
@@ -45,7 +44,7 @@ func TestGetMessage(t *testing.T) {
 	})
 
 	t.Run("returns expected message when messages are written", func(t *testing.T) {
-		dummyMsg := "this is dummy message"
+		dummyMsg := []byte("this is dummy message")
 
 		msg.Put(context.Background(), DummyTopic, dummyMsg)
 		request, _ := http.NewRequest(http.MethodGet, "/api/message", bytes.NewReader(req))
@@ -53,7 +52,7 @@ func TestGetMessage(t *testing.T) {
 		requestHandler(response, request)
 		json.Unmarshal(response.Body.Bytes(), &responseData)
 
-		expected := []*types.Message{{Id: 0, Data: dummyMsg}}
-		assert.Equal(t, expected, responseData.Messages)
+		assert.Equal(t, string(dummyMsg), responseData.Messages[0].Data)
+		assert.Equal(t, uint64(0), responseData.Messages[0].Id)
 	})
 }

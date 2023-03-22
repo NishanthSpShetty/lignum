@@ -9,9 +9,8 @@ import (
 
 // Message
 type Message struct {
-	Id uint64
-	// TODO: consider []byte here
-	Data string
+	Id   uint64
+	Data []byte
 }
 
 // Topic

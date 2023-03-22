@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/NishanthSpShetty/lignum/proto";
+
+service Lignum {
+  rpc Echo(EchoMessage) returns (EchoMessage) {}
+  rpc Ping(PingRequest) returns (PingResponse) {}
+
+  rpc Send(Message) returns (Ok) {}
+  rpc Read(Query) returns (Messages) {}
+  rpc CreateTopic(Topic) returns (Ok) {}
+}
+
+message EchoMessage { string message = 1; }
+message PingResponse { string message = 1; }
+message PingRequest {}
+
+message Message {
+  string topic = 1;
+  bytes data = 2;
+}
+
+message Messages {
+  string topic = 1;
+  repeated Message message = 2;
+}
+
+message Query {
+  string topic = 1;
+  uint64 from = 2;
+  uint64 to = 3;
+}
+
+message Topic { string name = 1; }
+
+message Ok {}
