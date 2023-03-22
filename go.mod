@@ -4,10 +4,11 @@ go 1.20
 
 require (
 	github.com/NishanthSpShetty/grpc-interceptors v0.2.0
+	github.com/gogo/status v1.1.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/consul/api v1.8.1
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/rs/zerolog v1.23.0
 	github.com/stretchr/testify v1.7.0
 	google.golang.org/grpc v1.53.0
@@ -25,7 +26,6 @@ require (
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/gogo/googleapis v0.0.0-20180223154316-0cd9801be74a // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/gogo/status v1.1.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
 	github.com/hashicorp/go-hclog v0.12.0 // indirect
