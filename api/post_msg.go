@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/NishanthSpShetty/lignum/message/types"
 	"github.com/NishanthSpShetty/lignum/metrics"
 	"github.com/NishanthSpShetty/lignum/replication"
 	"github.com/rs/zerolog/log"
@@ -24,10 +23,15 @@ type GetMessageRequest struct {
 	To    uint64 `json:"to"`
 }
 
+type Message struct {
+	Id   uint64
+	Data string
+}
+
 // respons message struct
 type GetMessageResponse struct {
-	Messages []*types.Message `json:"messages"`
-	Count    int              `json:"count"`
+	Messages []Message `json:"messages"`
+	Count    int       `json:"count"`
 }
 
 func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
@@ -100,8 +104,16 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	}
 
 	messages := s.message.Get(messageRequest.Topic, from, to)
+	ms := make([]Message, 0, len(messages))
 	// TODO: handle nil return values
-	messag := GetMessageResponse{Messages: messages, Count: len(messages)}
+	for _, m := range messages {
+		fmt.Printf("%+v\n", m.Data)
+		ms = append(ms, Message{
+			Id:   m.Id,
+			Data: string(m.Data),
+		})
+	}
+	messag := GetMessageResponse{Messages: ms, Count: len(messages)}
 
 	log.Debug().Interface("ReceivedMessage", messageRequest).Send()
 	json.NewEncoder(w).Encode(messag)

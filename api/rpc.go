@@ -37,8 +37,37 @@ func (s *Server) CreateTopic(context.Context, *proto.Topic) (*proto.Ok, error) {
 }
 
 // Read implements proto.LignumServer
-func (s *Server) Read(context.Context, *proto.Query) (*proto.Messages, error) {
-	panic("unimplemented")
+func (s *Server) Read(ctx context.Context, req *proto.Query) (*proto.Messages, error) {
+	resp := &proto.Messages{}
+
+	from := req.GetFrom()
+	to := req.GetTo()
+	topic := req.GetTopic()
+
+	if from < 0 || to <= from {
+		return nil, status.Error(codes.InvalidArgument, "invalid range specified")
+	}
+
+	if topic == "" {
+		return nil, status.Error(codes.InvalidArgument, "topic is empty")
+	}
+
+	if !s.message.TopicExist(topic) {
+		log.Error().Str("Topic", topic).Msg("topic does not exist")
+		return nil, status.Error(codes.InvalidArgument, "topic does not exist")
+	}
+
+	messages := s.message.Get(topic, from, to)
+	ms := make([]*proto.Message, 0, len(messages))
+	for _, m := range messages {
+		ms = append(ms, &proto.Message{
+			Topic: topic,
+			Data:  m.Data,
+		})
+	}
+
+	resp.Message = ms
+	return resp, nil
 }
 
 // Send implements proto.LignumServer
