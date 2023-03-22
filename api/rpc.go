@@ -7,9 +7,12 @@ import (
 
 	interceptors "github.com/NishanthSpShetty/grpc-interceptors"
 	proto "github.com/NishanthSpShetty/lignum/proto"
+	"github.com/NishanthSpShetty/lignum/replication"
+	"github.com/gogo/status"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var _ proto.LignumServer = (*Server)(nil)
@@ -39,8 +42,26 @@ func (s *Server) Read(context.Context, *proto.Query) (*proto.Messages, error) {
 }
 
 // Send implements proto.LignumServer
-func (s *Server) Send(context.Context, *proto.Message) (*proto.Ok, error) {
-	panic("unimplemented")
+func (s *Server) Send(ctx context.Context, req *proto.Message) (*proto.Ok, error) {
+	data := req.GetData()
+	topic := req.GetTopic()
+
+	if topic == "" {
+		return nil, status.Error(codes.InvalidArgument, "topic is empty")
+	}
+
+	log.Debug().Bytes("Data", data).Str("Topic", topic).Msg("message received")
+	mesg, liveReplication := s.message.Put(ctx, topic, data)
+	if liveReplication {
+		// write messages to replication queue
+		payload := replication.Payload{
+			Topic: topic,
+			Id:    mesg.Id,
+			Data:  mesg.Data,
+		}
+		s.replicationQueue <- payload
+	}
+	return &proto.Ok{}, nil
 }
 
 func (s *Server) setupGrpc() {

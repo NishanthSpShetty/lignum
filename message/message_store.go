@@ -146,7 +146,7 @@ func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *t
 }
 
 // Put write message to store and return the new Message and bool value indicating live replication
-func (m *MessageStore) Put(ctx context.Context, topicName string, msg []byte) (types.Message, bool) {
+func (m *MessageStore) Put(ctx context.Context, topicName string, data []byte) (types.Message, bool) {
 	// check if the topic exist
 	topic, ok := m.topic[topicName]
 
@@ -172,14 +172,14 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, msg []byte) (t
 		topic.ResetMessageBuffer()
 	}
 
-	_msg := types.Message{Id: topic.CounterNext(), Data: msg}
+	msg := types.Message{Id: topic.CounterNext(), Data: data}
 	// push the message onto wal writer queue
 	m.walChannel <- wal.Payload{
 		Topic: topicName,
-		Id:    _msg.Id,
-		Data:  _msg.Data,
+		Id:    msg.Id,
+		Data:  msg.Data,
 	}
-	return topic.Push(_msg), topic.LiveReplication()
+	return topic.Push(msg), topic.LiveReplication()
 }
 
 // Get return the value for given range (from, to)
