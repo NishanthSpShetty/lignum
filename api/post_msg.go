@@ -55,7 +55,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Debug().Str("Data", msg.Message).Str("Topic", msg.Topic).Msg("message received")
+	log.Debug().Str("data", msg.Message).Str("topic", msg.Topic).Msg("message received")
 	mesg, liveReplication := s.message.Put(ctx, msg.Topic, []byte(msg.Message))
 	if liveReplication {
 		// write messages to replication queue
@@ -86,7 +86,7 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 
 	if from < 0 || to <= from {
 		http.Error(w, "invalid message range (must: from<to)", http.StatusBadRequest)
-		log.Error().Uint64("From", from).Uint64("To", to).Msg("invalid range specified")
+		log.Error().Uint64("from", from).Uint64("to", to).Msg("invalid range specified")
 		return
 	}
 

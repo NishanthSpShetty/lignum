@@ -47,7 +47,8 @@ func getWalFile(topic, path string) (*os.File, uint64) {
 	var offset uint64 = 0
 	dir, err := os.Open(path)
 	if err != nil {
-		fmt.Println(err)
+		log.Error().Err(err).Msg("getWalFile: failed to open file")
+		return nil, offset
 	}
 	files, err := dir.Readdir(-1)
 	if err != nil {
@@ -152,7 +153,7 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, data []byte) (
 
 	// create new topic if it doesnt exist
 	if !ok {
-		log.Info().Str("Topic", topicName).Msg("topic does not exist, creating")
+		log.Info().Str("topic", topicName).Msg("topic does not exist, creating")
 		topic = m.createNewTopic(topicName, m.messageBufferSize)
 	}
 
@@ -186,7 +187,7 @@ func (m *MessageStore) Put(ctx context.Context, topicName string, data []byte) (
 // returns value starting with offset `from` to `to` (exclusive)
 // Must: from < to
 func (m *MessageStore) Get(topicName string, from, to uint64) []*types.Message {
-	// 2, 5 => 2,3,5
+	// 2, 5 => 2,3,4
 	topic, ok := m.topic[topicName]
 
 	if !ok {

@@ -45,11 +45,10 @@ func createPath(path string) error {
 
 func WriteWal(dataDir string, m Metadata, data []byte) error {
 	td := getTopicDatDir(dataDir, m.Topic)
-	fmt.Println("creating topic directory ", td)
 	// possible that path does not exist, so call creator
 	err := createPath(td)
 	if err != nil {
-		fmt.Printf("failed to create path %s %s\n", td, err.Error())
+		log.Error().Err(err).Msg("failed to create a path")
 		return err
 	}
 

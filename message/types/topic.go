@@ -144,12 +144,12 @@ func (t *Topic) GetMessages(from, to uint64) []*Message {
 	log.Debug().
 		Uint64("from", from).
 		Uint64("to", to).
-		Uint64("fromOffset", fromOffset).
-		Uint64("toOffset", toOffset).
-		Bool("fromInBuffer", fromInBuffer).
-		Bool("toInBuffer", toInBuffer).
-		Uint64("currentInbufferOffset", currentInbufferOffset).
-		Uint64("latestMessageOffset", latestMessageOffset).
+		Uint64("from_ffset", fromOffset).
+		Uint64("to_offset", toOffset).
+		Bool("from_in_buffer", fromInBuffer).
+		Bool("to_in_buffer", toInBuffer).
+		Uint64("current_in_buffer_offset", currentInbufferOffset).
+		Uint64("latest_message_offset", latestMessageOffset).
 		Msg("GetMessages stats")
 
 	// if fromInBuffer is true, then all messages can only be read from the buffer.

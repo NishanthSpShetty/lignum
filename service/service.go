@@ -114,7 +114,7 @@ func (s *Service) Start() error {
 	healthCheckTimeout := s.Config.Follower.HealthCheckTimeoutInMilliSeconds * time.Millisecond
 	clientTimeout := s.Config.Replication.ClientTimeoutInMilliSeconds * time.Millisecond
 
-	log.Info().Str("ServiceID", s.ServiceId).Msg("starting lignum - distributed messaging service")
+	log.Info().Str("service_id", s.ServiceId).Msg("starting lignum - distributed messaging service")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.addCancel(cancel)

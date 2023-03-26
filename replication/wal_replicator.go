@@ -85,11 +85,10 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 	currentTopics := msgStore.GetTopics()
 	log.Info().
 		Int("topics", len(currentTopics)).
-		Str("", f.Node().Host).
+		Str("host", f.Node().Host).
 		Str("id", f.Node().Id).
 		Msg("syncing the follower")
 
-	// get the tcp connection
 	addr := fmt.Sprintf("%s:%d", f.Node().Host, f.Node().ReplicationPort)
 	// TODO: we can have a iteration where no topic data is there to replicate in such case obtaining connection and doing other work is waste, optimise it.
 	conn, err := net.Dial("tcp", addr)
@@ -137,6 +136,7 @@ func (w *WALReplicator) syncFollwer(msgStore *message.MessageStore, f *follower.
 			metad, err := meta.Bytes()
 			if err != nil {
 				log.Error().Err(err).Msg("failed to encode metdata into bytes")
+				// FIXME: handle the error properly
 			}
 			conn.Write(metad)
 			conn.Write(wal.MetaMarker())
@@ -188,7 +188,7 @@ func (w *WALReplicator) topicSyncerForNewFollower(msgStore *message.MessageStore
 	// sync new follower when registers
 	j := 0
 	for f := range w.fq {
-		fmt.Println("Syncing new follower in iteration ", "count ", j)
+		fmt.Println("syncing new follower in iteration ", "count ", j)
 		w.syncFollwer(msgStore, f, false)
 		j++
 	}
