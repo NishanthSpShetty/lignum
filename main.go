@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strings"
 
@@ -45,7 +44,7 @@ func main() {
 	if present {
 		logLevel, err = zerolog.ParseLevel(envLogLevel)
 		if err != nil {
-			fmt.Printf("Error : %s. Exiting\n", err.Error())
+			log.Error().Err(err).Msg("failed to parse log level")
 			return
 		}
 	}
@@ -61,7 +60,7 @@ func main() {
 		return
 	}
 
-	log.Debug().Interface("Config", appConfig).Msg("loaded app config")
+	log.Debug().Interface("config", appConfig).Msg("loaded app config")
 	service, err := service.New(appConfig)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to initialise service")

@@ -48,8 +48,8 @@ func (c *ConsulClusterController) CreateSession(consulConfig config.Consul, sess
 		return err
 	}
 	log.Debug().
-		Str("SessionId", sessionId).
-		Str("Duration", writeMeta.RequestTime.String()).
+		Str("session_id", sessionId).
+		Dur("duration", writeMeta.RequestTime).
 		Msg("consul session created")
 
 	c.renewSessionPeriodically(sessionId, consulConfig.SessionRenewalTTLInSeconds, sessionRenewalChannel)
@@ -91,9 +91,9 @@ func (c *ConsulClusterController) AcquireLock(node cluster_types.Node, serviceKe
 
 	if acquired {
 		log.Debug().
-			Str("Duration", writeMeta.RequestTime.String()).
-			RawJSON("Node", lockData).
-			Bool("Acquired", acquired).
+			Dur("duration", writeMeta.RequestTime).
+			RawJSON("node", lockData).
+			Bool("acquired", acquired).
 			Msg("consul lock aquired on the session")
 	}
 	return acquired, err

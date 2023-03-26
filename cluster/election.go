@@ -31,13 +31,14 @@ func sendConnectRequestLeader(client http.Client, host string, port int, request
 func connectToLeader(ctx context.Context, serviceKey string, clusteController cluster_types.ClusterController, node types.Node, httpClient http.Client, msgStore *message.MessageStore) {
 	if !state.isLeader() {
 		// stop loop if the current node becomes the leader
+		log := log.With().Str("node_id", node.Id).Str("host", node.Host).Logger()
 
 		if !state.isConnectedLeader() {
 			log.Info().Msg("registering this service as a follower to the cluster leader.")
 			// get the leader information and send a follow request.
 			leaderNode, err := clusteController.GetLeader(serviceKey)
 			if err != nil {
-				log.Error().Err(err).Send()
+				log.Error().Err(err).Msg("failed get leader")
 				return
 			}
 
@@ -69,7 +70,7 @@ func connectToLeader(ctx context.Context, serviceKey string, clusteController cl
 			err = sendConnectRequestLeader(httpClient, leaderNode.Host, leaderNode.Port, requestBody)
 
 			if err != nil {
-				log.Error().Err(err).Msg("failed to register with the leader ")
+				log.Error().Err(err).Str("leader_node", leaderNode.Id).Str("leader_host", leaderNode.Host).Msg("failed to register with the leader ")
 			} else {
 				// we are connected to leader,
 				state.setConnectedToLeader(true)
@@ -122,7 +123,6 @@ func tryAcquireLock(node cluster_types.Node, c cluster_types.ClusterController, 
 
 	if acquired {
 		state.markLeader()
-		fmt.Println("waiting to write")
 		leaderSignal <- true
 		log.Info().Msg("lock acquired and marking the node as leader")
 	}

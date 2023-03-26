@@ -11,7 +11,7 @@ import (
 
 func (s *Service) Stop() {
 	log.Info().
-		Str("ServiceID", s.ServiceId).
+		Str("service_id", s.ServiceId).
 		Msg("stopping all routines, channels")
 
 	// call all cancelfunctions
@@ -28,7 +28,7 @@ func (s *Service) Stop() {
 	}
 	s.SetStopped()
 	s.apiServer.Stop(context.Background())
-	log.Info().Str("ServiceId", s.ServiceId).Msg("shutting down")
+	log.Info().Str("service_id", s.ServiceId).Msg("shutting down")
 }
 
 func (s *Service) signalHandler() {

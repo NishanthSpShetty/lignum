@@ -121,7 +121,7 @@ func (w *Wal) writeToWal(payload Payload) {
 }
 
 func (w *Wal) StartWalWriter(ctx context.Context) {
-	log.Debug().Msg("Started WAL writer service")
+	log.Debug().Msg("started WAL writer service")
 	go func() {
 		for {
 			select {

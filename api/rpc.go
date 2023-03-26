@@ -53,7 +53,7 @@ func (s *Server) Read(ctx context.Context, req *proto.Query) (*proto.Messages, e
 	}
 
 	if !s.message.TopicExist(topic) {
-		log.Error().Str("Topic", topic).Msg("topic does not exist")
+		log.Error().Str("topic", topic).Msg("topic does not exist")
 		return nil, status.Error(codes.InvalidArgument, "topic does not exist")
 	}
 
@@ -79,7 +79,7 @@ func (s *Server) Send(ctx context.Context, req *proto.Message) (*proto.Ok, error
 		return nil, status.Error(codes.InvalidArgument, "topic is empty")
 	}
 
-	log.Debug().Bytes("Data", data).Str("Topic", topic).Msg("message received")
+	log.Debug().Bytes("data", data).Str("topic", topic).Msg("message received")
 	mesg, liveReplication := s.message.Put(ctx, topic, data)
 	if liveReplication {
 		// write messages to replication queue

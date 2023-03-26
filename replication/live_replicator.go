@@ -63,7 +63,7 @@ func (r *LiveReplicator) Start(ctx context.Context, replicationTimeoutInMs time.
 	go func() {
 		// when queue is closed, the following looping would stop, effectively stopping the routine
 		for payload := range r.replicationQueue {
-			log.Debug().Interface("Payload", payload).Msg("received message for replication ")
+			log.Debug().Interface("payload", payload).Msg("received message for replication ")
 			r.replicate(payload)
 		}
 	}()
@@ -71,7 +71,7 @@ func (r *LiveReplicator) Start(ctx context.Context, replicationTimeoutInMs time.
 
 func (r *LiveReplicator) replicate(payload Payload) {
 	for id, follower := range r.followerRegistry.List() {
-		log.Debug().Str("FollowerServiceID", id).Msg("sending message to follower")
+		log.Debug().Str("follower_service_id", id).Msg("sending message to follower")
 		if follower.IsReady() {
 			r.send(follower.Node(), payload)
 		}
@@ -91,7 +91,7 @@ func (r *LiveReplicator) send(node types.Node, payload Payload) {
 	b, _ := ioutil.ReadAll(response.Body)
 	reason := string(b)
 	if response.StatusCode == http.StatusBadRequest {
-		log.Error().Str("Reason", reason).RawJSON("Node", node.Json()).Msg("follower rejected replication message")
+		log.Error().Str("reason", reason).RawJSON("node", node.Json()).Msg("follower rejected replication message")
 	}
 	if response.StatusCode == http.StatusOK {
 		log.Debug().Msg("msg sent to follower")

@@ -78,7 +78,7 @@ func NewServer(serviceId string, queue chan<- replication.Payload, config config
 func (s *Server) registerFollower() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		requestBody, _ := ioutil.ReadAll(req.Body)
-		log.Info().Bytes("RequestBody", requestBody).Msg("request received for follower registration")
+		log.Info().Bytes("request_body", requestBody).Msg("request received for follower registration")
 		fr := types.FollowerRegistration{}
 		json.Unmarshal(requestBody, &fr)
 		s.follower.Register(fr)

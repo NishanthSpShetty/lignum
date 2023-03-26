@@ -2,7 +2,6 @@ package follower
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -77,7 +76,6 @@ func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
 	}
 
 	f.follower[fr.Node.Id] = follower
-	fmt.Printf("registered follower %v\n", follower)
 	// add the follower data to queue too
 	f.queue <- follower
 }
