@@ -43,16 +43,16 @@ func New(msgConfig config.Message, walChannel chan<- wal.Payload) *MessageStore 
 	}
 }
 
-func getWalFile(topic, path string) (*os.File, uint64) {
+func getWalFile(topic, path string) (string, uint64) {
 	var offset uint64 = 0
 	dir, err := os.Open(path)
 	if err != nil {
 		log.Error().Err(err).Msg("getWalFile: failed to open file")
-		return nil, offset
+		return "", offset
 	}
 	files, err := dir.Readdir(-1)
 	if err != nil {
-		return nil, offset
+		return "", offset
 	}
 
 	// filter file ending with qwal
@@ -65,16 +65,11 @@ func getWalFile(topic, path string) (*os.File, uint64) {
 		}
 	}
 
-	file, err := os.OpenFile(walFilePath, os.O_RDONLY, os.ModePerm)
-	if err != nil {
-		log.Error().Err(err).Str("filename", walFilePath).Msg("failed to open WAL file")
-		return nil, offset
-	}
 	// get the message offset
 	offsetStr := strings.ReplaceAll(walFileName, topic+"_", "")
 	offsetStr = strings.ReplaceAll(offsetStr, ".qwal", "")
 	offset, err = strconv.ParseUint(offsetStr, 10, 64)
-	return file, offset
+	return walFilePath, offset
 }
 
 // RestoreWAL on startup read WAL files and replay the messages
@@ -99,7 +94,14 @@ func (m *MessageStore) RestoreWAL(walP *wal.Wal) {
 			topicName := topicDir.Name()
 			topic := m.createNewTopic(topicName, m.messageBufferSize)
 			fmt.Println("Loading topic ", topicName, " from WAL file")
-			file, offset := getWalFile(topicName, m.dataDir+"/"+topicDir.Name())
+			walFilePath, offset := getWalFile(topicName, m.dataDir+"/"+topicDir.Name())
+
+			log.Debug().Str("file", walFilePath).Str("data_dir", m.dataDir).Msg("found wal file for topic")
+			file, err := os.OpenFile(walFilePath, os.O_RDONLY, os.ModePerm)
+			if err != nil {
+				log.Error().Err(err).Str("filename", walFilePath).Msg("failed to open WAL file")
+				continue
+			}
 
 			if file == nil {
 				// FIXME: too many wal files,
@@ -117,11 +119,17 @@ func (m *MessageStore) RestoreWAL(walP *wal.Wal) {
 				continue
 			}
 
+			file.Close()
 			// load messages back to topic
 			topic.PushAll(msgs)
 			lastMsg := msgs[len(msgs)-1]
 			topic.SetCounter(lastMsg.Id + 1)
-			// TODO: update wal writer cache
+
+			f, err := os.OpenFile(walFilePath, os.O_APPEND|os.O_RDWR, os.ModePerm)
+			if err != nil {
+				return
+			}
+			walP.UpdateWalCache(topicName, f)
 		}
 	}
 }
