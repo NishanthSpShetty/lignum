@@ -59,6 +59,12 @@ func (w *Wal) ResetWal(topic string) {
 	w.walCache.delete(topic)
 }
 
+func (w *Wal) UpdateWalCache(topic string, f *os.File) error {
+	writer := bufio.NewWriter(f)
+	w.walCache.set(topic, &walFile{file: f, writer: writer})
+	return nil
+}
+
 // getWalWriter return the WAL writer if present.
 // create new file and WAL writer for the given topic
 func (w *Wal) getWalWriter(payload Payload) *bufio.Writer {
@@ -115,7 +121,11 @@ func (w *Wal) writeToWal(payload Payload) {
 	// get the wal file associated with the topic
 	file := w.getWalWriter(payload)
 	// create if file does not exist.
-	file.WriteString(fmt.Sprintf("%d%s%s\n", payload.Id, MESSAGE_KEY_VAL_SEPERATOR, payload.Data))
+	_, err := file.WriteString(fmt.Sprintf("%d%s%s\n", payload.Id, MESSAGE_KEY_VAL_SEPERATOR, payload.Data))
+	if err != nil {
+		log.Error().Err(err).Msg("failed to write to wall")
+		return
+	}
 	// append the message to file
 	file.Flush()
 }
