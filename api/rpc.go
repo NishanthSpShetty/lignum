@@ -32,8 +32,27 @@ func (s *Server) Ping(context.Context, *proto.PingRequest) (*proto.PingResponse,
 }
 
 // CreateTopic implements proto.LignumServer
-func (s *Server) CreateTopic(context.Context, *proto.Topic) (*proto.Ok, error) {
-	panic("unimplemented")
+func (s *Server) CreateTopic(ctx context.Context, req *proto.Topic) (*proto.Ok, error) {
+	name := req.GetName()
+
+	if name == "" {
+		return nil, status.Error(codes.InvalidArgument, "topic name is empty")
+	}
+
+	if s.message.TopicExist(name) {
+		log.Error().Str("topic", name).Msg("topic exist with the given name")
+		return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("topic %s exist", name))
+	}
+
+	bufferSize := s.message.BufferSize()
+
+	liveReplication := req.GetEnableLiveReplication()
+
+	s.message.CreateNewTopic(name, bufferSize, liveReplication)
+	log.Debug().Str("topic", name).Bool("enable_live_replication", liveReplication).
+		Uint64("quorum_count", req.GetQorumCount()).
+		Msg("topic created")
+	return &proto.Ok{}, nil
 }
 
 // Read implements proto.LignumServer

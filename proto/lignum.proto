@@ -33,6 +33,10 @@ message Query {
   uint64 to = 3;
 }
 
-message Topic { string name = 1; }
+message Topic {
+  string name = 1;
+  bool enableLiveReplication = 2;
+  uint64 qorumCount = 3;
+}
 
 message Ok {}

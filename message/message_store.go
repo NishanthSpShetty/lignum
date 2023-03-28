@@ -43,6 +43,10 @@ func New(msgConfig config.Message, walChannel chan<- wal.Payload) *MessageStore 
 	}
 }
 
+func (m *MessageStore) BufferSize() uint64 {
+	return m.messageBufferSize
+}
+
 func getWalFile(topic, path string) (string, uint64) {
 	var offset uint64 = 0
 	dir, err := os.Open(path)
@@ -152,6 +156,13 @@ func (m *MessageStore) createNewTopic(topicName string, msgBufferSize uint64) *t
 	metrics.IncrementTopic()
 	m.topic[topicName] = topic
 	return topic
+}
+
+func (m *MessageStore) CreateNewTopic(topicName string, msgBufferSize uint64, liveReplication bool) {
+	topic := m.createNewTopic(topicName, msgBufferSize)
+	if liveReplication {
+		topic.EnableLiveReplication()
+	}
 }
 
 // Put write message to store and return the new Message and bool value indicating live replication
