@@ -55,6 +55,25 @@ func (s *Server) CreateTopic(ctx context.Context, req *proto.Topic) (*proto.Ok, 
 	return &proto.Ok{}, nil
 }
 
+// ListTopic implements proto.LignumServer
+func (s *Server) ListTopic(ctx context.Context, req *proto.ListTopicRequest) (*proto.ListTopicResponse, error) {
+	topics := make([]*proto.Topic, 0)
+
+	topix := s.message.GetTopics()
+
+	for _, topic := range topix {
+		topics = append(topics, &proto.Topic{
+			Name:                  topic.GetName(),
+			EnableLiveReplication: false,
+			Count:                 topic.GetCurrentOffset(),
+			QorumCount:            0,
+		})
+	}
+	return &proto.ListTopicResponse{
+		Topic: topics,
+	}, nil
+}
+
 // Read implements proto.LignumServer
 func (s *Server) Read(ctx context.Context, req *proto.Query) (*proto.Messages, error) {
 	resp := &proto.Messages{}

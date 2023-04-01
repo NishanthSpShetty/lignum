@@ -8,6 +8,7 @@ package proto
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -27,6 +28,7 @@ type LignumClient interface {
 	Send(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Ok, error)
 	Read(ctx context.Context, in *Query, opts ...grpc.CallOption) (*Messages, error)
 	CreateTopic(ctx context.Context, in *Topic, opts ...grpc.CallOption) (*Ok, error)
+	ListTopic(ctx context.Context, in *ListTopicRequest, opts ...grpc.CallOption) (*ListTopicResponse, error)
 }
 
 type lignumClient struct {
@@ -82,6 +84,15 @@ func (c *lignumClient) CreateTopic(ctx context.Context, in *Topic, opts ...grpc.
 	return out, nil
 }
 
+func (c *lignumClient) ListTopic(ctx context.Context, in *ListTopicRequest, opts ...grpc.CallOption) (*ListTopicResponse, error) {
+	out := new(ListTopicResponse)
+	err := c.cc.Invoke(ctx, "/proto.Lignum/ListTopic", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LignumServer is the server API for Lignum service.
 // All implementations must embed UnimplementedLignumServer
 // for forward compatibility
@@ -91,27 +102,35 @@ type LignumServer interface {
 	Send(context.Context, *Message) (*Ok, error)
 	Read(context.Context, *Query) (*Messages, error)
 	CreateTopic(context.Context, *Topic) (*Ok, error)
+	ListTopic(context.Context, *ListTopicRequest) (*ListTopicResponse, error)
 	mustEmbedUnimplementedLignumServer()
 }
 
 // UnimplementedLignumServer must be embedded to have forward compatible implementations.
-type UnimplementedLignumServer struct {
-}
+type UnimplementedLignumServer struct{}
 
 func (UnimplementedLignumServer) Echo(context.Context, *EchoMessage) (*EchoMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Echo not implemented")
 }
+
 func (UnimplementedLignumServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
+
 func (UnimplementedLignumServer) Send(context.Context, *Message) (*Ok, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
+
 func (UnimplementedLignumServer) Read(context.Context, *Query) (*Messages, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Read not implemented")
 }
+
 func (UnimplementedLignumServer) CreateTopic(context.Context, *Topic) (*Ok, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTopic not implemented")
+}
+
+func (UnimplementedLignumServer) ListTopic(context.Context, *ListTopicRequest) (*ListTopicResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTopic not implemented")
 }
 func (UnimplementedLignumServer) mustEmbedUnimplementedLignumServer() {}
 
@@ -216,6 +235,24 @@ func _Lignum_CreateTopic_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Lignum_ListTopic_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTopicRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LignumServer).ListTopic(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Lignum/ListTopic",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LignumServer).ListTopic(ctx, req.(*ListTopicRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Lignum_ServiceDesc is the grpc.ServiceDesc for Lignum service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -242,6 +279,10 @@ var Lignum_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateTopic",
 			Handler:    _Lignum_CreateTopic_Handler,
+		},
+		{
+			MethodName: "ListTopic",
+			Handler:    _Lignum_ListTopic_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

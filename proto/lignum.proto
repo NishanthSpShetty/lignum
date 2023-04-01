@@ -11,6 +11,7 @@ service Lignum {
   rpc Send(Message) returns (Ok) {}
   rpc Read(Query) returns (Messages) {}
   rpc CreateTopic(Topic) returns (Ok) {}
+  rpc ListTopic(ListTopicRequest) returns (ListTopicResponse) {}
 }
 
 message EchoMessage { string message = 1; }
@@ -37,6 +38,11 @@ message Topic {
   string name = 1;
   bool enableLiveReplication = 2;
   uint64 qorumCount = 3;
+  uint64 count = 4;
 }
 
 message Ok {}
+
+message ListTopicRequest {}
+
+message ListTopicResponse { repeated Topic topic = 1; }
