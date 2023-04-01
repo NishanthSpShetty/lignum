@@ -64,7 +64,7 @@ func (s *Server) ListTopic(ctx context.Context, req *proto.ListTopicRequest) (*p
 	for _, topic := range topix {
 		topics = append(topics, &proto.Topic{
 			Name:                  topic.GetName(),
-			EnableLiveReplication: false,
+			EnableLiveReplication: topic.LiveReplication(),
 			Count:                 topic.GetCurrentOffset(),
 			QorumCount:            0,
 		})
