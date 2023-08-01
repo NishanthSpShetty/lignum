@@ -17,6 +17,7 @@ Create a disributed logging/messaging service using golang, something like kafka
  - [X] implement http api.
  - [X] Unit test for cluster functions.
  - [X] Script to produce and consume messages.
+ - [X] gRPC API
 
 
 ### cluster 
@@ -31,8 +32,9 @@ Create a disributed logging/messaging service using golang, something like kafka
   - [X] Send message to and read from the topic.
   - [X] Create topic if doesnt not exist when the first message is published.
   - [X] Each topic has a separate offset conter.
-  - [ ] send the message to leader for replication in case follower receives the message. [not sure if required]
+  - [ ] send the message to leader for replication in case follower receives the message. [not in scope]
   - [X] When message received by leader, it should be replicated to all healthy follower node.
   - [X] Can read from any node.
-  - [ ] Message is persisted by each node.
+  - [X] Message is persisted by each node.
+  - [X] WAL replication
 
