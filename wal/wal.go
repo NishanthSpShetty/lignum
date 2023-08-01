@@ -119,8 +119,8 @@ func (w *Wal) writeToWal(payload Payload) {
 	}
 
 	// get the wal file associated with the topic
-	file := w.getWalWriter(payload)
 	// create if file does not exist.
+	file := w.getWalWriter(payload)
 	_, err := file.WriteString(fmt.Sprintf("%d%s%s\n", payload.Id, MESSAGE_KEY_VAL_SEPERATOR, payload.Data))
 	if err != nil {
 		log.Error().Err(err).Msg("failed to write to wall")
