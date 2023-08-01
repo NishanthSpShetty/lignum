@@ -18,6 +18,7 @@ Distributed message queue inspired by Kafka, which can be used to
    * Consume messages from topic.
    * Message is replicated to all nodes, meaning any node can be used to read message from the topic, compared to Kafka where topic has leader and replicated to few set of nodes in a cluster.
    * Persist messages on disk.
+   * Support both HTTP and GRPC API's.
    
    
 ### Cluster
@@ -98,7 +99,7 @@ Lignum will listen on the specified port for incoming traffics
 
 ---
 
-### Usage
+### Usage using the Http REST API's.
 
 #### Sending message
 
@@ -107,8 +108,10 @@ Endpoint    /api/message
 
 Method     POST
 
-Request   {"topic"  : "beautiful_topic_name", 
-           "message": "message from oracle"}
+Request    {
+	     "topic"  : "beautiful_topic_name", 
+             "message": "message from oracle"
+	   }
 ```
 
 Example curl
@@ -140,9 +143,11 @@ Endpoint    /api/message
 
 Method     GET
 
-Request   {"topic"  : "beautiful_topic_name", 
-           "from": 0,
-           "to": 100}
+Request  {	
+	  "topic": "beautiful_topic_name",
+	  "from": 0,
+	  "to": 100
+	}
 ```
 
 where
@@ -187,7 +192,12 @@ The above message will return 3 messages if presents, if the message is less tha
 }
 ```
 
->> NOTE: Lignum doesn't store any data about the consumer, so it wont track the last message consumed as done by Kafka. 
+#### Using gRPC to connect to Lignum
+
+To use gRPC, checkout the proto files [here](https://github.com/NishanthSpShetty/lignum/tree/master/proto)
+
+
+> NOTE: Lignum doesn't store any data about the consumer, so it wont track the last message consumed as done by Kafka. 
 
 ## Storage
 
@@ -196,10 +206,18 @@ Lignum stores the messages to disk as log files, batched with the messageBufferS
 It creates a WAL file and when the number of message reaches set limit with buffer size, it will flushed to log file and new WAL file is created with the different offset for message.
 Every message is sent to lignum will be written to queuing WAL file (.qwal) which gets promoted to WAL file.
 
-
 ---
+
+## Contribution
+
+- Try it out and feel free to raise a issue, create a PR.
+- Any feedback/proposals are welcome.
+- Or reach out to me over a [linkedin](https://www.linkedin.com/in/nishanthspshetty/) to know more.
+
+  
 
 *For TODO's and progress on the project refer [laundrylist](https://github.com/NishanthSpShetty/lignum/blob/master/laundrylist.md) or [lignum project](https://github.com/NishanthSpShetty/lignum/projects/1)*
 
----
+
+
 
