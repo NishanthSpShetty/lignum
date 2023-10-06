@@ -18,6 +18,7 @@ Create a disributed logging/messaging service using golang, something like kafka
  - [X] Unit test for cluster functions.
  - [X] Script to produce and consume messages.
  - [X] gRPC API
+ - [ ] Topic metadata persistance, currently topic metadata is read from data segment stored in wal file.
 
 
 ### cluster 
@@ -37,4 +38,5 @@ Create a disributed logging/messaging service using golang, something like kafka
   - [X] Can read from any node.
   - [X] Message is persisted by each node.
   - [X] WAL replication
-
+  - [ ] Switching between live and WAL replication
+  - [ ] Server metrics, currently has fewer metrics published in `/metrics` api, need to add more metrics on various points.
