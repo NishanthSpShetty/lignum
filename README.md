@@ -61,9 +61,9 @@ Currently lignum implements two modes of replication strategy, 1. WAL replicatio
 ### Requirement
 Consul service
 
-You can run consul in docker with the following command
+You can run consul in docker with the following command, (use sudo if needed)
 ```
-docker-compose up
+docker compose up
 ```
 
 ### Test

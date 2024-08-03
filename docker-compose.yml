@@ -3,7 +3,7 @@ version: "3"
 services:
   consul:
     hostname: consul
-    image: "consul"
+    image: "hashicorp/consul"
     restart: always
     ports:
      - "8500:8500"
