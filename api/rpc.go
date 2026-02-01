@@ -8,11 +8,11 @@ import (
 	interceptors "github.com/NishanthSpShetty/grpc-interceptors"
 	proto "github.com/NishanthSpShetty/lignum/proto"
 	"github.com/NishanthSpShetty/lignum/replication"
-	"github.com/gogo/status"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ proto.LignumServer = (*Server)(nil)

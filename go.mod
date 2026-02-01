@@ -1,10 +1,9 @@
 module github.com/NishanthSpShetty/lignum
 
-go 1.20
+go 1.24.0
 
 require (
-	github.com/NishanthSpShetty/grpc-interceptors v0.3.0
-	github.com/gogo/status v1.1.0
+	github.com/NishanthSpShetty/grpc-interceptors v0.4.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/consul/api v1.8.1
 	github.com/pkg/errors v0.9.1
@@ -12,7 +11,7 @@ require (
 	github.com/rs/zerolog v1.23.0
 	github.com/stretchr/testify v1.7.0
 	google.golang.org/grpc v1.53.0
-	google.golang.org/protobuf v1.28.1
+	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -25,8 +24,6 @@ require (
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/go-kit/kit v0.11.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
-	github.com/gogo/googleapis v0.0.0-20180223154316-0cd9801be74a // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
 	github.com/hashicorp/go-hclog v0.12.0 // indirect
@@ -44,9 +41,9 @@ require (
 	github.com/prometheus/common v0.26.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
-	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
