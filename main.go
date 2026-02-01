@@ -30,12 +30,9 @@ func isDevelopment(dev_mode string) bool {
 }
 
 func main() {
-	development := false
-	// TODO: i don't feel good about the variable name, but i dont know what to name either
-	// also should this be in config or args??
-	devMode, present := os.LookupEnv("ENV")
-	if present && isDevelopment(devMode) {
-		development = true
+	isDev := false
+	if envName, ok := os.LookupEnv("ENV"); ok && isDevelopment(envName) {
+		isDev = true
 	}
 
 	envLogLevel, present := os.LookupEnv("LOG_LEVEL")
@@ -49,7 +46,7 @@ func main() {
 		}
 	}
 
-	initialiseLogger(development, logLevel)
+	initialiseLogger(isDev, logLevel)
 
 	configFile := flag.String("config", "", "get configuration from file")
 	flag.Parse()

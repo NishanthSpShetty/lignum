@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -88,7 +88,8 @@ func (r *LiveReplicator) send(node types.Node, payload Payload) {
 		// should add some retrier mechanism
 		return
 	}
-	b, _ := ioutil.ReadAll(response.Body)
+	defer response.Body.Close()
+	b, _ := io.ReadAll(response.Body)
 	reason := string(b)
 	if response.StatusCode == http.StatusBadRequest {
 		log.Error().Str("reason", reason).RawJSON("node", node.Json()).Msg("follower rejected replication message")
@@ -96,5 +97,4 @@ func (r *LiveReplicator) send(node types.Node, payload Payload) {
 	if response.StatusCode == http.StatusOK {
 		log.Debug().Msg("msg sent to follower")
 	}
-	response.Body.Close()
 }

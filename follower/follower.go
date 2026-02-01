@@ -3,6 +3,7 @@ package follower
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	cluster_types "github.com/NishanthSpShetty/lignum/cluster/types"
@@ -20,6 +21,7 @@ type Follower struct {
 type FollowerRegistry struct {
 	follower map[string]*Follower
 	queue    chan *Follower
+	lock     sync.RWMutex
 }
 
 func (f *Follower) IsHealthy() bool { return f.healthy }
@@ -75,12 +77,16 @@ func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
 		messageStat: stats,
 	}
 
+	f.lock.Lock()
 	f.follower[fr.Node.Id] = follower
+	f.lock.Unlock()
 	// add the follower data to queue too
 	f.queue <- follower
 }
 
 func (f *FollowerRegistry) ListNodes() []cluster_types.Node {
+	f.lock.RLock()
+	defer f.lock.RUnlock()
 	l := make([]cluster_types.Node, 0)
 	for _, follower := range f.follower {
 		l = append(l, follower.node)
@@ -89,7 +95,14 @@ func (f *FollowerRegistry) ListNodes() []cluster_types.Node {
 }
 
 func (f *FollowerRegistry) List() map[string]*Follower {
-	return f.follower
+	f.lock.RLock()
+	defer f.lock.RUnlock()
+	// Return a copy to avoid race conditions if the caller iterates over the map
+	copyMap := make(map[string]*Follower, len(f.follower))
+	for k, v := range f.follower {
+		copyMap[k] = v
+	}
+	return copyMap
 }
 
 func New(followerQueue chan *Follower) *FollowerRegistry {
@@ -105,6 +118,8 @@ func isActive(client http.Client, node *cluster_types.Node) bool {
 
 func (f *FollowerRegistry) healthCheck(client http.Client) {
 	// iterate over each follower nodes and mark them healthy
+	f.lock.RLock()
+	defer f.lock.RUnlock()
 	healthy := 0
 	dead := 0
 	for _, follower := range f.follower {

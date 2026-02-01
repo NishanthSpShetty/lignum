@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -22,7 +22,7 @@ func sendConnectRequestLeader(client http.Client, host string, port int, request
 	if err != nil {
 		return err
 	}
-	response, err := ioutil.ReadAll(resp.Body)
+	response, err := io.ReadAll(resp.Body)
 	// TODO: We will just log whatever we receive from the leader for now
 	log.Debug().Bytes("ConnectLeaderResponse", response).Send()
 	return err

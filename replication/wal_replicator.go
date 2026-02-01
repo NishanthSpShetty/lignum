@@ -3,6 +3,7 @@ package replication
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -10,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/NishanthSpShetty/lignum/follower"
@@ -69,13 +69,7 @@ func (w *WALReplicator) syncedFollwer(f *follower.Follower) {
 }
 
 func sendFile(c *net.TCPConn, f *os.File, fi os.FileInfo) error {
-	sockFile, err := c.File()
-	if err != nil {
-		errors.Wrap(err, "could not get connection file")
-	}
-	defer sockFile.Close()
-	_, err = syscall.Sendfile(int(sockFile.Fd()), int(f.Fd()), nil, int(fi.Size()))
-
+	_, err := io.Copy(c, f)
 	return errors.Wrap(err, "sendFile")
 }
 
@@ -206,8 +200,10 @@ func (w *WALReplicator) topicSyncer(msgStore *message.MessageStore) {
 		}
 
 		// as the below operation takes time, we can let the writer update the slice by copying and using the copy
+		w.lock.RLock()
 		followers := make([]*follower.Follower, len(w.syncFollwers))
 		copy(followers, w.syncFollwers)
+		w.lock.RUnlock()
 		for _, f := range followers {
 			if f.IsReady() && f.IsHealthy() {
 				w.syncFollwer(msgStore, f, true)
