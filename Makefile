@@ -41,3 +41,6 @@ proto:
 
 tidy:
 	go mod tidy
+
+update:
+	go get -u -t ./...
