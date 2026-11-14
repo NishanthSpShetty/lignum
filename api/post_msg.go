@@ -35,6 +35,7 @@ type GetMessageResponse struct {
 }
 
 func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	metrics.IncrementPostRequest()
 	var msg PutMessageRequest
 
@@ -71,6 +72,7 @@ func (s *Server) handlePost(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	decoder := json.NewDecoder(req.Body)
 	decoder.DisallowUnknownFields()
 
@@ -105,7 +107,12 @@ func (s *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 
 	messages := s.message.Get(messageRequest.Topic, from, to)
 	ms := make([]Message, 0, len(messages))
-	// TODO: handle nil return values
+	if messages == nil {
+
+		http.Error(w, "failed to get messages", http.StatusInternalServerError)
+		log.Error().Str("Topic", messageRequest.Topic).Msg("failed to get messages")
+		return
+	}
 	for _, m := range messages {
 		ms = append(ms, Message{
 			Id:   m.Id,

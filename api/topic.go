@@ -11,6 +11,7 @@ type Topic struct {
 }
 
 func (s *Server) handleTopicGet(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	topics := make([]Topic, 0)
 	topix := s.message.GetTopics()
 
@@ -20,16 +21,4 @@ func (s *Server) handleTopicGet(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(topics)
 }
 
-func (s *Server) TopicHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch req.Method {
-		//	case "POST":
-		//		s.handleTopicPost(w, req)
-		case "GET":
-			s.handleTopicGet(w, req)
-		default:
-			http.Error(w, "request method must be one of [ GET, POST ].", http.StatusMethodNotAllowed)
-		}
-	}
-}
+

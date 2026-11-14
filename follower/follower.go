@@ -68,7 +68,11 @@ func (f *FollowerRegistry) Register(fr cluster_types.FollowerRegistration) {
 	// we know that the node is healthy when registering itself
 	stats := make([]*cluster_types.MessageStat, 0, len(fr.MessageStat))
 	for _, stat := range fr.MessageStat {
-		stats = append(stats, &stat)
+		_stat := &cluster_types.MessageStat{
+			Topic:  stat.Topic,
+			Offset: stat.Offset,
+		}
+		stats = append(stats, _stat)
 	}
 	follower := &Follower{
 		node:        fr.Node,

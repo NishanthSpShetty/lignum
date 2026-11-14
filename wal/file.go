@@ -77,6 +77,7 @@ func ReadFromLog(dataDir, topic string, fileOffset, from, to uint64) ([]byte, er
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 	return readFile(file, fileOffset, from, to)
 }
 
