@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"time"
@@ -35,76 +35,76 @@ type Server struct {
 
 func (s *Server) Stop(ctx context.Context) {
 	s.grpcServer.GracefulStop()
-	s.httpServer.Shutdown(ctx)
+	if err := s.httpServer.Shutdown(ctx); err != nil {
+		log.Error().Err(err).Msg("error shutting down http server")
+	}
 }
 
 func NewServer(serviceId string, queue chan<- replication.Payload, config config.Server, message *message.MessageStore, follower *follower.FollowerRegistry) (*Server, error) {
 	address := fmt.Sprintf("%s:%d", config.Host, config.Port)
-	httpServer := http.Server{
-		Addr: address,
-		// shamelessly copied following config from internet, will revisit this later
-		ReadTimeout:       1 * time.Second,
-		WriteTimeout:      1 * time.Second,
-		IdleTimeout:       30 * time.Second,
-		ReadHeaderTimeout: 2 * time.Second,
-	}
-
 	ln, err := net.Listen("tcp", address)
 	if err != nil {
-		return nil, errors.Wrap(err, "NewServer failed to listen on given address ")
+		return nil, errors.Wrap(err, "NewServer failed to listen on given address")
 	}
 
 	s := &Server{
 		serviceId:        serviceId,
 		config:           config,
 		replicationQueue: queue,
-		httpServer:       &httpServer,
 		message:          message,
 		follower:         follower,
 		httpListener:     ln,
 	}
+
+	mux := http.NewServeMux()
+	s.registerRoutes(mux)
+
+	s.httpServer = &http.Server{
+		Addr:              address,
+		Handler:           mux,
+		ReadHeaderTimeout: 2 * time.Second,
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
 	s.setupGrpc()
-
-	http.HandleFunc("/ping", s.ping())
-	http.HandleFunc("/api/follower/register", s.registerFollower())
-	http.HandleFunc("/internal/api/replicate", s.replicate())
-	http.HandleFunc("/api/message", s.handleMessage())
-	http.HandleFunc("/api/topics", s.TopicHandler())
-	http.Handle("/metrics", promhttp.Handler())
-
 	return s, nil
 }
 
-func (s *Server) registerFollower() http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		requestBody, _ := ioutil.ReadAll(req.Body)
-		log.Info().Bytes("request_body", requestBody).Msg("request received for follower registration")
-		fr := types.FollowerRegistration{}
-		json.Unmarshal(requestBody, &fr)
-		s.follower.Register(fr)
-		fmt.Fprintf(w, "Follower registered. Node : [ %v ]\n", fr)
-	}
+func (s *Server) registerRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /ping", s.handlePing)
+	mux.HandleFunc("POST /api/follower/register", s.handleRegisterFollower)
+	mux.HandleFunc("POST /internal/api/replicate", s.handleReplicate)
+	mux.HandleFunc("GET /api/message", s.handleGet)
+	mux.HandleFunc("POST /api/message", s.handlePost)
+	mux.HandleFunc("GET /api/topics", s.handleTopicGet)
+	mux.Handle("GET /metrics", promhttp.Handler())
 }
 
-func (a *Server) ping() http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintf(w, "PONG")
+func (s *Server) handleRegisterFollower(w http.ResponseWriter, req *http.Request) {
+	req.Body = http.MaxBytesReader(w, req.Body, 1024*1024)
+	requestBody, err := io.ReadAll(req.Body)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to read request body")
+		http.Error(w, "failed to read request body", http.StatusBadRequest)
+		return
 	}
+	log.Info().Bytes("request_body", requestBody).Msg("request received for follower registration")
+	fr := types.FollowerRegistration{}
+	if err := json.Unmarshal(requestBody, &fr); err != nil {
+		log.Error().Err(err).Msg("failed to unmarshal request body")
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	s.follower.Register(fr)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Follower registered. Node : [ %v ]\n", fr)
 }
 
-// handleMessage dispatch to particular handlers based on request method
-func (s *Server) handleMessage() http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch req.Method {
-		case "POST":
-			s.handlePost(w, req)
-		case "GET":
-			s.handleGet(w, req)
-		default:
-			http.Error(w, "request method must be one of [ GET, POST ].", http.StatusMethodNotAllowed)
-		}
-	}
+func (s *Server) handlePing(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "PONG")
 }
 
 func (s *Server) Start() error {

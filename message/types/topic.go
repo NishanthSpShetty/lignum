@@ -78,6 +78,9 @@ func (t *Topic) readFromBuffer(from, to uint64) []*Message {
 		return nil
 	}
 	msgs := make([]*Message, to-from)
+	if msgs == nil {
+		return nil
+	}
 	i := 0
 	messages := t.getBufferedMessage()
 	for _, _msg := range messages {
@@ -178,7 +181,7 @@ func (t *Topic) getMessageSizeInBuffer() uint64 {
 }
 
 func (t *Topic) ResetMessageBuffer() {
-	//	t.messageBuffer = make([]Message, t.msgBufferSize)
+	t.messageBuffer = make([]Message, t.msgBufferSize)
 	t.bufferIdx = 0
 }
 

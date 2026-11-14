@@ -33,7 +33,7 @@ func (s *Service) Stop() {
 
 func (s *Service) signalHandler() {
 	go func() {
-		signalChannel := make(chan os.Signal)
+		signalChannel := make(chan os.Signal, 1)
 		signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
 		// read the signal and discard
 		<-signalChannel

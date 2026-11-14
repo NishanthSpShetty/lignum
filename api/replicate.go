@@ -39,13 +39,4 @@ func (s *Server) handleReplicate(w http.ResponseWriter, req *http.Request) {
 	log.Debug().Msg("replication message processed")
 }
 
-func (s *Server) replicate() http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		switch req.Method {
-		case "POST":
-			s.handleReplicate(w, req)
-		default:
-			http.Error(w, "request method must be [ POST ].", http.StatusMethodNotAllowed)
-		}
-	}
-}
+

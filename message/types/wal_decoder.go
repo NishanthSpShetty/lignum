@@ -12,7 +12,7 @@ import (
 func DecodeRawMessage(raw []byte, from, to uint64) []*Message {
 	buf := make([]*Message, 0, 16)
 	i := 0
-	for _, line := range strings.Split(string(raw), "\n") {
+	for line := range strings.SplitSeq(string(raw), "\n") {
 		message := Message{}
 		splits := strings.Split(line, wal.MESSAGE_KEY_VAL_SEPERATOR)
 		if len(splits) != 2 {
